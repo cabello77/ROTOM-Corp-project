@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const pool = require("./database");
 
 const app = express();
 
@@ -14,6 +15,16 @@ app.get("/", (req, res) => {
 // Test API route
 app.get("/api/test", (req, res) => {
   res.json({ message: "Hello from ROTOM server!", time: new Date() });
+});
+
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM users');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 });
 
 //Start server

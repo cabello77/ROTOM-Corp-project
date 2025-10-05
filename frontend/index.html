@@ -1,63 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ROTOM Corp.</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-      background-color: #f4f4f4;
-    }
-
-    header {
-      background: #222;
-      color: white;
-      padding: 1rem;
-    }
-
-    h1 {
-      margin: 0;
-    }
-
-    main {
-      padding: 2rem;
-    }
-  </style>
-</head>
-<body>
-        <button id="fetchUsersBtn">Click me!</button>
-        <div id="usersList"></div>
-        <script>
-                document.getElementById('fetchUsersBtn').addEventListener('click' , async () => {
-                        try {
-                                const response = await fetch('/api/users');
-                                const users = await response.json();
-
-                                const usersList = document.getElementById('usersList');
-                                usersList.innerHTML = '';
-                        
-                                users.forEach(user => {
-                                const userDiv = document.createElement('div');
-                                userDiv.className = 'user';
-                                userDiv.textContent = `${user.name} — ${user.email}`;
-                                usersList.appendChild(userDiv);
-                        });
-                        } catch (err) {
-                                alert('Failed to fetch users: ' + err.message);
-                        }
-                });
-                                
-        </script>
-  <header>
-    <h1>ROTOM Corp.</h1>
-  </header>
-
-  <main>
-    <p>Click the button to see user information</p>
-  </main>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kapakana&display=swap" rel="stylesheet">
+    <title>Plotline</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { Link } from "react-router-dom";
+
 
 function App() {
   const [serverStatus, setServerStatus] = useState('Checking...')
@@ -13,14 +15,14 @@ function App() {
     try {
       // Test database connection
       console.log('📡 Testing database connection...')
-      const dbResponse = await axios.get('http://localhost:3001/api/db-test')
+      const dbResponse = await axios.get('http://localhost:3000/api/db-test')
       console.log('✅ Database connection response:', dbResponse.data)
       setServerStatus(dbResponse.data.status)
       setUserCount(dbResponse.data.userCount)
 
       // Fetch all users
       console.log('👥 Fetching all users...')
-      const usersResponse = await axios.get('http://localhost:3001/api/users')
+      const usersResponse = await axios.get('http://localhost:3000/api/users')
       console.log('✅ Users fetched successfully:', usersResponse.data)
       setUsers(usersResponse.data)
       
@@ -48,12 +50,20 @@ function App() {
               Plotline
             </div>
             <div className="space-x-4">
-              <button className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity" style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#D9D9D9' }}>
+              <Link 
+                to="/signup"
+                className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity" 
+                style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#D9D9D9' }}
+              >
                 Sign Up
-              </button>
-              <button className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity" style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#D9D9D9' }}>
-                Login In
-              </button>
+              </Link>
+              <Link
+              to="/login"
+              className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity" 
+              style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#D9D9D9' }}
+              >
+                Login
+              </Link>
             </div>
           </div>
         </div>

@@ -1,0 +1,11 @@
+{
+  "name": "rotom-corp-monorepo",
+  "private": true,
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "heroku-postbuild": "cd frontend && npm install && npm run build && mkdir -p ../backend/public && cp -R dist/* ../backend/public/ && cd ../backend && npm install && npx prisma generate"
+  }
+}
+

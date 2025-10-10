@@ -141,6 +141,14 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
+// SPA fallback for React Router (serve index.html for non-API routes)
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
 //Start server
 const port = process.env.PORT || 3001;
 app.listen(port, () => {

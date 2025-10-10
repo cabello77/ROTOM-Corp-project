@@ -15,14 +15,14 @@ function App() {
     try {
       // Test database connection
       console.log('📡 Testing database connection...')
-      const dbResponse = await axios.get('http://localhost:3000/api/db-test')
+      const dbResponse = await axios.get('/api/db-test')
       console.log('✅ Database connection response:', dbResponse.data)
       setServerStatus(dbResponse.data.status)
       setUserCount(dbResponse.data.userCount)
 
       // Fetch all users
       console.log('👥 Fetching all users...')
-      const usersResponse = await axios.get('http://localhost:3000/api/users')
+      const usersResponse = await axios.get('/api/users')
       console.log('✅ Users fetched successfully:', usersResponse.data)
       setUsers(usersResponse.data)
       

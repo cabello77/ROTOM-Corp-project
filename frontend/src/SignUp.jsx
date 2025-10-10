@@ -19,7 +19,7 @@ function SignUp() {
     setMessage("Submitting...");
 
     try {
-      const res = await axios.post("http://localhost:3000/api/signup", formData);
+      const res = await axios.post("/api/signup", formData);
       setMessage(res.data.message);
       setFormData({ name: "", email: "", password: "" });
     } catch (err) {

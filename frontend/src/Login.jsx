@@ -1,8 +1,9 @@
 import { useState } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
 
@@ -15,9 +16,12 @@ function Login() {
     setMessage("Logging in...");
 
     try {
-      const res = await axios.post("http://localhost:3000/api/login", formData);
+      const res = await axios.post("/api/login", formData);
       setMessage(res.data.message);
       setFormData({ email: "", password: "" });
+      if (res.data?.message?.toLowerCase().includes("successful")) {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.error(err);
       setMessage(err.response?.data?.error || "Login failed");

@@ -8,11 +8,252 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(cuid())
-  name     String
-  email    String @unique
-  password String
+  id				Int @id @default(cuid())
+  name			String
+  email			String @unique
+  password	String
+  profile		Profile?
+	notif			UserNotifs[]
+	clubMem		UserBookClubMember[]
+	books			UserBook[]
 
   @@map("users")
 }
+
+model Profile {
+	id							Int @id @default(cuid())
+	username				Int @unique
+	fullName				String
+	profilePicture	String?
+	bio							String?
+	userID					Int 
+	user						User @relation(fields: [userID], references: [id])
+	nameRef					User @relation("nameRef", fields: [fullName], references: [name])				
+}
+
+model UserNotifs {
+	id							Int @id @default(cuid())
+	notifMessage		String
+	userID					Int
+	user						User @relation (fields: [userID], references: [id])
+}
+
+model Friend {
+	id							Int @id @default(cuid())
+	userID					Int 
+	user						User @relation(fields: [userID], references: [id])
+	friendID				Int 
+	friend					User @relation(fields: [friendID], references: [id])
+	status					FriendStatus //PENDING, ACCEPTED, or REJECTED
+	@@unique([userID, friendID])
+}
+
+enum FriendStatus {
+  PENDING
+	ACCEPTED
+	REJECTED
+}
+
+model Book {
+	id							Int @id @default(cuid())
+	title						String
+	author					String
+	genre						String
+	description			String
+	bookCover				String
+	bookClubBooks		BookClubBook[]
+	userBooks				UserBook[]
+}
+
+model UserBook {
+	id							Int @id @default(cuid())
+	readingStatus		ReadingStatus //CURRENTLY_READING or FINISHED
+	startDate				DateTime
+	dateFinished		DateTime?
+	bookClubID			Int
+	userID					Int
+	bookID					Int
+	user						User @relation(fields: [userID], references: [id])
+	bookClub				BookClub @relation(fields: [bookClubID], references: [id])
+	book						Book @relation(fields: [bookID], references: [id])
+}
+
+model BookClub {
+	id							Int @id @default(cuid())
+	name						String
+	description			String
+	books						BookClubBook[]
+	members					UserBookClubMember[]
+}
+
+model UserBookClubMember {
+	id							Int @id @default(cuid())
+	isModerator			Boolean
+	isHost					Boolean
+	userID					Int
+	bookClubID			Int
+	user						User @relation(fields: [userID], references: [id])
+	bookClub				BookClub @relation(fields: [bookClubID], references: [id])
+	bookProgress		UserBookClubBookProgress[]
+}
+
+model BookClubBook {
+	id							Int @id @default(cuid())
+	readingStatus		ReadingStatus //CURRENTLY_READING or FINISHED
+	startDate				DateTime
+	dateFinished		DateTime?
+	bookClubID			Int
+	bookID					Int
+	bookClub				BookClub @relation(fields: [bookClubID], references: [id])
+	book						Book @relation(fields: [bookID], references: [id])
+	bookGoals				BookClubBookGoals[]
+}
+
+enum ReadingStatus {
+  CURRENTLY_READING
+  FINISHED
+}
+
+model BookClubBookGoals {
+	id						Int @id @default(cuid())
+	goalDate			DateTime
+	goalPages			Int
+	bookClubID		Int
+	bookID				Int
+	bookClub			BookClub @relation(fields: [bookClubID], references: [id])
+	book					Book @relation(fields: [bookID], references: [id])
+	userProgress	UserBookClubBookProgress[]
+}
+
+model UserBookClubBookProgress {
+	id						Int @id @default(cuid())
+	progressDate  DateTime @default(now())
+	progressPages Int 
+	userID				Int
+	bookClubID		Int
+	bookID				Int
+	user					User @relation(fields: [userID], references: [id])
+	bookClub			BookClub @relation(fields: [bookClubID], references: [id])
+	book					Book @relation(fields: [bookID], references: [id])
+}
+
+model BookClubChatMessage {
+	id							Int @id @default(cuid())
+	parentMessageID Int?
+	datePosted			DateTime @default(now())
+	dateEdited			DateTime?
+	hasMedia				Boolean
+	bookClubID			Int
+	userID					Int
+	bookClub				BookClub @relation(fields: [bookClubID], references: [id])
+	user						User @relation(fields: [userID], references: [id])
+	parent					BookClubChatMessage? @relation(fields: [parentMessageID], references: [id])
+	replies					BookClubChatMessage[] @relation("MessageReplies")
+	content					GeneralChatMessageContent 
+	media						GeneralChatMessageMedia[]
+}
+
+model GeneralChatMessageContent
+{
+	id					Int @id @default(cuid())
+	message 		String
+	bookClubID	Int
+	messageID	  Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	message			BookClubChatMessage @realtion(fields: [messageID], references: [id])
+
+}
+
+model GeneralChatMessageMedia
+{
+	id					Int @id @default(cuid())
+	file 				String
+	fileType		String
+	bookClubID	Int
+	messageID		Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	message			BookClubChatMessage @realtion(fields: [messageID], references: [id])
+}
+
+model ThreadPost
+{
+	id					Int @id @default(cuid())
+	datePosted	DateTime @default(now())
+	dateEdited	DateTime?
+	hasMedia		Boolean
+	bookClubID	Int
+	userID			Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	user				User @relation(fields: [userID], references: [id])
+	content			ThreadPostContent
+	media				ThreadPostMedia[]
+}
+
+model ThreadPostContent
+{
+	id					Int @id @default(cuid())
+	message 		String
+	bookClubID	Int
+	threadID	  Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	thread			ThreadPost @realtion(fields: [threadID], references: [id])
+}
+
+model ThreadPostMedia
+{
+	id					Int @id @default(cuid())
+	file 				String
+	fileType		String
+	bookClubID	Int
+	threadID		Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	thread			ThreadPost @realtion(fields: [threadID], references: [id])
+}
+
+model ThreadReply {
+	id							Int @id @default(cuid())
+	parentReplyID 	Int?
+	threadID				Int
+	datePosted			DateTime @default(now())
+	dateEdited			DateTime?
+	hasMedia				Boolean
+	bookClubID			Int
+	userID					Int
+	bookClub				BookClub @relation(fields: [bookClubID], references: [id])
+	user						User @ relation(fields: [uesrID], references: [id])
+	parent					ThreadReply? @relation(fields: [parentReplyID], references: [id])
+	replies					ThreadReply[] @relation("MessageReplies")
+	content					ThreadReplyContent
+	media						ThreadReplyMedia[]
+}
+
+model ThreadReplyContent
+{
+	id					Int @id @default(cuid())
+	message 		String
+	bookClubID	Int
+	threadID	  Int
+	replyID			Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	thread			ThreadPost @realtion(fields: [threadID], references: [id])
+	reply				ThreadReply @relation(fields: [replyID], references: [id])
+}
+
+model ThreadReplyMedia
+{
+	id					Int @id @default(cuid())
+	file 				String
+	fileType		String
+	bookClubID	Int
+	threadID		Int
+	replyID			Int
+	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
+	thread			ThreadPost @realtion(fields: [threadID], references: [id])
+	reply				ThreadReply @realtion(fields: [replyID], references: [id])
+}
+
+
+
+
+
 

@@ -1,14 +1,24 @@
 import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "./contexts/UserContext";
+import mockUserData from "./data/mockUserData";
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useUser();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleDemoLogin = () => {
+    // Allow local demo without hitting the backend or database
+    login(mockUserData);
+    setMessage("Loaded local demo user");
+    navigate("/profile");
   };
 
   const handleSubmit = async (e) => {
@@ -17,13 +27,19 @@ function Login() {
 
     try {
       const res = await axios.post("/api/login", formData);
+      console.log("Login response:", res.data);
       setMessage(res.data.message);
       setFormData({ email: "", password: "" });
       if (res.data?.message?.toLowerCase().includes("successful")) {
-        navigate("/dashboard");
+        // Store user data in context
+        console.log("Storing user data:", res.data.user);
+        login(res.data.user);
+        console.log("Navigating to profile...");
+        // Navigate to the user's profile page after successful login
+        navigate("/profile");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       setMessage(err.response?.data?.error || "Login failed");
     }
   };
@@ -65,7 +81,8 @@ function Login() {
               placeholder="Email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full border border-gray-300 p-2 mb-3 rounded"
+              className="w-full border border-gray-300 p-3 mb-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style={{ fontFamily: "Times New Roman, serif" }}
               required
             />
             <input
@@ -74,7 +91,8 @@ function Login() {
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full border border-gray-300 p-2 mb-3 rounded"
+              className="w-full border border-gray-300 p-3 mb-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              style={{ fontFamily: "Times New Roman, serif" }}
               required
             />
 
@@ -84,6 +102,14 @@ function Login() {
               style={{ fontFamily: "Times New Roman, serif" }}
             >
               Login
+            </button>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded transition mt-3 border border-gray-300"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
+              Use Demo Account
             </button>
           </form>
 

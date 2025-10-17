@@ -13,6 +13,14 @@ model User {
   email    String @unique
   password String
 
+  // Optional profile fields
+  avatar        String?
+  bio           String?
+  joinDate      DateTime? @default(now())
+  readingProgress Json?
+  bookClubs     Json?
+  friends       Int? @default(0)
+
   @@map("users")
 }
 

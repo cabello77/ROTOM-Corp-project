@@ -9,6 +9,29 @@ const { PrismaClient } = require('@prisma/client');
 const app = express();
 const prisma = new PrismaClient();
 
+// File upload handling for avatars
+const multer = require('multer');
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+const fs = require('fs');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png/;
+    const ok = allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase());
+    if (ok) cb(null, true);
+    else cb(new Error('Only JPG/PNG images are allowed'));
+  }
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -48,6 +71,50 @@ app.get('/api/users', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Get single user
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Update user profile (bio, name, readingProgress, bookClubs, friends)
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { name, bio, readingProgress, bookClubs, friends } = req.body;
+    const data = {};
+    if (name) data.name = name;
+    if (bio !== undefined) data.bio = bio;
+    if (readingProgress !== undefined) data.readingProgress = readingProgress;
+    if (bookClubs !== undefined) data.bookClubs = bookClubs;
+    if (friends !== undefined) data.friends = friends;
+
+    const user = await prisma.user.update({ where: { id: req.params.id }, data });
+    res.json({ message: 'Profile updated', user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+// Upload avatar
+app.post('/api/users/:id/avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const relativePath = `/uploads/${req.file.filename}`;
+    const user = await prisma.user.update({ where: { id: req.params.id }, data: { avatar: relativePath } });
+    res.json({ message: 'Avatar uploaded', avatar: relativePath, user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message || 'Failed to upload avatar' });
   }
 });
 

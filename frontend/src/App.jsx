@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
+import { useState, useEffect } from 'react';
 import { Link } from "react-router-dom";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 function App() {
   const [serverStatus, setServerStatus] = useState('Checking...')
@@ -15,16 +15,24 @@ function App() {
     try {
       // Test database connection
       console.log('📡 Testing database connection...')
-      const dbResponse = await axios.get('/api/db-test')
-      console.log('✅ Database connection response:', dbResponse.data)
-      setServerStatus(dbResponse.data.status)
-      setUserCount(dbResponse.data.userCount)
+      const dbRes = await fetch(`${API_BASE}/api/db-test`)
+      if (!dbRes.ok) {
+        throw new Error(`DB test failed: ${dbRes.status}`)
+      }
+      const dbData = await dbRes.json()
+      console.log('✅ Database connection response:', dbData)
+      setServerStatus(dbData.status)
+      setUserCount(dbData.userCount)
 
       // Fetch all users
       console.log('👥 Fetching all users...')
-      const usersResponse = await axios.get('/api/users')
-      console.log('✅ Users fetched successfully:', usersResponse.data)
-      setUsers(usersResponse.data)
+      const usersRes = await fetch(`${API_BASE}/api/users`)
+      if (!usersRes.ok) {
+        throw new Error(`Fetch users failed: ${usersRes.status}`)
+      }
+      const usersData = await usersRes.json()
+      console.log('✅ Users fetched successfully:', usersData)
+      setUsers(usersData)
       
     } catch (error) {
       console.error('❌ Connection failed:', error)

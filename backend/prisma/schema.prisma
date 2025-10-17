@@ -8,19 +8,21 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(cuid())
-  name     String
-  email    String @unique
-  password String
-
-  // Optional profile fields
-  avatar        String?
-  bio           String?
-  joinDate      DateTime? @default(now())
-  readingProgress Json?
-  bookClubs     Json?
-  friends       Int? @default(0)
-
-  @@map("users")
+  id        Int       @id @default(autoincrement())
+  name      String
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  profile   Profile?
 }
 
+model Profile {
+  id             Int      @id @default(autoincrement())
+  username       String   @unique
+  fullName       String
+  profilePicture String?
+  bio            String?
+  joinDate       DateTime @default(now())
+  userId         Int      @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

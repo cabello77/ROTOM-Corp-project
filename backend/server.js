@@ -2,35 +2,75 @@ require('dotenv').config();
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
-const bcrypt = require("bcrypt");  // <-- Add this line
+const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
-
 
 const app = express();
 const prisma = new PrismaClient();
 
-// File upload handling for avatars
-const multer = require('multer');
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-const fs = require('fs');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+const parseUserId = (value) => {
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) {
+    throw new Error('Invalid user id');
   }
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
-  fileFilter: (req, file, cb) => {
-    const allowed = /jpeg|jpg|png/;
-    const ok = allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase());
-    if (ok) cb(null, true);
-    else cb(new Error('Only JPG/PNG images are allowed'));
+  return parsed;
+};
+
+const randomUsername = () => {
+  const base = Date.now() + Math.floor(Math.random() * 1000);
+  return `user_${base}`;
+};
+
+const serializeUser = (user) => {
+  if (!user) return null;
+  const profile = user.profile || null;
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    createdAt: user.createdAt,
+    profile: profile
+      ? {
+          id: profile.id,
+          username: profile.username,
+          fullName: profile.fullName,
+          profilePicture: profile.profilePicture,
+          bio: profile.bio,
+          joinDate: profile.joinDate,
+        }
+      : null,
+  };
+};
+
+// File upload handling for avatars (optional if multer is available)
+let upload = null;
+(() => {
+  try {
+    const multer = require('multer');
+    const fs = require('fs');
+    const uploadDir = path.join(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => cb(null, uploadDir),
+      filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+      }
+    });
+    upload = multer({
+      storage,
+      limits: { fileSize: 2 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const allowed = /jpeg|jpg|png/;
+        const ok = allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase());
+        if (ok) cb(null, true);
+        else cb(new Error('Only JPG/PNG images are allowed'));
+      }
+    });
+  } catch (error) {
+    console.warn('⚠️  Multer not installed; avatar uploads will be disabled.');
   }
-});
+})();
 
 // Middleware
 app.use(cors());
@@ -52,9 +92,9 @@ app.get("/api/db-test", async (req, res) => {
   try {
     await prisma.$connect();
     const userCount = await prisma.user.count();
-    res.json({ 
+    res.json({
       status: "Database connected successfully!",
-      userCount: userCount,
+      userCount,
       timestamp: new Date()
     });
   } catch (err) {
@@ -66,8 +106,10 @@ app.get("/api/db-test", async (req, res) => {
 // Get all users
 app.get('/api/users', async (req, res) => {
   try {
-    const users = await prisma.user.findMany();
-    res.json(users);
+    const users = await prisma.user.findMany({
+      include: { profile: true },
+    });
+    res.json(users.map(serializeUser));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -77,28 +119,99 @@ app.get('/api/users', async (req, res) => {
 // Get single user
 app.get('/api/users/:id', async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
+    let userId;
+    try {
+      userId = parseUserId(req.params.id);
+    } catch {
+      return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json(user);
+    res.json(serializeUser(user));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
-// Update user profile (bio, name, readingProgress, bookClubs, friends)
+// Update user profile
 app.put('/api/users/:id', async (req, res) => {
   try {
-    const { name, bio, readingProgress, bookClubs, friends } = req.body;
-    const data = {};
-    if (name) data.name = name;
-    if (bio !== undefined) data.bio = bio;
-    if (readingProgress !== undefined) data.readingProgress = readingProgress;
-    if (bookClubs !== undefined) data.bookClubs = bookClubs;
-    if (friends !== undefined) data.friends = friends;
+    let userId;
+    try {
+      userId = parseUserId(req.params.id);
+    } catch {
+      return res.status(400).json({ error: 'Invalid user id' });
+    }
 
-    const user = await prisma.user.update({ where: { id: req.params.id }, data });
-    res.json({ message: 'Profile updated', user });
+    const { name, email, profile = {} } = req.body;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userUpdates = {};
+    if (typeof name === 'string') userUpdates.name = name;
+    if (typeof email === 'string') userUpdates.email = email;
+
+    const profileUpdates = {};
+    if (typeof profile.bio === 'string' || profile.bio === null) profileUpdates.bio = profile.bio;
+    if (typeof profile.profilePicture === 'string' || profile.profilePicture === null) {
+      profileUpdates.profilePicture = profile.profilePicture;
+    }
+    if (typeof profile.fullName === 'string') profileUpdates.fullName = profile.fullName;
+    if (profile.username !== undefined) {
+      const parsedUsername = String(profile.username).trim();
+      if (parsedUsername.length > 0) {
+        profileUpdates.username = parsedUsername;
+      }
+    }
+
+    const data = { ...userUpdates };
+
+    if (Object.keys(profileUpdates).length > 0) {
+      const createProfile = {
+        username:
+          typeof profileUpdates.username === 'string' && profileUpdates.username.length > 0
+            ? profileUpdates.username
+            : randomUsername(),
+        fullName:
+          profileUpdates.fullName ||
+          userUpdates.name ||
+          req.body.name ||
+          existingUser.name ||
+          'New User',
+        bio: profileUpdates.bio ?? null,
+        profilePicture: profileUpdates.profilePicture ?? null,
+      };
+      data.profile = {
+        upsert: {
+          create: createProfile,
+          update: profileUpdates,
+        },
+      };
+    }
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'No valid fields provided' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data,
+      include: { profile: true },
+    });
+
+    res.json({ message: 'Profile updated', user: serializeUser(user) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update user' });
@@ -106,90 +219,146 @@ app.put('/api/users/:id', async (req, res) => {
 });
 
 // Upload avatar
-app.post('/api/users/:id/avatar', upload.single('avatar'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const relativePath = `/uploads/${req.file.filename}`;
-    const user = await prisma.user.update({ where: { id: req.params.id }, data: { avatar: relativePath } });
-    res.json({ message: 'Avatar uploaded', avatar: relativePath, user });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message || 'Failed to upload avatar' });
+app.post(
+  '/api/users/:id/avatar',
+  upload
+    ? upload.single('avatar')
+    : (req, res, next) => {
+        req.file = null;
+        next();
+      },
+  async (req, res) => {
+    try {
+      if (!upload) {
+        return res.status(503).json({ error: 'Avatar uploads unavailable: multer not installed' });
+      }
+
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+      let userId;
+      try {
+        userId = parseUserId(req.params.id);
+      } catch {
+        return res.status(400).json({ error: 'Invalid user id' });
+      }
+
+      const relativePath = `/uploads/${req.file.filename}`;
+
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+
+      if (!existingUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          profile: {
+            upsert: {
+              create: {
+                username: randomUsername(),
+                fullName: existingUser.name || 'New User',
+                profilePicture: relativePath,
+              },
+              update: {
+                profilePicture: relativePath,
+              },
+            },
+          },
+        },
+        include: { profile: true },
+      });
+
+      res.json({
+        message: 'Avatar uploaded',
+        avatar: relativePath,
+        user: serializeUser(user),
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message || 'Failed to upload avatar' });
+    }
   }
-});
+);
 
 // Sign Up Route
 app.post('/api/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check for missing fields
     if (!name || !email || !password) {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save new user
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        profile: {
+          create: {
+            username: randomUsername(),
+            fullName: name,
+            bio: null,
+            profilePicture: null,
+          },
+        },
+      },
+      include: { profile: true },
     });
 
     console.log(`✅ New user registered: ${user.email}`);
 
-    // Respond without sending the hashed password
     res.json({
       message: 'User registered successfully!',
-      user: { id: user.id, name: user.name, email: user.email }
+      user: serializeUser(user),
     });
-
   } catch (error) {
     console.error('❌ Signup error:', error);
     res.status(500).json({ error: 'Server error during signup' });
   }
 });
 
-// ✅ User Login Route
+// User Login Route
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1️⃣ Check for missing fields
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    // 2️⃣ Find the user by email
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { profile: true },
+    });
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // 3️⃣ Compare password with hashed password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    // 4️⃣ Return success (optionally later: return a JWT)
     res.json({
       message: "Login successful!",
-      user: { id: user.id, name: user.name, email: user.email }
+      user: serializeUser(user),
     });
-
   } catch (error) {
     console.error("❌ Login error:", error);
     res.status(500).json({ error: "Server error during login" });
   }
 });
-
 
 // Create a test user
 app.post('/api/users', async (req, res) => {
@@ -198,10 +367,18 @@ app.post('/api/users', async (req, res) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email
-      }
+        email,
+        password: 'test',
+        profile: {
+          create: {
+            username: randomUsername(),
+            fullName: name,
+          },
+        },
+      },
+      include: { profile: true },
     });
-    res.json({ message: 'User created successfully', user });
+    res.json({ message: 'User created successfully', user: serializeUser(user) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create user' });
@@ -216,8 +393,9 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-//Start server
+// Start server
 const port = process.env.PORT || 3001;
-app.listen(port, () => {
+const host = process.env.HOST || '0.0.0.0';
+app.listen(port, host, () => {
   console.log(`✅ Server running on port ${port}`);
 });

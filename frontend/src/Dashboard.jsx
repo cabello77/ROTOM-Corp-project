@@ -44,7 +44,7 @@ function Dashboard() {
                 style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#D9D9D9" }}
               >
                 Profile
-              </Link>
+              </Link> 
               <Link
                 to="/"
                 className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity"

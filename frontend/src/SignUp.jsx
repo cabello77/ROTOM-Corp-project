@@ -1,17 +1,17 @@
 import { useState } from "react";
-import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 
 function SignUp() {
   const navigate = useNavigate();
-  const { login } = useUser();
+  const { signup } = useUser();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
   });
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -19,23 +19,19 @@ function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     setMessage("Submitting...");
 
     try {
-      const res = await axios.post("/api/signup", formData);
-      setMessage(res.data.message);
+      await signup(formData);
       setFormData({ name: "", email: "", password: "" });
-      if (res.data?.message?.toLowerCase().includes("successfully")) {
-        // Store user data in context and redirect to profile
-        console.log("Signup successful, storing user data:", res.data.user);
-        login(res.data.user);
-        // Navigate to the user's profile page after successful signup
-        navigate("/profile");
-      }
+      setMessage("Signup successful!");
+      navigate("/profile");
     } catch (err) {
       console.error(err);
-      setMessage(err.response?.data?.error || "Signup failed");
+      setMessage(err.message || "Signup failed");
     }
+    setIsSubmitting(false);
   };
 
   const handleSocialSignUp = async (provider) => {
@@ -184,10 +180,11 @@ function SignUp() {
 
             <button
               type="submit"
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded transition"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded transition disabled:opacity-60"
               style={{ fontFamily: "Times New Roman, serif" }}
+              disabled={isSubmitting}
             >
-              Sign Up
+              {isSubmitting ? "Signing Up..." : "Sign Up"}
             </button>
           </form>
 

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import ProfileEdit from "./ProfileEdit";
+import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
@@ -11,12 +12,26 @@ function Profile() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [clubs, setClubs] = useState([]); // 🆕 new state for user clubs
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       navigate("/login");
     }
   }, [isLoading, isAuthenticated, navigate]);
+
+  // 🆕 Fetch clubs created by the user
+  useEffect(() => {
+    const fetchClubs = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/users/${user.id}/clubs`);
+        setClubs(res.data);
+      } catch (err) {
+        console.error("Error fetching user clubs:", err);
+      }
+    };
+    if (user?.id) fetchClubs();
+  }, [user?.id]);
 
   if (isLoading) {
     return (
@@ -85,7 +100,6 @@ function Profile() {
     return `${API_BASE}${path}`;
   }, [user.profile?.profilePicture]);
 
-  const bookClubs = Array.isArray(user.bookClubs) ? user.bookClubs : [];
   const friendsList = Array.isArray(user.friendsList) ? user.friendsList : [];
   const memberSince = user.profile?.joinDate
     ? new Date(user.profile.joinDate).toLocaleDateString()
@@ -169,209 +183,206 @@ function Profile() {
         <div className="h-1" style={{ backgroundColor: "#4F93D6" }} />
       </header>
 
-      <main className="flex-grow px-4 py-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <aside className="lg:col-span-3 space-y-4">
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                  My Book Clubs
-                </h2>
-                <div className="space-y-3">
-                  {bookClubs.length ? (
-                    bookClubs.map((club) => (
-                      <button
-                        key={club.id || club.name}
-                        type="button"
-                        className="w-full text-left px-4 py-2 rounded border border-[#e6dac8] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors"
-                        style={{ fontFamily: "Times New Roman, serif" }}
-                      >
-                        {club.name}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                      Join a club to see it here.
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Discover
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Explore trending clubs and discussions.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+<main className="flex-grow px-4 py-8">
+  <div className="max-w-7xl mx-auto space-y-6">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      {/* LEFT SIDEBAR */}
+      <aside className="lg:col-span-3 space-y-4">
+        {/* My Book Clubs */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+            My Book Clubs
+          </h2>
+          <div className="space-y-3">
+            {clubs.length ? (
+              clubs.map((club) => (
+                <Link
+                  key={club.id}
+                  to={`/clubs/${club.id}`}
+                  className="block text-left px-4 py-2 rounded border border-[#e6dac8] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors"
                   style={{ fontFamily: "Times New Roman, serif" }}
                 >
-                  Discover Clubs
-                </button>
-                <button
-                  type="button"
-                  className="w-full text-gray-700 px-4 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-[#f7ecda] transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Or Create Your Own
-                </button>
-              </div>
-
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Friends
-                  </h2>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {friendsList.length ? (
-                    friendsList.map((friend) => (
-                      <span
-                        key={friend}
-                        className="px-4 py-2 rounded-full border border-[#ddcdb7] bg-[#faf6ed] text-sm text-gray-700"
-                        style={{ fontFamily: "Times New Roman, serif" }}
-                      >
-                        {friend}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                      Add friends to see them here.
-                    </p>
-                  )}
-                </div>
-                <button
-                  type="button"
-                  className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Add Friends
-                </button>
-              </div>
-            </aside>
-
-            <section className="lg:col-span-6 space-y-4">
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      placeholder="Search posts, clubs, or friends"
-                      className="w-full border border-[#ddcdb7] rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4F93D6]"
-                      style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full border border-[#ddcdb7] text-gray-600 hover:bg-[#efe5d5] transition-colors flex items-center justify-center"
-                  >
-                    <span className="sr-only">Notifications</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    className="w-10 h-10 rounded-full border border-[#ddcdb7] text-gray-600 hover:bg-[#efe5d5] transition-colors flex items-center justify-center"
-                  >
-                    <span className="sr-only">Messages</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.75 9.75 0 01-3.74-.74L4 20l1.01-3.03A7.2 7.2 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
-                <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                  Join a book club to see curated discussions here.
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
-                <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: "Times New Roman, serif" }}>
-                  You're all caught up! :)
-                </p>
-              </div>
-            </section>
-
-            <aside className="lg:col-span-3 space-y-4">
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm overflow-hidden">
-                <div className="bg-[#d7c4a9] h-20 relative">
-                  <div className="absolute left-6 -bottom-10 w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg">
-                    {avatarSrc ? (
-                      <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                        <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
-                          {user.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="px-6 pt-12 pb-6 space-y-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                      {user.name}
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                      {user.email}
-                    </p>
-                  </div>
-                  <div className="text-sm text-gray-600 space-y-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                    <p>Member since — {memberSince}</p>
-                    <p>{user.friends ?? friendsList.length} friends</p>
-                    <p>{user.profile?.bio || "Add a bio to let other readers know what you love."}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                    style={{ fontFamily: "Times New Roman, serif" }}
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                    My Bookshelf
-                  </h3>
-                  <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Track books to build your shelf.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Update Shelf
-                </button>
-              </div>
-
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Logout
-                </button>
-              </div>
-            </aside>
+                  {club.name}
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                Join or create a club to see it here.
+              </p>
+            )}
           </div>
         </div>
-      </main>
+
+        {/* Discover, Friends, etc remain unchanged below... */}
+
+
+        {/* Discover */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
+          <div>
+            <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+              Discover
+            </h3>
+            <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: "Times New Roman, serif" }}>
+              Explore trending clubs and discussions.
+            </p>
+          </div>
+          <Link
+            to="/clubs"
+            className="block text-center w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Discover Clubs
+          </Link>
+          <Link
+            to="/clubs/new"
+            className="block text-center w-full text-gray-700 px-4 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-[#f7ecda] transition-colors"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Or Create Your Own
+          </Link>
+        </div>
+
+        {/* Friends */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+          <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+            Friends
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {friendsList.length ? (
+              friendsList.map((friend) => (
+                <span
+                  key={friend}
+                  className="px-4 py-2 rounded-full border border-[#ddcdb7] bg-[#faf6ed] text-sm text-gray-700"
+                  style={{ fontFamily: "Times New Roman, serif" }}
+                >
+                  {friend}
+                </span>
+              ))
+            ) : (
+              <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                Add friends to see them here.
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Add Friends
+          </button>
+        </div>
+      </aside>
+
+      {/* CENTER COLUMN */}
+      <section className="lg:col-span-6 space-y-4">
+        {/* Search + Top Bar */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search posts, clubs, or friends"
+                className="w-full border border-[#ddcdb7] rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4F93D6]"
+                style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+              />
+            </div>
+            <button className="w-10 h-10 rounded-full border border-[#ddcdb7] text-gray-600 hover:bg-[#efe5d5] transition-colors flex items-center justify-center">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Example Feed Blocks */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
+          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+            Join a book club to see curated discussions here.
+          </p>
+        </div>
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
+          <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: "Times New Roman, serif" }}>
+            You're all caught up! :)
+          </p>
+        </div>
+      </section>
+
+      {/* RIGHT SIDEBAR */}
+      <aside className="lg:col-span-3 space-y-4">
+        {/* Profile Summary Card */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-[#d7c4a9] h-20 relative">
+            <div className="absolute left-6 -bottom-10 w-20 h-20 rounded-full border-4 border-white overflow-hidden shadow-lg">
+              {avatarSrc ? (
+                <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
+                  <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="px-6 pt-12 pb-6 space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+                {user.name}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                {user.email}
+              </p>
+            </div>
+            <div className="text-sm text-gray-600 space-y-1" style={{ fontFamily: "Times New Roman, serif" }}>
+              <p>Member since — {memberSince}</p>
+              <p>{user.friends ?? friendsList.length} friends</p>
+              <p>{user.profile?.bio || "Add a bio to let other readers know what you love."}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
+        {/* My Bookshelf */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+          <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+            My Bookshelf
+          </h3>
+          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+            Track books to build your shelf.
+          </p>
+          <button
+            type="button"
+            className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Update Shelf
+          </button>
+        </div>
+
+        {/* Logout */}
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Logout
+          </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
 
       {statusMessage && (
         <div className="fixed bottom-6 right-6 bg-white shadow-lg border border-gray-200 rounded-lg px-4 py-3">

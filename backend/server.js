@@ -360,6 +360,103 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Create a new book club
+app.post("/api/clubs", async (req, res) => {
+  try {
+    const { name, description, creatorId } = req.body;
+
+    // Basic validation
+    if (!name || !creatorId) {
+      return res.status(400).json({ error: "Name and creatorId are required." });
+    }
+
+    // Create club and include creator info for convenience
+    const newClub = await prisma.club.create({
+      data: {
+        name,
+        description,
+        creatorId,
+      },
+      include: {
+        creator: {
+          include: { profile: true },
+        },
+      },
+    });
+
+    // Send structured response
+    res.status(201).json({
+      message: "Club created successfully!",
+      club: newClub,
+    });
+  } catch (error) {
+    console.error("❌ Error creating club:", error);
+    res.status(500).json({
+      error: error.message || "Server error while creating club.",
+    });
+  }
+});
+
+// Get a club by ID
+app.get("/api/clubs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const club = await prisma.club.findUnique({
+      where: { id: Number(id) },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    res.json(club);
+  } catch (error) {
+    console.error("❌ Error fetching club:", error);
+    res.status(500).json({ error: "Server error fetching club." });
+  }
+});
+
+// Get clubs created by a user
+app.get("/api/users/:id/clubs", async (req, res) => {
+  const userId = parseInt(req.params.id);
+  try {
+    const clubs = await prisma.club.findMany({
+      where: { creatorId: userId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(clubs);
+  } catch (err) {
+    console.error("Error fetching user clubs:", err);
+    res.status(500).json({ error: "Failed to fetch clubs." });
+  }
+});
+
+// Get all book clubs (for discover page)
+app.get("/api/clubs", async (req, res) => {
+  try {
+    const clubs = await prisma.club.findMany({
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+      orderBy: { name: "asc" }, 
+    });
+
+    console.log("📚 All clubs found:", clubs);
+    res.json(Array.isArray(clubs) ? clubs : []);
+  } catch (error) {
+    console.error("❌ Error fetching clubs:", error);
+    res.status(500).json({ error: "Server error while fetching clubs." });
+  }
+});
+
+
 // Create a test user
 app.post('/api/users', async (req, res) => {
   try {

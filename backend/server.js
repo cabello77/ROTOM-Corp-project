@@ -456,6 +456,31 @@ app.get("/api/clubs", async (req, res) => {
   }
 });
 
+// Delete a club (only by creator)
+app.delete("/api/clubs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body; // the logged-in user's ID
+
+    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    // Only the creator can delete it
+    if (club.creatorId !== Number(userId)) {
+      return res.status(403).json({ error: "You are not authorized to delete this club." });
+    }
+
+    await prisma.club.delete({ where: { id: Number(id) } });
+    res.json({ message: "Club deleted successfully." });
+  } catch (error) {
+    console.error("❌ Error deleting club:", error);
+    res.status(500).json({ error: "Server error while deleting club." });
+  }
+});
+
+
 
 // Create a test user
 app.post('/api/users', async (req, res) => {

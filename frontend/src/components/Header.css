@@ -1,0 +1,50 @@
+/* Header Component */
+.app-header {
+  color: white;
+  background-color: #774C30;
+}
+
+.app-header-content {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.app-header-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-logo {
+  font-size: 4rem;
+  font-style: italic;
+  font-family: 'Kapakana, cursive';
+  text-decoration: none;
+  color: white;
+  transition: opacity 0.3s;
+}
+
+.app-logo:hover {
+  opacity: 0.8;
+}
+
+.app-nav-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.app-nav-button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid #9ca3af;
+  transition: opacity 0.3s;
+  color: #1f2937;
+  background-color: #EFE6D7;
+  font-family: 'Times New Roman, serif';
+  text-decoration: none;
+}
+
+.app-nav-button:hover {
+  opacity: 0.8;
+}
+

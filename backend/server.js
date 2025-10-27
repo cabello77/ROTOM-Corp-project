@@ -384,6 +384,15 @@ app.post("/api/clubs", async (req, res) => {
       },
     });
 
+    // Automatically add the creator as a member so they can participate in reading goals
+    await prisma.clubMember.create({
+      data: {
+        clubId: newClub.id,
+        userId: Number(creatorId),
+        progress: 0,
+      }
+    });
+
     // Send structured response
     res.status(201).json({
       message: "Club created successfully!",
@@ -504,6 +513,287 @@ app.post('/api/users', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// Assign book to club
+app.put("/api/clubs/:id/book", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId, bookData, readingGoal, goalDeadline } = req.body;
+
+    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    // Only the creator can assign books
+    if (club.creatorId !== Number(userId)) {
+      return res.status(403).json({ error: "You are not authorized to assign books to this club." });
+    }
+
+    const updatedClub = await prisma.club.update({
+      where: { id: Number(id) },
+      data: {
+        currentBookId: bookData.title || "",
+        currentBookData: bookData,
+        readingGoal: readingGoal || null,
+        goalDeadline: goalDeadline ? new Date(goalDeadline) : null,
+      },
+    });
+
+    res.json(updatedClub);
+  } catch (error) {
+    console.error("❌ Error assigning book:", error);
+    res.status(500).json({ error: "Server error while assigning book." });
+  }
+});
+
+// Remove book from club
+app.delete("/api/clubs/:id/book", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    // Only the creator can remove books
+    if (club.creatorId !== Number(userId)) {
+      return res.status(403).json({ error: "You are not authorized to remove books from this club." });
+    }
+
+    const updatedClub = await prisma.club.update({
+      where: { id: Number(id) },
+      data: {
+        currentBookId: null,
+        currentBookData: null,
+        readingGoal: null,
+        goalDeadline: null,
+      },
+    });
+
+    res.json(updatedClub);
+  } catch (error) {
+    console.error("❌ Error removing book:", error);
+    res.status(500).json({ error: "Server error while removing book." });
+  }
+});
+
+// Update reading goal for a club
+app.put("/api/clubs/:id/goal", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId, readingGoal, goalDeadline } = req.body;
+
+    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    // Only the creator can update the goal
+    if (club.creatorId !== Number(userId)) {
+      return res.status(403).json({ error: "You are not authorized to update the reading goal." });
+    }
+
+    const updatedClub = await prisma.club.update({
+      where: { id: Number(id) },
+      data: {
+        readingGoal: readingGoal || null,
+        goalDeadline: goalDeadline ? new Date(goalDeadline) : null,
+      },
+    });
+
+    res.json(updatedClub);
+  } catch (error) {
+    console.error("❌ Error updating reading goal:", error);
+    res.status(500).json({ error: "Server error while updating reading goal." });
+  }
+});
+
+// Join a club
+app.post("/api/clubs/:id/join", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    // Check if user is already a member
+    const existingMember = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
+    });
+
+    if (existingMember) {
+      return res.status(400).json({ error: "User is already a member of this club" });
+    }
+
+    const member = await prisma.clubMember.create({
+      data: {
+        clubId: Number(id),
+        userId: Number(userId),
+        progress: 0,
+      },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    res.json(member);
+  } catch (error) {
+    console.error("❌ Error joining club:", error);
+    res.status(500).json({ error: "Server error while joining club." });
+  }
+});
+
+// Leave a club
+app.delete("/api/clubs/:id/leave", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    const member = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: "User is not a member of this club" });
+    }
+
+    await prisma.clubMember.delete({
+      where: { id: member.id }
+    });
+
+    res.json({ message: "Successfully left club" });
+  } catch (error) {
+    console.error("❌ Error leaving club:", error);
+    res.status(500).json({ error: "Server error while leaving club." });
+  }
+});
+
+// Get club members
+app.get("/api/clubs/:id/members", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const club = await prisma.club.findUnique({
+      where: { id: Number(id) },
+      select: { creatorId: true }
+    });
+
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+    
+    const members = await prisma.clubMember.findMany({
+      where: { clubId: Number(id) },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      },
+      orderBy: { joinedAt: "asc" }
+    });
+
+    // Add isHost flag to each member
+    const membersWithHostFlag = members.map(member => ({
+      ...member,
+      isHost: member.userId === club.creatorId
+    }));
+
+    res.json(membersWithHostFlag);
+  } catch (error) {
+    console.error("❌ Error fetching club members:", error);
+    res.status(500).json({ error: "Server error while fetching members." });
+  }
+});
+
+// Update member progress
+app.put("/api/clubs/:id/members/:userId/progress", async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const { progress } = req.body;
+
+    // Check if club exists and get creator info
+    const club = await prisma.club.findUnique({
+      where: { id: Number(id) },
+      select: { creatorId: true }
+    });
+
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    let member = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
+    });
+
+    // If member doesn't exist but user is the creator, create membership automatically
+    if (!member && Number(userId) === club.creatorId) {
+      member = await prisma.clubMember.create({
+        data: {
+          clubId: Number(id),
+          userId: Number(userId),
+          progress: 0,
+        }
+      });
+    }
+
+    if (!member) {
+      return res.status(404).json({ error: "Member not found" });
+    }
+
+    const updatedMember = await prisma.clubMember.update({
+      where: { id: member.id },
+      data: { progress: Math.min(100, Math.max(0, progress)) },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    res.json(updatedMember);
+  } catch (error) {
+    console.error("❌ Error updating progress:", error);
+    res.status(500).json({ error: "Server error while updating progress." });
+  }
+});
+
+// Get user's club memberships
+app.get("/api/users/:id/clubs-joined", async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    
+    const memberships = await prisma.clubMember.findMany({
+      where: { userId },
+      include: {
+        club: {
+          include: {
+            creator: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        }
+      }
+    });
+
+    // Return clubs with progress data
+    res.json(memberships.map(m => ({
+      ...m.club,
+      membershipProgress: m.progress,
+      membershipId: m.id
+    })));
+  } catch (error) {
+    console.error("❌ Error fetching user club memberships:", error);
+    res.status(500).json({ error: "Server error while fetching memberships." });
   }
 });
 

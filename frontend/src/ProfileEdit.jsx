@@ -173,7 +173,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
               type="button"
               onClick={handleSave}
               className="text-gray-800 px-6 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity font-medium"
-              style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#D9D9D9" }}
+              style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#EFE6D7" }}
               disabled={isSaving}
             >
               {isSaving ? "Saving..." : "Done"}

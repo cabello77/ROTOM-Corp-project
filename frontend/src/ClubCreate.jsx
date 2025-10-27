@@ -2,17 +2,65 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";
+import UserDropdown from "./components/UserDropdown";
+import ProfileEdit from "./ProfileEdit";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 export default function ClubCreate() {
-  const { user, isAuthenticated } = useUser();
+  const { user, isAuthenticated, updateProfile, uploadAvatar } = useUser();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [returnPath, setReturnPath] = useState(null);
+
+  // Handle save profile from edit modal
+  const handleSaveProfile = async (updatedData) => {
+    try {
+      const { name, email, bio, avatarFile, removeAvatar } = updatedData;
+      
+      await updateProfile(user.id, {
+        name,
+        email,
+        profile: {
+          bio,
+          fullName: name,
+          username: user.profile?.username || `user_${user.id}`,
+        },
+      });
+
+      if (avatarFile) {
+        await uploadAvatar(user.id, avatarFile);
+      } else if (removeAvatar) {
+        await updateProfile(user.id, {
+          profile: {
+            bio,
+            fullName: name,
+            username: user.profile?.username || `user_${user.id}`,
+            profilePicture: null,
+          },
+        });
+      }
+      
+      setIsEditModalOpen(false);
+      if (returnPath) {
+        navigate(returnPath);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    if (returnPath) {
+      navigate(returnPath);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,20 +108,13 @@ export default function ClubCreate() {
               Plotline
             </div>
             <div className="space-x-4">
-              <button
-                onClick={() => navigate(-1)}
-                className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity"
-                style={{
-                  fontFamily: "Times New Roman, serif",
-                  backgroundColor: "#D9D9D9",
-                }}
-              >
-                Back
-              </button>
+              <UserDropdown onEditProfile={(previousLocation) => {
+                setIsEditModalOpen(true);
+                setReturnPath(previousLocation);
+              }} />
             </div>
           </div>
         </div>
-        <div className="h-1 bg-blue-400"></div>
       </header>
 
       {/* Main Form */}
@@ -104,7 +145,7 @@ export default function ClubCreate() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#4F93D6]"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
                 placeholder="Enter a unique club name"
                 required
@@ -123,7 +164,7 @@ export default function ClubCreate() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#4F93D6]"
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
                 rows="4"
                 placeholder="What is your book club about?"
@@ -153,6 +194,14 @@ export default function ClubCreate() {
           </p>
         </div>
       </footer>
+
+      <ProfileEdit
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        user={user}
+        onSave={handleSaveProfile}
+        isSaving={false}
+      />
     </div>
   );
 }

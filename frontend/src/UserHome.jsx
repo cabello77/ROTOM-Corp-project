@@ -1,18 +1,62 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import ProfileEdit from "./ProfileEdit";
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
-function Profile() {
+function UserHome() {
   const { user, isLoading, isAuthenticated, logout, updateProfile, uploadAvatar } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const returnPath = location.state?.returnPath;
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [clubs, setClubs] = useState([]); // 🆕 new state for user clubs
+  const [clubsCreated, setClubsCreated] = useState([]); // Clubs created by user
+  const [clubsJoined, setClubsJoined] = useState([]); // Clubs user has joined
+
+  // Memoize avatar source BEFORE any conditional returns
+  const avatarSrc = useMemo(() => {
+    const path = user?.profile?.profilePicture;
+    if (!path) return null;
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+    return `${API_BASE}${path}`;
+  }, [user?.profile?.profilePicture]);
+
+  // Memoize friends list BEFORE any conditional returns
+  const friendsList = useMemo(() => {
+    return Array.isArray(user?.friendsList) ? user.friendsList : [];
+  }, [user?.friendsList]);
+
+  // Memoize member since BEFORE any conditional returns
+  const memberSince = useMemo(() => {
+    return user?.profile?.joinDate
+      ? new Date(user.profile.joinDate).toLocaleDateString()
+      : "—";
+  }, [user?.profile?.joinDate]);
+
+  // Combine created and joined clubs
+  const allClubs = useMemo(() => {
+    const combined = [...clubsCreated, ...clubsJoined];
+    // Remove duplicates based on club ID
+    return combined.filter((club, index, self) => 
+      index === self.findIndex((c) => c.id === club.id)
+    );
+  }, [clubsCreated, clubsJoined]);
+
+  // Helper function to calculate days remaining
+  const getDaysRemaining = (deadline) => {
+    if (!deadline) return null;
+    const now = new Date();
+    const deadlineDate = new Date(deadline);
+    const diffTime = deadlineDate - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -24,13 +68,34 @@ function Profile() {
   useEffect(() => {
     const fetchClubs = async () => {
       try {
-        const res = await axios.get(`${API_BASE}/api/users/${user.id}/clubs`);
-        setClubs(res.data);
+        const res = await axios.get(`${API_BASE}/api/users/${user?.id}/clubs`);
+        setClubsCreated(res.data);
       } catch (err) {
         console.error("Error fetching user clubs:", err);
       }
     };
     if (user?.id) fetchClubs();
+  }, [user?.id]);
+
+  // Fetch clubs user has joined
+  useEffect(() => {
+    const fetchJoinedClubs = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/users/${user?.id}/clubs-joined`);
+        setClubsJoined(res.data);
+      } catch (err) {
+        console.error("Error fetching joined clubs:", err);
+        setClubsJoined([]);
+      }
+    };
+    if (user?.id) fetchJoinedClubs();
+    
+    // Set up interval to refresh joined clubs every 3 seconds
+    const intervalId = setInterval(() => {
+      if (user?.id) fetchJoinedClubs();
+    }, 3000);
+    
+    return () => clearInterval(intervalId);
   }, [user?.id]);
 
   if (isLoading) {
@@ -83,6 +148,10 @@ function Profile() {
 
       setStatusMessage("Profile updated!");
       setIsEditModalOpen(false);
+      // Navigate back to the return path if one was provided
+      if (returnPath) {
+        navigate(returnPath);
+      }
     } catch (error) {
       console.error(error);
       setStatusMessage(error.message || "Failed to update profile.");
@@ -90,20 +159,6 @@ function Profile() {
       setIsSaving(false);
     }
   };
-
-  const avatarSrc = useMemo(() => {
-    const path = user.profile?.profilePicture;
-    if (!path) return null;
-    if (path.startsWith("http://") || path.startsWith("https://")) {
-      return path;
-    }
-    return `${API_BASE}${path}`;
-  }, [user.profile?.profilePicture]);
-
-  const friendsList = Array.isArray(user.friendsList) ? user.friendsList : [];
-  const memberSince = user.profile?.joinDate
-    ? new Date(user.profile.joinDate).toLocaleDateString()
-    : "—";
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
@@ -142,6 +197,26 @@ function Profile() {
                 </button>
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-2">
+                    <Link
+                      to="/user-home"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                      <span>Home</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      <span>Notifications</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsEditModalOpen(true)}
@@ -153,16 +228,6 @@ function Profile() {
                       </svg>
                       <span>Edit Profile</span>
                     </button>
-                    <Link
-                      to="/dashboard"
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                      style={{ fontFamily: "Times New Roman, serif" }}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                      <span>Dashboard</span>
-                    </Link>
                     <button
                       type="button"
                       onClick={handleLogout}
@@ -180,7 +245,6 @@ function Profile() {
             </div>
           </div>
         </div>
-        <div className="h-1" style={{ backgroundColor: "#4F93D6" }} />
       </header>
 
 <main className="flex-grow px-4 py-8">
@@ -195,8 +259,8 @@ function Profile() {
             My Book Clubs
           </h2>
           <div className="space-y-3">
-            {clubs.length ? (
-              clubs.map((club) => (
+            {allClubs.length ? (
+              allClubs.map((club) => (
                 <Link
                   key={club.id}
                   to={`/clubs/${club.id}`}
@@ -213,8 +277,6 @@ function Profile() {
             )}
           </div>
         </div>
-
-        {/* Discover, Friends, etc remain unchanged below... */}
 
 
         {/* Discover */}
@@ -284,7 +346,7 @@ function Profile() {
               <input
                 type="text"
                 placeholder="Search posts, clubs, or friends"
-                className="w-full border border-[#ddcdb7] rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4F93D6]"
+                className="w-full border border-[#ddcdb7] rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
               />
             </div>
@@ -340,14 +402,45 @@ function Profile() {
               <p>{user.friends ?? friendsList.length} friends</p>
               <p>{user.profile?.bio || "Add a bio to let other readers know what you love."}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsEditModalOpen(true)}
-              className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              Edit Profile
-            </button>
+            
+            {/* Reading Progress Section */}
+            <div className="pt-4 border-t border-[#e3d8c8]">
+              <h3 className="text-sm font-semibold text-gray-800 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+                Reading Progress
+              </h3>
+              <div className="space-y-3">
+                {clubsJoined.length > 0 ? (
+                  clubsJoined.map((club) => {
+                    const bookTitle = club.currentBookData?.title || club.currentBookId || "No book assigned";
+                    const progress = club.membershipProgress || 0;
+                    const goal = club.readingGoal || "No goal set";
+                    const daysRemaining = getDaysRemaining(club.goalDeadline);
+                    
+                    return (
+                      <div key={club.id} className="space-y-1">
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span style={{ fontFamily: "Times New Roman, serif" }}>
+                            {bookTitle} • {goal}
+                            {daysRemaining !== null && daysRemaining >= 0 && ` • ${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'}`}
+                          </span>
+                          <span style={{ fontFamily: "Times New Roman, serif" }}>{Math.round(progress)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-[#774C30] h-2 rounded-full" 
+                            style={{ width: `${Math.round(progress)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-gray-500" style={{ fontFamily: "Times New Roman, serif" }}>
+                    No reading progress yet. Join a book club to start tracking!
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         {/* My Bookshelf */}
@@ -394,7 +487,13 @@ function Profile() {
 
       <ProfileEdit
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          // Navigate back to the return path if one was provided
+          if (returnPath) {
+            navigate(returnPath);
+          }
+        }}
         user={user}
         onSave={handleSaveProfile}
         isSaving={isSaving}
@@ -403,4 +502,5 @@ function Profile() {
   );
 }
 
-export default Profile;
+export default UserHome;
+

@@ -76,7 +76,7 @@ function SidebarProfile() {
           </div>
           <button
             type="button"
-            onClick={() => navigate("/profile")}
+            onClick={() => navigate("/user-home")}
             className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
             style={{ fontFamily: "Times New Roman, serif" }}
           >

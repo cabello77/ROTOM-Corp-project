@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
+import Header from "./components/Header";
 
 function Login() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ function Login() {
       await login(formData.email, formData.password);
       setFormData({ email: "", password: "" });
       setMessage("Login successful!");
-      navigate("/profile");
+      navigate("/user-home");
     } catch (err) {
       console.error("Login error:", err);
       setMessage(err.message || "Login failed");
@@ -33,25 +34,9 @@ function Login() {
   return (
     <div className="min-h-screen flex flex-col bg-amber-50">
       {/* Header */}
-      <header className="text-white" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
-              Plotline
-            </div>
-            <div className="space-x-4">
-              <Link
-                to="/"
-                className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity"
-                style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#D9D9D9" }}
-              >
-                Home
-              </Link>
-            </div>
-          </div>
-        </div>
-        <div className="h-1 bg-blue-400"></div>
-      </header>
+      <Header buttons={[
+        { path: '/', label: 'Home' }
+      ]} />
 
       {/* Login Section */}
       <main className="flex-grow flex flex-col items-center justify-center px-4 py-10">
@@ -84,8 +69,12 @@ function Login() {
 
             <button
               type="submit"
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded transition disabled:opacity-60"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              className="w-full py-4 rounded-lg font-semibold text-lg transition-all hover:scale-105 shadow-lg disabled:opacity-60"
+              style={{ 
+                fontFamily: "Times New Roman, serif",
+                backgroundColor: '#774C30',
+                color: 'white'
+              }}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Logging in..." : "Login"}

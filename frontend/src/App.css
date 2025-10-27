@@ -1,42 +1,209 @@
-#root {
-  max-width: 1280px;
+/* App Container */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Welcome Section */
+.welcome-section {
+  background-color: #FFFDED;
+}
+
+.welcome-content {
+  max-width: 56rem;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.welcome-heading {
+  font-size: 2.25rem;
+  font-family: 'Times New Roman, serif';
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.welcome-text {
+  font-family: 'Times New Roman, serif';
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.italic-logo {
+  font-style: italic;
+  font-family: 'Kapakana, cursive';
 }
 
-.card {
-  padding: 2em;
+/* Hero Section */
+.hero-section {
+  padding: 5rem 0;
+  background-image: url('/src/assets/background.jpg');
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
 }
 
-.read-the-docs {
-  color: #888;
+.hero-content {
+  text-align: center;
+}
+
+.hero-text {
+  font-family: 'Times New Roman, serif';
+  font-size: 4rem;
+}
+
+/* Features Gallery */
+.features-section {
+  background-color: #FFFDED;
+}
+
+.features-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.features-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 3rem;
+  font-family: 'Kapakana, cursive';
+}
+
+.gallery-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.gallery-scroll {
+  display: flex;
+  overflow-x: hidden;
+  gap: 1.5rem;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  flex: 1;
+}
+
+.gallery-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-arrow {
+  flex-shrink: 0;
+  background: white;
+  border-radius: 50%;
+  padding: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gallery-arrow:hover {
+  background: #f3f4f6;
+}
+
+.gallery-arrow-left {
+  order: 0;
+}
+
+.gallery-arrow-right {
+  order: 2;
+}
+
+.gallery-svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #374151;
+  stroke: currentColor;
+  fill: none;
+}
+
+.feature-card {
+  flex-shrink: 0;
+  width: 24rem;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background-color: #EFE6D7 ;
+}
+
+.feature-card-content {
+  text-align: center;
+}
+
+.feature-card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  font-family: 'Times New Roman, serif';
+}
+
+.feature-card-text {
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.625;
+  font-family: 'Times New Roman, serif';
+}
+
+/* Call to Action Section */
+.cta-section {
+  background-color: #FFFDED;
+}
+
+.cta-container {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 1rem;
+  text-align: center;
+}
+
+.cta-text {
+  font-size: 1.125rem;
+  color: #1f2937;
+  line-height: 1.75;
+  margin-bottom: 1.5rem;
+  font-family: 'Times New Roman, serif';
+}
+
+.cta-text-last {
+  margin-bottom: 2rem;
+}
+
+.cta-button {
+  display: inline-block;
+  padding: 1rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  transition: all 0.3s;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  font-family: 'Times New Roman, serif';
+  background-color: #774C30;
+  color: white;
+}
+
+.cta-button:hover {
+  transform: scale(1.05);
+}
+
+/* Footer */
+.app-footer {
+  color: white;
+  padding: 2rem 0;
+  background-color: #774C30;
+}
+
+.app-footer-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.app-footer-text {
+  font-family: 'Times New Roman, serif';
 }

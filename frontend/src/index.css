@@ -39,3 +39,24 @@ body {
     @apply bg-white rounded-lg shadow-md p-6 border border-gray-200;
   }
 }
+
+.py-20 {
+  background-image: url('/src/assets/background.jpg');
+  background-repeat: no-repeat;
+  /* background-attachment: fixed; */
+  background-position: center center;
+  background-size: cover;
+  /* min-height: 100vh; */
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+/* Hide scrollbar for gallery */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

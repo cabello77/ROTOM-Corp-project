@@ -1,14 +1,62 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
-import SidebarProfile from "./components/SidebarProfile";
+import UserDropdown from "./components/UserDropdown";
+import ProfileEdit from "./ProfileEdit";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
 function ClubDiscover() {
-  const { user, isAuthenticated, isLoading } = useUser();
+  const { user, isAuthenticated, isLoading, updateProfile, uploadAvatar } = useUser();
+  const navigate = useNavigate();
   const [clubs, setClubs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [returnPath, setReturnPath] = useState(null);
+
+  // Handle save profile from edit modal
+  const handleSaveProfile = async (updatedData) => {
+    try {
+      const { name, email, bio, avatarFile, removeAvatar } = updatedData;
+      
+      await updateProfile(user.id, {
+        name,
+        email,
+        profile: {
+          bio,
+          fullName: name,
+          username: user.profile?.username || `user_${user.id}`,
+        },
+      });
+
+      if (avatarFile) {
+        await uploadAvatar(user.id, avatarFile);
+      } else if (removeAvatar) {
+        await updateProfile(user.id, {
+          profile: {
+            bio,
+            fullName: name,
+            username: user.profile?.username || `user_${user.id}`,
+            profilePicture: null,
+          },
+        });
+      }
+      
+      setIsEditModalOpen(false);
+      if (returnPath) {
+        navigate(returnPath);
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    if (returnPath) {
+      navigate(returnPath);
+    }
+  };
 
   // Fetch all clubs
   useEffect(() => {
@@ -16,7 +64,6 @@ function ClubDiscover() {
       try {
         const res = await fetch(`${API_BASE}/api/clubs`);
         const data = await res.json();
-        console.log("Fetched clubs data:", data);
 
         if (Array.isArray(data)) {
           // Sort alphabetically by name
@@ -69,37 +116,20 @@ function ClubDiscover() {
               Plotline
             </div>
             <div className="space-x-4">
-              <Link
-                to="/dashboard"
-                className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity"
-                style={{
-                  fontFamily: "Times New Roman, serif",
-                  backgroundColor: "#D9D9D9",
-                }}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/profile"
-                className="text-gray-800 px-4 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity"
-                style={{
-                  fontFamily: "Times New Roman, serif",
-                  backgroundColor: "#D9D9D9",
-                }}
-              >
-                Profile
-              </Link>
+              <UserDropdown onEditProfile={(previousLocation) => {
+                setIsEditModalOpen(true);
+                setReturnPath(previousLocation);
+              }} />
             </div>
           </div>
         </div>
-        <div className="h-1 bg-blue-400" />
       </header>
 
       {/* Main Content */}
       <main className="flex-grow px-4 py-10">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* LEFT: Discover Clubs Section */}
-          <section className="lg:col-span-9">
+        <div className="max-w-7xl mx-auto">
+          {/* Discover Clubs Section - Centered */}
+          <section className="flex flex-col items-center">
             <h1
               className="text-3xl font-semibold text-center mb-8"
               style={{ fontFamily: "Times New Roman, serif" }}
@@ -115,7 +145,7 @@ function ClubDiscover() {
                 No clubs found yet. Be the first to create one!
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
                 {clubs.map((club) => (
                   <div
                     key={club.id}
@@ -146,21 +176,26 @@ function ClubDiscover() {
                     </div>
                     <Link
                       to={`/clubs/${club.id}`}
-                      className="mt-4 text-center px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+                      className="mt-4 block w-full text-center px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
                       style={{ fontFamily: "Times New Roman, serif" }}
                     >
-                      View Club
+                      View Book Club
                     </Link>
                   </div>
                 ))}
               </div>
             )}
           </section>
-
-          {/* RIGHT: Sidebar */}
-          <SidebarProfile />
         </div>
       </main>
+
+      <ProfileEdit
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        user={user}
+        onSave={handleSaveProfile}
+        isSaving={false}
+      />
     </div>
   );
 }

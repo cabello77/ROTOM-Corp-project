@@ -8,7 +8,8 @@ function buildTree(replies) {
     if (!byParent.has(key)) byParent.set(key, []);
     byParent.get(key).push(r);
   });
-  for (const arr of byParent.values()) arr.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  // Sort replies newest first within each parent bucket
+  for (const arr of byParent.values()) arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const attach = (parentId, depth = 0) => (byParent.get(parentId || 'root') || []).map((r) => ({ ...r, depth, children: attach(r.id, depth + 1) }));
   return attach(null, 0);
 }
@@ -63,13 +64,14 @@ function ReplyNode({ node, currentUser, onEdit, onDelete }) {
 export default function ThreadDetail({ threadId, currentUser, isMember, isHost }) {
   const [thread, setThread] = useState(null);
   const [allReplies, setAllReplies] = useState([]);
-  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
-  const pageSize = 20;
+  const composerRef = useRef(null);
+  const initialVisibleCount = 3;
   const pollMs = 30000;
-  const sentinel = useRef(null);
+  
 
   const load = async () => {
     setLoading(true);
@@ -81,7 +83,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
   };
 
   useEffect(() => {
-    setPage(1);
+    setExpanded(false);
     load();
     setLastSeen(threadId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,43 +95,25 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
 
+  // Build a tree and paginate only top-level comments like Instagram
   const tree = useMemo(() => buildTree(allReplies), [allReplies]);
-
-  const flatVisible = useMemo(() => {
-    // Flatten the tree preserving order to do simple paging
-    const out = [];
-    const walk = (nodes) => {
-      for (const n of nodes) {
-        out.push(n);
-        if (n.depth < 3 && n.children) walk(n.children);
-      }
-    };
-    walk(tree);
-    return out;
-  }, [tree]);
-
-  const visible = flatVisible.slice(0, page * pageSize);
-  useEffect(() => {
-    setHasMore(flatVisible.length > visible.length);
-  }, [flatVisible, visible]);
-
-  useEffect(() => {
-    if (!hasMore) return;
-    const el = sentinel.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) setPage((p) => p + 1);
-    }, { rootMargin: '200px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasMore]);
+  const topLevelVisible = useMemo(() => (
+    expanded ? tree : tree.slice(0, initialVisibleCount)
+  ), [expanded, tree]);
 
   const handleReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim() || !isMember || thread?.locked) return;
     await createReply({ threadId, body: replyText.trim(), author: { id: currentUser.id, name: currentUser.name } });
     setReplyText('');
+    setComposerOpen(false);
     await load();
+  };
+
+  const openComposer = () => {
+    if (!isMember || thread?.locked) return;
+    setComposerOpen(true);
+    setTimeout(() => composerRef.current?.focus(), 0);
   };
 
   const onEdit = async (node) => {
@@ -169,41 +153,86 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
           by {thread.author?.name || 'Unknown'} · {new Date(thread.createdAt).toLocaleString()}
         </p>
         <div className="text-sm text-gray-800 mt-3 whitespace-pre-wrap" style={{ fontFamily: 'Times New Roman, serif' }}>{thread.body}</div>
-      </div>
-
-      {/* Reply composer */}
-      <form onSubmit={handleReply} className="space-y-2">
-        <textarea
-          value={replyText}
-          onChange={(e) => setReplyText(e.target.value)}
-          rows={4}
-          placeholder={thread.locked ? 'Thread is locked' : 'Write a reply…'}
-          disabled={!isMember || thread.locked}
-          className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-60"
-          style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#FDFBF6' }}
-        />
-        <div className="flex justify-end">
+        <div className="mt-2 flex justify-end">
           <button
-            type="submit"
-            disabled={!isMember || thread.locked || !replyText.trim()}
-            className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-sm disabled:opacity-60"
+            type="button"
+            onClick={openComposer}
+            disabled={!isMember || thread.locked}
+            title={thread.locked ? 'Thread is locked' : 'Reply'}
+            className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-xs disabled:opacity-60"
             style={{ fontFamily: 'Times New Roman, serif' }}
           >
+            <span role="img" aria-label="reply">💬</span>
             Reply
           </button>
         </div>
-      </form>
+      </div>
 
       {/* Replies */}
       <div className="mt-2">
-        {visible.map((n) => (
+        {composerOpen && (
+          <form onSubmit={handleReply} className="mb-3 space-y-2">
+            <textarea
+              ref={composerRef}
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              rows={3}
+              placeholder={thread.locked ? 'Thread is locked' : 'Add a comment…'}
+              disabled={!isMember || thread.locked}
+              className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-60"
+              style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#FDFBF6' }}
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setComposerOpen(false)}
+                className="px-3 py-2 rounded border border-[#ddcdb7] bg-white text-sm"
+                style={{ fontFamily: 'Times New Roman, serif' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!isMember || thread.locked || !replyText.trim()}
+                className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-sm disabled:opacity-60"
+                style={{ fontFamily: 'Times New Roman, serif' }}
+              >
+                Post
+              </button>
+            </div>
+          </form>
+        )}
+        {topLevelVisible.map((n) => (
           <ReplyNode key={n.id} node={n} currentUser={currentUser} onEdit={onEdit} onDelete={onDelete} />
         ))}
-        <div ref={sentinel} />
+        {tree.length > initialVisibleCount && (
+          <div className="mt-3">
+            {!expanded ? (
+              <button
+                type="button"
+                className="text-sm text-gray-700 underline"
+                onClick={() => setExpanded(true)}
+                style={{ fontFamily: 'Times New Roman, serif' }}
+              >
+                Show more comments ({tree.length - initialVisibleCount} more)
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="text-sm text-gray-700 underline"
+                onClick={() => setExpanded(false)}
+                style={{ fontFamily: 'Times New Roman, serif' }}
+              >
+                Show fewer comments
+              </button>
+            )}
+          </div>
+        )}
         {loading && (
           <p className="text-xs text-gray-500" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
         )}
       </div>
+      {/* Composer removed per request; use the Reply button above to add comments via prompt. */}
     </div>
   );
 }

@@ -995,7 +995,6 @@ app.patch('/api/replies/:id', async (req, res) => {
   }
 });
 
-<<<<<<< Updated upstream
 app.delete('/api/replies/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -1149,8 +1148,6 @@ app.patch('/api/replies/:id', async (req, res) => {
   }
 });
 
-=======
->>>>>>> Stashed changes
 // Delete a reply (author only)
 app.delete('/api/replies/:id', async (req, res) => {
   try {

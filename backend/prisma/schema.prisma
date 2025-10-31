@@ -41,7 +41,7 @@ model Club {
   readingGoal String? // Reading goal text (e.g., "Read chapters 1-3")
   goalDeadline DateTime? // Deadline for the reading goal
   members     ClubMember[] // Members of the club
-  discussions ThreadPost[]
+  discussions DiscussionPost[]
 }
 
 model ClubMember {
@@ -67,30 +67,78 @@ model DiscussionPost {
 	id		Int @id @default(autoincrement())
 	datePosted	DateTime @default(now())
 	dateEdited	DateTime?
-	hasMedia		Boolean
+	hasMedia	Boolean
+        chapter         Int?
 	bookClubID	Int
 	userID		Int
-	bookClub		Club @relation(fields: [bookClubID], references: [id])
+	bookClub	Club @relation(fields: [bookClubID], references: [id])
 	user		User @relation(fields: [userID], references: [id])
-	content		ThreadPostContent
-	media		ThreadPostMedia[]
+	content		DiscussionPostContent
+	media		DiscussionPostMedia[]
+        replies         ThreadReply[]
+        tags            Tag[]
+}
+
+model Tag {
+        id              Int @id @default(autoincrement())
+        name            String
 }
 
 model DiscussionPostContent {
-	id	          Int @id @default(autoincrement())
+	id              Int @id @default(autoincrement())
 	message 		String
 	bookClubID	Int
-	threadID	          Int
-	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
-	thread		ThreadPost @realtion(fields: [threadID], references: [id])
+	threadID	Int
+	bookClub        Club @relation(fields: [bookClubID], references: [id])
+	discussion      DiscussionPost @realtion(fields: [threadID], references: [id])
 }
 
 model DiscussionPostMedia {
-	id		Int @id @default(cuid())
+	id		Int @id @default(autoincrement())
 	file 		String
-	fileType		String
+	fileType	String
 	bookClubID	Int
-	threadID		Int
-	bookClub		BookClub @relation(fields: [bookClubID], references: [id])
-	thread		ThreadPost @realtion(fields: [threadID], references: [id])
+	threadID	Int
+	bookClub	Club @relation(fields: [bookClubID], references: [id])
+	discussion	DiscussionPost @relation(fields: [threadID], references: [id])
+}
+
+model ThreadReply {
+	id		Int @id @default(autoincrement())
+	parentReplyID 	Int?
+	threadID	Int
+	datePosted	DateTime @default(now())
+	dateEdited	DateTime?
+	hasMedia	Boolean
+	bookClubID      Int
+	userID		Int
+	bookClub	Club @relation(fields: [bookClubID], references: [id])
+	user		User @ relation(fields: [userID], references: [id])
+	parent		ThreadReply? @relation(fields: [parentReplyID], references: [id])
+	replies		ThreadReply[] @relation("MessageReplies")
+	content		ThreadReplyContent
+	media		ThreadReplyMedia[]
+}
+
+model ThreadReplyContent {
+	id		Int @id @default(autoincrement())
+	message         String
+	bookClubID	Int
+	threadID	Int
+	replyID		Int
+	bookClub	Club @relation(fields: [bookClubID], references: [id])
+	thread		DiscussionPost @realtion(fields: [threadID], references: [id])
+	reply		ThreadReply @relation(fields: [replyID], references: [id])
+}
+
+model ThreadReplyMedia {
+	id		Int @id @default(autoincrement())
+	file 		String
+	fileType	String
+	bookClubID	Int
+	threadID	Int
+	replyID		Int
+	bookClub	Club @relation(fields: [bookClubID], references: [id])
+	thread		DiscussionPost @realtion(fields: [threadID], references: [id])
+	reply		ThreadReply @realtion(fields: [replyID], references: [id])
 }

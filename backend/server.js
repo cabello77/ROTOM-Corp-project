@@ -808,13 +808,13 @@ app.post("/api/discussion", async(req, res) => {
                 }
 
                 const club = await prisma.club.findUnique({
-                    where: {id: Number(bookCLubID) },
+                    where: {id: Number(bookClubID) },
                     });
                 if (!club) {
                     return res.status(404).json({error: "Club not found."});
                 }
 
-                const membership = await prisma.ClubMember.findUnique({
+                const membership = await prisma.clubMember.findUnique({
                     where: {
                               userIDBookClubID: {
                                         userID: Number(userID),
@@ -833,19 +833,29 @@ app.post("/api/discussion", async(req, res) => {
                               bookClubID: Number(bookClubID),
                               userID: Number(userID),
                               hasMedia: media.length > 0,
+                              chapter: chapter ? Number(chapter) : null,
                               content: {
                                         create: {
                                         message,
                                         bookClubID: Number(bookClubID),
                                         },
                               },
-                    media: {
+                    media: media.length > 0 
+                              ? {
                               create: media.map(file => ({
                                         file: file.path || file.url,
                                         fileType: file.type,
                                         bookClubID: Number(bookClubID),
                                         })),
-                              },
+                              }
+                              : undefined,
+                    tags: tags.length > 0 
+                              ? {
+                              create: tags.map((tag) => ({
+                                        where: {name: tag},
+                                        })),
+                              }
+                              : undefined,
                     },
                     include: {
                     user: {select: {id: true, name: true, email: true}},
@@ -863,6 +873,8 @@ app.post("/api/discussion", async(req, res) => {
                     console.error("Error creating discussion post:", error);
           }
 });
+
+
 
 // SPA fallback for React Router (serve index.html for non-API routes)
 app.get('*', (req, res) => {

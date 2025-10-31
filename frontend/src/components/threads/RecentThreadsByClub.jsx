@@ -1,47 +1,54 @@
-import { useEffect, useMemo, useState } from 'react';
-import { fetchThreads } from '../../services/mockThreads';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import useRecentThreadsByClubs from '../../hooks/useRecentThreadsByClubs';
 
-export default function RecentThreadsByClub({ clubIds = [], limit = 5 }) {
-  const [groups, setGroups] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const out = {};
-      for (const id of clubIds) {
-        const res = await fetchThreads(id, { page: 1, size: limit, sort: 'activity' });
-        out[id] = res.items;
-      }
-      setGroups(out);
-      setLoading(false);
-    };
-    load();
-  }, [clubIds, limit]);
-
-  const totalCount = useMemo(() => Object.values(groups).reduce((acc, arr) => acc + arr.length, 0), [groups]);
+export default function RecentThreadsByClub({ clubIds = [], limit = 3, clubMap = {} }) {
+  const { groups, loading, totalCount } = useRecentThreadsByClubs({ clubIds, limit, pollMs: 30000 });
   if (!clubIds.length) return null;
 
-  return (
-    <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
-      <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>Recent Discussions</h3>
-      {loading && <p className="text-sm text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>}
-      {!loading && totalCount === 0 && (
+  if (loading) {
+    return (
+      <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+        <p className="text-sm text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
+      </div>
+    );
+  }
+
+  if (totalCount === 0) {
+    return (
+      <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+        <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>Recent Discussions</h3>
         <p className="text-sm text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>No recent threads.</p>
-      )}
-      {!loading && Object.entries(groups).map(([clubId, threads]) => (
-        <div key={clubId} className="space-y-2">
-          <h4 className="text-sm font-semibold text-gray-700" style={{ fontFamily: 'Times New Roman, serif' }}>Club {clubId}</h4>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {Object.entries(groups).map(([clubId, threads]) => (
+        <div key={clubId} className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+          <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>
+            {clubMap[clubId]?.name || `Club ${clubId}`} • Recent Discussions
+          </h3>
           <ul className="space-y-2">
             {threads.slice(0, limit).map((t) => (
               <li key={t.id} className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#faf6ed]">
                 <div className="text-sm text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>{t.title}</div>
-                <div className="text-xs text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>by {t.author?.name || 'Unknown'} · {new Date(t.lastActivityAt).toLocaleString()}</div>
+                <div className="text-xs text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>by {t.author?.name || 'Unknown'} • {new Date(t.lastActivityAt).toLocaleString()}</div>
               </li>
             ))}
           </ul>
+          <div className="pt-2 flex justify-end">
+            <Link
+              to={`/clubs/${clubId}`}
+              className="text-sm underline text-gray-700 hover:text-gray-900"
+              style={{ fontFamily: 'Times New Roman, serif' }}
+            >
+              View all discussions
+            </Link>
+          </div>
         </div>
       ))}
-    </div>
+    </>
   );
 }

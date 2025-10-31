@@ -360,13 +360,15 @@ function UserHome() {
         </div>
 
         {/* Example Feed Blocks */}
-        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
-          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-            Join a book club to see curated discussions here.
-          </p>
-        </div>
-        {/* Placeholder: pass joined club IDs once available; demo with club 1 */}
-        <RecentThreadsByClub clubIds={[1]} limit={5} />
+        {allClubs.length === 0 && (
+          <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
+            <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+              Join a book club to see curated discussions here.
+            </p>
+          </div>
+        )}
+        {/* Recent discussions grouped by your clubs */}
+        <RecentThreadsByClub clubIds={allClubs.map(c => c.id)} clubMap={Object.fromEntries(allClubs.map(c => [c.id, { name: c.name || `Club ${c.id}` }]))} limit={3} />
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
           <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: "Times New Roman, serif" }}>
             You're all caught up! :)

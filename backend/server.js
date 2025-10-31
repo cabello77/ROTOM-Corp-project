@@ -354,7 +354,26 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Handle legacy plaintext passwords gracefully and upgrade to bcrypt
+    const stored = user.password || '';
+    let isPasswordValid = false;
+    if (typeof stored === 'string' && stored.startsWith('$2')) {
+      // Bcrypt hash present
+      isPasswordValid = await bcrypt.compare(password, stored);
+    } else {
+      // Legacy plaintext stored; compare directly then upgrade hash on success
+      if (password === stored) {
+        isPasswordValid = true;
+        try {
+          const newHash = await bcrypt.hash(password, 10);
+          await prisma.user.update({ where: { id: user.id }, data: { password: newHash } });
+        } catch (e) {
+          console.warn('Password hash upgrade failed for user', user.id, e?.message);
+        }
+      } else {
+        isPasswordValid = false;
+      }
+    }
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
@@ -966,7 +985,7 @@ app.post('/api/discussion', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating discussion post:', error);
-    res.status(500).json({ error: 'Failed to create discussion' });
+    res.status(500).json({ error: error?.message || 'Failed to create discussion' });
   }
 });
 
@@ -1056,72 +1075,7 @@ app.get('/api/discussion/:id', async (req, res) => {
   }
 });
 
-// Create new discussion post
-app.post('/api/discussion', async (req, res) => {
-  try {
-    const bodyClubId = req.body.clubId ?? req.body.bookClubID;
-    const bodyUserId = req.body.userId ?? req.body.userID;
-    const { message, media = [], title, chapterIndex = null, tags = [] } = req.body;
 
-    const clubId = Number(bodyClubId);
-    const userId = Number(bodyUserId);
-
-    if (!clubId || !userId || !message || !title) {
-      return res.status(400).json({ error: 'clubId, userId, title and message are required.' });
-    }
-
-    const club = await prisma.club.findUnique({ where: { id: clubId } });
-    if (!club) {
-      return res.status(404).json({ error: 'Club not found.' });
-    }
-
-    const membership = await prisma.clubMember.findUnique({
-      where: { clubId_userId: { clubId, userId } },
-      select: { role: true },
-    });
-
-    if (!membership || ![Role.HOST, Role.MODERATOR].includes(membership.role)) {
-      return res.status(403).json({ error: 'You are not authorized to create a discussion.' });
-    }
-
-    const newDiscussion = await prisma.discussionPost.create({
-      data: {
-        clubId,
-        userId,
-        hasMedia: Array.isArray(media) && media.length > 0,
-        title: String(title).slice(0, 120),
-        chapterIndex: chapterIndex != null ? Math.max(1, Number(chapterIndex) || 1) : null,
-        tags: Array.isArray(tags) ? tags.slice(0, 5) : [],
-        content: {
-          create: {
-            message: String(message).slice(0, 10000),
-          },
-        },
-        media: Array.isArray(media) && media.length > 0
-          ? {
-              create: media.map((file) => ({
-                file: file?.path || file?.url || String(file),
-                fileType: file?.type || 'unknown',
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-        content: true,
-        media: true,
-      },
-    });
-
-    res.status(201).json({
-      message: 'Discussion post created.',
-      discussion: serializeDiscussion(newDiscussion),
-    });
-  } catch (error) {
-    console.error('Error creating discussion post:', error);
-    res.status(500).json({ error: 'Failed to create discussion' });
-  }
-});
 
 // Create a reply
 app.post('/api/discussion/:id/replies', async (req, res) => {

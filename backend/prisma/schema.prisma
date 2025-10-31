@@ -42,6 +42,7 @@ model Club {
   goalDeadline DateTime? // Deadline for the reading goal
   members     ClubMember[] // Members of the club
   discussions DiscussionPost[]
+  threadReplies ThreadReply[]
 }
 
 model ClubMember {
@@ -53,7 +54,8 @@ model ClubMember {
   joinedAt DateTime @default(now())
   club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  discussionPosts       DiscussionPost[]
+  threadReplies         ThreadReply[]
   @@unique([clubId, userId])
 }
 
@@ -70,9 +72,9 @@ model DiscussionPost {
 	hasMedia	Boolean
         chapter         Int?
 	bookClubID	Int
-	userID		Int
+	memberID	Int
 	bookClub	Club @relation(fields: [bookClubID], references: [id])
-	user		User @relation(fields: [userID], references: [id])
+	member          ClubMember @relation(fields: [memberID], references: [id])
 	content		DiscussionPostContent
 	media		DiscussionPostMedia[]
         replies         ThreadReply[]
@@ -86,10 +88,8 @@ model Tag {
 
 model DiscussionPostContent {
 	id              Int @id @default(autoincrement())
-	message 		String
-	bookClubID	Int
+	message 	String
 	threadID	Int
-	bookClub        Club @relation(fields: [bookClubID], references: [id])
 	discussion      DiscussionPost @relation(fields: [threadID], references: [id])
 }
 
@@ -97,9 +97,7 @@ model DiscussionPostMedia {
 	id		Int @id @default(autoincrement())
 	file 		String
 	fileType	String
-	bookClubID	Int
 	threadID	Int
-	bookClub	Club @relation(fields: [bookClubID], references: [id])
 	discussion	DiscussionPost @relation(fields: [threadID], references: [id])
 }
 
@@ -111,9 +109,9 @@ model ThreadReply {
 	dateEdited	DateTime?
 	hasMedia	Boolean
 	bookClubID      Int
-	userID		Int
+	memberID	Int
 	bookClub	Club @relation(fields: [bookClubID], references: [id])
-	user		User @ relation(fields: [userID], references: [id])
+	member          ClubMember @relation(fields: [memberID], references: [id])
 	parent		ThreadReply? @relation(fields: [parentReplyID], references: [id])
 	replies		ThreadReply[] @relation("MessageReplies")
 	content		ThreadReplyContent
@@ -123,10 +121,8 @@ model ThreadReply {
 model ThreadReplyContent {
 	id		Int @id @default(autoincrement())
 	message         String
-	bookClubID	Int
 	threadID	Int
 	replyID		Int
-	bookClub	Club @relation(fields: [bookClubID], references: [id])
 	thread		DiscussionPost @relation(fields: [threadID], references: [id])
 	reply		ThreadReply @relation(fields: [replyID], references: [id])
 }
@@ -135,10 +131,8 @@ model ThreadReplyMedia {
 	id		Int @id @default(autoincrement())
 	file 		String
 	fileType	String
-	bookClubID	Int
 	threadID	Int
 	replyID		Int
-	bookClub	Club @relation(fields: [bookClubID], references: [id])
 	thread		DiscussionPost @relation(fields: [threadID], references: [id])
 	reply		ThreadReply @relation(fields: [replyID], references: [id])
 }

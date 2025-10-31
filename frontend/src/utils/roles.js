@@ -1,6 +1,6 @@
-export function canCreateThread({ isHost = false } = {}) {
-  // MVP: only host can create threads
-  return Boolean(isHost);
+export function canCreateThread({ isHost = false, isMember = false } = {}) {
+  // Allow any club member (including host) to create threads
+  return Boolean(isHost || isMember);
 }
 
 export function canReply({ isLocked = false, isMember = false } = {}) {

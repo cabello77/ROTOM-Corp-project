@@ -914,8 +914,8 @@ app.post('/api/discussion', async (req, res) => {
       select: { role: true },
     });
 
-    if (!membership || ![Role.HOST, Role.MODERATOR].includes(membership.role)) {
-      return res.status(403).json({ error: 'You are not authorized to create a discussion.' });
+    if (!membership || ![Role.HOST, Role.MODERATOR, Role.MEMBER].includes(membership.role)) {
+      return res.status(403).json({ error: 'You must be a club member to create a discussion.' });
     }
 
     const newDiscussion = await prisma.discussionPost.create({

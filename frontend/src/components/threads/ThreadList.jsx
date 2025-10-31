@@ -13,7 +13,10 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState(null);
 
-  const canCreate = useMemo(() => canCreateThread({ isHost }), [isHost]);
+  const canCreate = useMemo(
+    () => canCreateThread({ isHost, isMember: Boolean(isMember || isHost) }),
+    [isHost, isMember]
+  );
   const pageSize = 10;
   const pollMs = 30000;
   const scrollSentinel = useRef(null);

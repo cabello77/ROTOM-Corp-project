@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import RecentThreadsByClub from "./components/threads/RecentThreadsByClub";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import ProfileEdit from "./ProfileEdit";
@@ -364,6 +365,8 @@ function UserHome() {
             Join a book club to see curated discussions here.
           </p>
         </div>
+        {/* Placeholder: pass joined club IDs once available; demo with club 1 */}
+        <RecentThreadsByClub clubIds={[1]} limit={5} />
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
           <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: "Times New Roman, serif" }}>
             You're all caught up! :)

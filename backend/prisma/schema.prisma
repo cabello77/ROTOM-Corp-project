@@ -90,7 +90,7 @@ model DiscussionPostContent {
 	bookClubID	Int
 	threadID	Int
 	bookClub        Club @relation(fields: [bookClubID], references: [id])
-	discussion      DiscussionPost @realtion(fields: [threadID], references: [id])
+	discussion      DiscussionPost @relation(fields: [threadID], references: [id])
 }
 
 model DiscussionPostMedia {
@@ -127,7 +127,7 @@ model ThreadReplyContent {
 	threadID	Int
 	replyID		Int
 	bookClub	Club @relation(fields: [bookClubID], references: [id])
-	thread		DiscussionPost @realtion(fields: [threadID], references: [id])
+	thread		DiscussionPost @relation(fields: [threadID], references: [id])
 	reply		ThreadReply @relation(fields: [replyID], references: [id])
 }
 
@@ -139,6 +139,6 @@ model ThreadReplyMedia {
 	threadID	Int
 	replyID		Int
 	bookClub	Club @relation(fields: [bookClubID], references: [id])
-	thread		DiscussionPost @realtion(fields: [threadID], references: [id])
-	reply		ThreadReply @realtion(fields: [replyID], references: [id])
+	thread		DiscussionPost @relation(fields: [threadID], references: [id])
+	reply		ThreadReply @relation(fields: [replyID], references: [id])
 }

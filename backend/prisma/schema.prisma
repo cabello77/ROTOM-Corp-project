@@ -8,16 +8,16 @@ datasource db {
 }
 
 model User {
-  id                Int               @id @default(autoincrement())
-  name              String
-  email             String            @unique
-  password          String
-  createdAt         DateTime          @default(now())
-  profile           Profile?
-  clubs             Club[]
-  memberships       ClubMember[]
-  discussionPosts   DiscussionPost[]
-  discussionReplies DiscussionReply[]
+  id                 Int                @id @default(autoincrement())
+  name               String
+  email              String             @unique
+  password           String
+  createdAt          DateTime           @default(now())
+  profile            Profile?
+  clubs              Club[]
+  memberships        ClubMember[]
+  discussionPosts    DiscussionPost[]
+  discussionReplies  DiscussionReply[]
 }
 
 model Profile {
@@ -100,15 +100,16 @@ model DiscussionPostMedia {
 }
 
 model DiscussionReply {
-  id           Int               @id @default(autoincrement())
+  id           Int              @id @default(autoincrement())
   discussionId Int
   parentId     Int?
   userId       Int
   body         String
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @default(now())
-  discussion   DiscussionPost    @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent       DiscussionReply?  @relation("ReplyToParent", fields: [parentId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @default(now())
+  discussion   DiscussionPost   @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       DiscussionReply? @relation("ReplyToParent", fields: [parentId], references: [id])
   children     DiscussionReply[] @relation("ReplyToParent")
 }
+

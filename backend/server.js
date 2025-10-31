@@ -82,6 +82,15 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
+// Build/version diagnostics
+app.get('/api/version', (req, res) => {
+  res.json({
+    version: process.env.HEROKU_RELEASE_VERSION || null,
+    commit: process.env.HEROKU_SLUG_COMMIT || null,
+    time: new Date(),
+  });
+});
+
 // Test API route
 app.get("/api/test", (req, res) => {
   res.json({ message: "Hello from Plotline server!", time: new Date() });

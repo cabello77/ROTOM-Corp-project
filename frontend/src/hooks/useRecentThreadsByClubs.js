@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { fetchThreads } from '../services/mockThreads';
+import { fetchThreads } from '../services/discussions';
 
 export default function useRecentThreadsByClubs({ clubIds = [], limit = 5, pollMs = 30000 }) {
   const [groups, setGroups] = useState({});
@@ -34,4 +34,3 @@ export default function useRecentThreadsByClubs({ clubIds = [], limit = 5, pollM
 
   return { groups, loading, totalCount, reload: load };
 }
-

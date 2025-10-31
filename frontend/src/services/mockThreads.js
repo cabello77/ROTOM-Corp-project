@@ -77,8 +77,13 @@ seedIfEmpty();
 
 // Sorting helpers
 function sortThreadsForList(list) {
-  const pinned = list.filter((t) => t.pinned).sort((a, b) => new Date(b.lastActivityAt) - new Date(a.lastActivityAt));
-  const others = list.filter((t) => !t.pinned).sort((a, b) => new Date(b.lastActivityAt) - new Date(a.lastActivityAt));
+  // Keep ordering stable based on original creation time (newest threads first)
+  const pinned = list
+    .filter((t) => t.pinned)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const others = list
+    .filter((t) => !t.pinned)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return [...pinned, ...others];
 }
 
@@ -132,8 +137,7 @@ export async function createReply({ threadId, parentId = null, body, author }) {
     updatedAt: now,
   };
   _state.replies.push(reply);
-  t.updatedAt = now;
-  t.lastActivityAt = now;
+  // Do not bump thread ordering on reply; keep createdAt ordering stable
   return reply;
 }
 
@@ -159,11 +163,6 @@ export async function editReply({ replyId, body }) {
   if (!r) return null;
   r.body = String(body).slice(0, 10000);
   r.updatedAt = nowIso();
-  const t = _state.threads.find((x) => x.id === r.threadId);
-  if (t) {
-    t.lastActivityAt = r.updatedAt;
-    t.updatedAt = r.updatedAt;
-  }
   return r;
 }
 
@@ -172,8 +171,6 @@ export async function deleteReply({ replyId }) {
   if (idx === -1) return false;
   const r = _state.replies[idx];
   _state.replies.splice(idx, 1);
-  const t = _state.threads.find((x) => x.id === r.threadId);
-  if (t) t.updatedAt = nowIso();
   return true;
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createReply, fetchThread, isNewBadge, setLastSeen } from '../../services/mockThreads';
+import { createReply, fetchThread, isNewBadge, setLastSeen, editReply as apiEditReply, deleteReply as apiDeleteReply } from '../../services/discussions';
 
 function buildTree(replies) {
   const byParent = new Map();
@@ -14,13 +14,24 @@ function buildTree(replies) {
   return attach(null, 0);
 }
 
-function ReplyNode({ node, currentUser, onEdit, onDelete }) {
+function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, onEdit, onDelete }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState('');
   const isOwner = currentUser && node.author && currentUser.id === node.author.id;
   const canEditWindow = (() => {
     const created = new Date(node.createdAt).getTime();
     return Date.now() - created <= 30 * 60 * 1000;
   })();
+
+  const handleChildReply = async (e) => {
+    e.preventDefault();
+    if (!replyText.trim() || !isMember || locked) return;
+    await createReply({ threadId, parentId: node.id, body: replyText.trim(), author: { id: currentUser.id, name: currentUser.name } });
+    setReplyText('');
+    setReplyOpen(false);
+    if (onReplied) onReplied();
+  };
 
   return (
     <div className="mt-3" style={{ marginLeft: `${Math.min(node.depth, 3) * 16}px` }}>
@@ -33,6 +44,9 @@ function ReplyNode({ node, currentUser, onEdit, onDelete }) {
             {isNewBadge(node.updatedAt || node.createdAt) && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 border border-green-300 text-green-800">New</span>
             )}
+            {isMember && !locked && (
+              <button className="text-xs text-gray-600 hover:underline" onClick={() => setReplyOpen((v) => !v)}>Reply</button>
+            )}
             {isOwner && canEditWindow && (
               <>
                 <button className="text-xs text-gray-600 hover:underline" onClick={() => onEdit(node)}>Edit</button>
@@ -43,6 +57,30 @@ function ReplyNode({ node, currentUser, onEdit, onDelete }) {
         </div>
         <div className="text-sm text-gray-800 mt-1" style={{ fontFamily: 'Times New Roman, serif' }}>{node.body}</div>
       </div>
+      {replyOpen && (
+        <form onSubmit={handleChildReply} className="mt-2 space-y-2" style={{ marginLeft: `${Math.min(node.depth, 3) * 16}px` }}>
+          <textarea
+            value={replyText}
+            onChange={(e) => setReplyText(e.target.value)}
+            rows={3}
+            placeholder={locked ? 'Thread is locked' : 'Write a reply…'}
+            disabled={!isMember || locked}
+            className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-60"
+            style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#FDFBF6' }}
+          />
+          <div className="flex items-center gap-2 justify-end">
+            <button type="button" className="text-xs text-gray-600 hover:underline" onClick={() => { setReplyOpen(false); setReplyText(''); }}>Cancel</button>
+            <button
+              type="submit"
+              disabled={!isMember || locked || !replyText.trim()}
+              className="px-2 py-1 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-xs disabled:opacity-60"
+              style={{ fontFamily: 'Times New Roman, serif' }}
+            >
+              Post reply
+            </button>
+          </div>
+        </form>
+      )}
       {node.children && node.children.length > 0 && node.depth < 3 && (
         <div className="mt-1">
           <button className="text-xs text-gray-600 hover:underline" onClick={() => setCollapsed((c) => !c)}>
@@ -53,7 +91,17 @@ function ReplyNode({ node, currentUser, onEdit, onDelete }) {
       {!collapsed && node.children && node.children.length > 0 && node.depth < 3 && (
         <div>
           {node.children.map((child) => (
-            <ReplyNode key={child.id} node={child} currentUser={currentUser} onEdit={onEdit} onDelete={onDelete} />
+            <ReplyNode
+              key={child.id}
+              node={child}
+              currentUser={currentUser}
+              isMember={isMember}
+              locked={locked}
+              threadId={threadId}
+              onReplied={onReplied}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
           ))}
         </div>
       )}
@@ -121,15 +169,13 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
     const next = window.prompt('Edit your reply:', node.body);
     if (next == null) return;
     // We call fetchThread again after mock to refresh
-    const { editReply } = await import('../../services/mockThreads');
-    await editReply({ replyId: node.id, body: next });
+    await apiEditReply({ replyId: node.id, body: next, userId: currentUser?.id });
     await load();
   };
 
   const onDelete = async (node) => {
     if (!window.confirm('Delete this reply?')) return;
-    const { deleteReply } = await import('../../services/mockThreads');
-    await deleteReply({ replyId: node.id });
+    await apiDeleteReply({ replyId: node.id, userId: currentUser?.id });
     await load();
   };
 
@@ -203,7 +249,17 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
           </form>
         )}
         {topLevelVisible.map((n) => (
-          <ReplyNode key={n.id} node={n} currentUser={currentUser} onEdit={onEdit} onDelete={onDelete} />
+          <ReplyNode
+            key={n.id}
+            node={n}
+            currentUser={currentUser}
+            isMember={Boolean(isMember)}
+            locked={Boolean(thread.locked)}
+            threadId={threadId}
+            onReplied={load}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         ))}
         {tree.length > initialVisibleCount && (
           <div className="mt-3">

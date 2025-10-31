@@ -1,0 +1,68 @@
+﻿                            {book.first_publish_year && (
+                              <p className="text-xs text-gray-500">Published: {book.first_publish_year}</p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Book Details Form */}
+              {selectedBook && (
+                <div className="border-t border-[#e3d8c8] pt-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+                    Book Details
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={bookDetails.title}
+                        onChange={(e) => setBookDetails({ ...bookDetails, title: e.target.value })}
+                        className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                        Author(s)
+                      </label>
+                      <input
+                        type="text"
+                        value={bookDetails.authors}
+                        onChange={(e) => setBookDetails({ ...bookDetails, authors: e.target.value })}
+                        className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                        Cover Image URL
+                      </label>
+                      <input
+                        type="text"
+                        value={bookDetails.cover}
+                        onChange={(e) => setBookDetails({ ...bookDetails, cover: e.target.value })}
+                        className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                        Description/Summary
+                      </label>
+                      <textarea
+                        value={bookDetails.description}
+                        onChange={(e) => setBookDetails({ ...bookDetails, description: e.target.value })}
+                        rows={3}
+                        className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                        style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>

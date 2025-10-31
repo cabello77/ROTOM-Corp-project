@@ -1,0 +1,77 @@
+﻿
+import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useUser } from "./contexts/UserContext";
+import LiveChat from "./components/club/LiveChat";
+import DiscussionsPanel from "./components/club/DiscussionsPanel";
+import ClubLeftSidebar from "./components/club/ClubLeftSidebar";
+import ClubRightSidebar from "./components/club/ClubRightSidebar";
+import ClubHeader from "./components/club/ClubHeader";
+import ClubTitleBar from "./components/club/ClubTitleBar";
+import ClubModals from "./components/club/ClubModals";
+import { searchBooks } from "./services/books";
+import { deleteClub, joinClub, leaveClub, updateMemberProgress, updateClubGoal, assignBookToClub } from "./services/clubActions";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
+export default function ClubHome() {
+  const { id } = useParams();
+  const { user, isAuthenticated, isLoading, updateProfile, uploadAvatar } = useUser();
+  const navigate = useNavigate();
+  const [club, setClub] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [currentBook, setCurrentBook] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [bookDetails, setBookDetails] = useState({
+    title: "",
+    authors: "",
+    cover: "",
+    description: "",
+    year: "",
+    genre: "",
+  });
+  const [readingGoal, setReadingGoal] = useState("");
+  const [goalDeadline, setGoalDeadline] = useState("");
+  const [userProgress, setUserProgress] = useState(0); // Progress from 0 to 100
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+  const [editReadingGoal, setEditReadingGoal] = useState("");
+  const [editGoalDeadline, setEditGoalDeadline] = useState("");
+  const [members, setMembers] = useState([]);
+  const [isMember, setIsMember] = useState(false);
+  const [currentUserMemberData, setCurrentUserMemberData] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [returnPath, setReturnPath] = useState(null);
+
+  // Days remaining util imported from utils/date
+
+  // Fetch club data
+  useEffect(() => {
+    const fetchClub = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/clubs/${id}`);
+        const clubData = res.data;
+        setClub(clubData);
+        
+        // Set current book if it exists in the database
+        if (clubData.currentBookData) {
+          setCurrentBook(clubData.currentBookData);
+        }
+        
+        // Set reading goal and deadline if they exist
+        if (clubData.readingGoal) {
+          setReadingGoal(clubData.readingGoal);
+        }
+        if (clubData.goalDeadline) {
+          // Convert the deadline to YYYY-MM-DD format for the input
+          const deadline = new Date(clubData.goalDeadline).toISOString().split('T')[0];
+          setGoalDeadline(deadline);
+        }
+      } catch (error) {
+        console.error("Error loading club:", error);
+      }
+    };

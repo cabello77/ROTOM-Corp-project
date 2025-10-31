@@ -3,7 +3,7 @@ import ThreadListItem from './ThreadListItem';
 import ThreadCreateModal from './ThreadCreateModal';
 import ThreadDetail from './ThreadDetail';
 import { canCreateThread } from '../../utils/roles';
-import { createThread, fetchThreads } from '../../services/mockThreads';
+import { createThread, fetchThreads } from '../../services/discussions';
 
 export default function ThreadList({ clubId, currentUser, isHost = false, isMember = false }) {
   const [items, setItems] = useState([]);

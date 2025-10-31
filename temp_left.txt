@@ -1,0 +1,231 @@
+﻿          )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <main className="flex-grow px-4 py-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            {/* LEFT SIDEBAR */}
+            <aside className="lg:col-span-3 space-y-4">
+              {/* Current Read */}
+              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+                    Current Read
+              </h2>
+                  {user && user.id === club.creatorId && !currentBook && (
+                    <button
+                      onClick={() => setIsModalOpen(true)}
+                      className="w-8 h-8 rounded-full border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors flex items-center justify-center"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                      title="Assign Book"
+                    >
+                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </button>
+                  )}
+                  {user && user.id === club.creatorId && currentBook && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm("Are you sure you want to remove the current book?")) {
+                          try {
+                            const res = await fetch(`${API_BASE}/api/clubs/${id}/book`, {
+                              method: "DELETE",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ userId: user.id }),
+                            });
+
+                            const data = await res.json();
+                            
+                            if (res.ok) {
+                              setCurrentBook(null);
+                            } else {
+                              alert(data.error || "Failed to remove book.");
+                            }
+                          } catch (err) {
+                            console.error("Error removing book:", err);
+                            alert("Error removing book. Please try again.");
+                          }
+                        }
+                      }}
+                      className="w-8 h-8 rounded-full border border-red-300 bg-red-50 hover:bg-red-100 transition-colors flex items-center justify-center"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                      title="Remove Book"
+                    >
+                      <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  {currentBook ? (
+                    <CurrentBookCard
+                      currentBook={currentBook}
+                      isHost={user && user.id === club.creatorId}
+                      club={club}
+                      goalDeadline={goalDeadline}
+                      onUpdateGoal={() => {
+                        setEditReadingGoal(club.readingGoal || "");
+                        setEditGoalDeadline(goalDeadline);
+                        setIsGoalModalOpen(true);
+                      }}
+                      onRemoveBook={async () => {
+                        try {
+                          const res = await fetch(`${API_BASE}/api/clubs/${club.id}/book`, {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: user.id }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setCurrentBook(null);
+                          } else {
+                            alert(data.error || "Failed to remove book.");
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          alert("Error removing book.");
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded" style={{ fontFamily: "Times New Roman, serif" }}>
+                      <p className="text-sm text-gray-600">
+                        {user && user.id === club.creatorId ? "Click + to assign a book" : "No book assigned yet"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Discussions moved to center column below Live Chat */}
+
+              <PastReads />
+
+              <MembersRoles members={members} />
+            </aside>
+
+            {/* CENTER COLUMN */}
+            <section className="lg:col-span-6 space-y-4">
+              <LiveChat />
+
+              <DiscussionsPanel
+                clubId={club?.id}
+                user={user}
+                isMember={isMember}
+                isHost={user && club && user.id === club.creatorId}
+              />
+            </section>
+
+            {/* RIGHT SIDEBAR */}
+            <aside className="lg:col-span-3 space-y-4">
+              {/* My Progress - visible for both hosts and members */}
+              {user && (
+                <>
+                  {(isMember || user.id === club.creatorId) && club.readingGoal && club.goalDeadline && getDaysRemaining(club.goalDeadline) && !getDaysRemaining(club.goalDeadline).includes("Overdue") ? (
+                    <MyProgressCard
+                      club={club}
+                      currentBook={currentBook}
+                      userProgress={userProgress}
+                      onOpenProgress={() => setIsProgressModalOpen(true)}
+                    />
+                  ) : user.id !== club.creatorId && !isMember ? (
+                    /* Show join button if not a member and not the host */
+                    <JoinClubCard onJoin={handleJoinClub} />
+                  ) : null}
+                </>
+              )}
+
+              {/* Member Progress */}
+              {members.length > 0 && club.readingGoal && (
+                <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+                  <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+                    Member Progress
+                  </h3>
+                  <div className="space-y-3">
+                    {members.map((member) => (
+                      <div key={member.id} className="space-y-1">
+                        <div className="flex justify-between items-center text-xs text-gray-600 mb-1">
+                          <span style={{ fontFamily: "Times New Roman, serif" }} className="flex items-center gap-1">
+                            {member.user.name}
+                            {member.isHost && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-800" title="Club Host">
+                                🏠 Host
+                              </span>
+                            )}
+                          </span>
+                          <span style={{ fontFamily: "Times New Roman, serif" }}>{member.progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-[#774C30] h-2 rounded-full transition-all" style={{ width: `${member.progress}%` }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons - visible for all members including hosts */}
+              {(isMember || (user && user.id === club.creatorId)) && (
+                <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+                  <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+                    Actions
+                  </h3>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                      onClick={() => alert("Invite functionality coming soon!")}
+                    >
+                      Invite Members
+                    </button>
+              {user && user.id === club.creatorId && (
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="w-full px-4 py-2 rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors text-sm text-red-700"
+                        style={{ fontFamily: "Times New Roman, serif" }}
+                      >
+                        Delete Book Club
+                      </button>
+                    )}
+                    {isMember && user && user.id !== club.creatorId && (
+                      <button
+                        type="button"
+                        onClick={handleLeaveClub}
+                        className="w-full px-4 py-2 rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors text-sm text-red-700"
+                        style={{ fontFamily: "Times New Roman, serif" }}
+                      >
+                        Leave Book Club
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
+        </div>
+      </main>
+
+      {/* Book Assignment Modal removed; using AssignBookModal below */}
+
+      {/* Assign Book Modal */}
+      <AssignBookModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSearchQuery("");
+          setSearchResults([]);
+          setSelectedBook(null);
+          setBookDetails({ title: "", authors: "", cover: "", description: "", year: "", genre: "" });
+          setReadingGoal("");
+          setGoalDeadline("");
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        handleSearch={handleSearch}

@@ -1,0 +1,62 @@
+﻿                        setBookDetails({
+                          title: "",
+                          authors: "",
+                          cover: "",
+                          description: "",
+                          year: "",
+                          genre: "",
+                        });
+                        setReadingGoal("");
+                        setGoalDeadline("");
+                      }}
+                      className="px-6 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-gray-50 transition-colors"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAssignBook}
+                      className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      Submit
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Book Modal */}
+      <AssignBookModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSearchQuery("");
+          setSearchResults([]);
+          setSelectedBook(null);
+          setBookDetails({ title: "", authors: "", cover: "", description: "", year: "", genre: "" });
+          setReadingGoal("");
+          setGoalDeadline("");
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        handleSearch={handleSearch}
+        searchResults={searchResults}
+        selectedBook={selectedBook}
+        handleSelectBook={handleSelectBook}
+        bookDetails={bookDetails}
+        setBookDetails={setBookDetails}
+        readingGoal={readingGoal}
+        setReadingGoal={setReadingGoal}
+        goalDeadline={goalDeadline}
+        setGoalDeadline={setGoalDeadline}
+        handleAssignBook={handleAssignBook}
+      />
+
+      {/* Progress Update Modal */}
+      <UpdateProgressModal
+        open={isProgressModalOpen}
+        onClose={() => setIsProgressModalOpen(false)}

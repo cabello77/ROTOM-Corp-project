@@ -1,0 +1,25 @@
+import { getDaysRemainingLabel } from "../../utils/date";
+
+export default function ClubTitleBar({ club }) {
+  const days = club?.goalDeadline ? getDaysRemainingLabel(club.goalDeadline) : null;
+  return (
+    <div className="text-center py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-4xl font-semibold text-gray-800 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+          {club.name}
+        </h1>
+        {club.readingGoal && club.goalDeadline && days ? (
+          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+            Current Reading Goal: <span className="font-semibold text-gray-800">{club.readingGoal}</span>
+            <span className="ml-2 font-semibold text-gray-800">{days}</span>
+          </p>
+        ) : (
+          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+            No reading goal set yet
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+

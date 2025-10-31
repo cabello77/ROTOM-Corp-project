@@ -41,16 +41,22 @@ model Club {
   currentBookId   String?
   currentBookData Json? // Store book details as JSON
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
   readingGoal String? // Reading goal text (e.g., "Read chapters 1-3")
   goalDeadline DateTime? // Deadline for the reading goal
   members     ClubMember[] // Members of the club
   discussions DiscussionPost[]
   threadReplies ThreadReply[]
 =======
+=======
+>>>>>>> Stashed changes
   readingGoal     String? // Reading goal text (e.g., "Read chapters 1-3")
   goalDeadline    DateTime? // Deadline for the reading goal
   members         ClubMember[] // Members of the club
   discussions     DiscussionPost[]
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 }
 
@@ -75,6 +81,7 @@ enum Role {
 }
 
 model DiscussionPost {
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
 	id		Int @id @default(autoincrement())
 	datePosted	DateTime @default(now())
@@ -173,6 +180,34 @@ model DiscussionPostContent {
 }
 
 model DiscussionPostMedia {
+=======
+  id         Int                   @id @default(autoincrement())
+  datePosted DateTime              @default(now())
+  dateEdited DateTime?
+  hasMedia   Boolean               @default(false)
+  clubId     Int
+  userId     Int
+  contentId  Int                   @unique
+  title      String
+  chapterIndex Int?
+  tags       Json?
+  pinned     Boolean               @default(false)
+  locked     Boolean               @default(false)
+  club       Club                  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content    DiscussionPostContent @relation(name: "DiscussionToContent", fields: [contentId], references: [id], onDelete: Cascade)
+  media      DiscussionPostMedia[]
+  replies    DiscussionReply[]
+}
+
+model DiscussionPostContent {
+  id         Int             @id @default(autoincrement())
+  message    String
+  discussion DiscussionPost? @relation(name: "DiscussionToContent")
+}
+
+model DiscussionPostMedia {
+>>>>>>> Stashed changes
   id           Int            @id @default(autoincrement())
   file         String
   fileType     String
@@ -193,4 +228,7 @@ model DiscussionReply {
   parent       DiscussionReply? @relation("ReplyToParent", fields: [parentId], references: [id])
   children     DiscussionReply[] @relation("ReplyToParent")
 }
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes

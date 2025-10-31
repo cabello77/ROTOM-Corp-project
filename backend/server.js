@@ -823,6 +823,7 @@ const serializeDiscussion = (row) => {
 };
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
                 const club = await prisma.club.findUnique({
                     where: {id: Number(bookClubID) },
                     });
@@ -906,12 +907,199 @@ app.get('/api/clubs/:id/discussions', async (req, res) => {
                 },
           });
 =======
+=======
+const serializeReply = (r) => ({
+  id: String(r.id),
+  threadId: String(r.discussionId),
+  parentId: r.parentId ? String(r.parentId) : null,
+  body: r.body,
+  author: r.user ? { id: r.user.id, name: r.user.name } : null,
+  createdAt: r.createdAt,
+  updatedAt: r.updatedAt || r.createdAt,
+});
+
+// List discussions for a club
+app.get('/api/clubs/:id/discussions', async (req, res) => {
+  try {
+    const clubId = Number(req.params.id);
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const size = Math.min(50, Math.max(1, parseInt(req.query.size || '10', 10)));
+
+    const [total, items] = await Promise.all([
+      prisma.discussionPost.count({ where: { clubId } }),
+      prisma.discussionPost.findMany({
+        where: { clubId },
+        include: { user: true, content: true },
+        orderBy: [ { pinned: 'desc' }, { datePosted: 'desc' } ],
+        skip: (page - 1) * size,
+        take: size,
+      })
+    ]);
+
+>>>>>>> Stashed changes
     const mapped = items.map(serializeDiscussion);
     res.json({ items: mapped, total, page, size, hasMore: (page - 1) * size + mapped.length < total });
   } catch (error) {
     console.error('Error listing discussions:', error);
     res.status(500).json({ error: 'Failed to list discussions' });
   }
+<<<<<<< Updated upstream
+=======
+});
+
+// Get a single discussion with replies
+app.get('/api/discussion/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const thread = await prisma.discussionPost.findUnique({
+      where: { id },
+      include: { user: true, content: true },
+    });
+    if (!thread) return res.status(404).json({ error: 'Discussion not found' });
+
+    const replies = await prisma.discussionReply.findMany({
+      where: { discussionId: id },
+      include: { user: true },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+
+    res.json({ thread: serializeDiscussion(thread), replies: replies.map(serializeReply) });
+  } catch (error) {
+    console.error('Error fetching discussion:', error);
+    res.status(500).json({ error: 'Failed to fetch discussion' });
+  }
+});
+
+// Create new discussion post
+app.post('/api/discussion', async (req, res) => {
+  try {
+    const bodyClubId = req.body.clubId ?? req.body.bookClubID;
+    const bodyUserId = req.body.userId ?? req.body.userID;
+    const { message, media = [], title, chapterIndex = null, tags = [] } = req.body;
+
+    const clubId = Number(bodyClubId);
+    const userId = Number(bodyUserId);
+
+    if (!clubId || !userId || !message || !title) {
+      return res.status(400).json({ error: 'clubId, userId, title and message are required.' });
+    }
+
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
+    if (!club) {
+      return res.status(404).json({ error: 'Club not found.' });
+    }
+
+    const membership = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId } },
+      select: { role: true },
+    });
+
+    if (!membership || ![Role.HOST, Role.MODERATOR].includes(membership.role)) {
+      return res.status(403).json({ error: 'You are not authorized to create a discussion.' });
+    }
+
+    const newDiscussion = await prisma.discussionPost.create({
+      data: {
+        clubId,
+        userId,
+        hasMedia: Array.isArray(media) && media.length > 0,
+        title: String(title).slice(0, 120),
+        chapterIndex: chapterIndex != null ? Math.max(1, Number(chapterIndex) || 1) : null,
+        tags: Array.isArray(tags) ? tags.slice(0, 5) : [],
+        content: {
+          create: {
+            message: String(message).slice(0, 10000),
+          },
+        },
+        media: Array.isArray(media) && media.length > 0
+          ? {
+              create: media.map((file) => ({
+                file: file?.path || file?.url || String(file),
+                fileType: file?.type || 'unknown',
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        content: true,
+        media: true,
+      },
+    });
+
+    res.status(201).json({
+      message: 'Discussion post created.',
+      discussion: serializeDiscussion(newDiscussion),
+    });
+  } catch (error) {
+    console.error('Error creating discussion post:', error);
+    res.status(500).json({ error: 'Failed to create discussion' });
+  }
+});
+
+// Create a reply
+app.post('/api/discussion/:id/replies', async (req, res) => {
+  try {
+    const discussionId = Number(req.params.id);
+    const { userId, parentId = null, body } = req.body;
+    if (!discussionId || !userId || !body) {
+      return res.status(400).json({ error: 'discussionId (in URL), userId and body are required' });
+    }
+
+    const discussion = await prisma.discussionPost.findUnique({ where: { id: discussionId }, select: { id: true, locked: true } });
+    if (!discussion) return res.status(404).json({ error: 'Discussion not found' });
+    if (discussion.locked) return res.status(403).json({ error: 'Discussion is locked' });
+
+    const reply = await prisma.discussionReply.create({
+      data: {
+        discussionId,
+        parentId: parentId ? Number(parentId) : null,
+        userId: Number(userId),
+        body: String(body).slice(0, 10000),
+      },
+      include: { user: true },
+    });
+
+    res.status(201).json(serializeReply(reply));
+  } catch (error) {
+    console.error('Error creating reply:', error);
+    res.status(500).json({ error: 'Failed to create reply' });
+  }
+});
+
+// Edit a reply (author only)
+app.patch('/api/replies/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { userId, body } = req.body;
+    if (!id || !userId || !body) return res.status(400).json({ error: 'id, userId and body required' });
+    const existing = await prisma.discussionReply.findUnique({ where: { id }, select: { userId: true } });
+    if (!existing) return res.status(404).json({ error: 'Reply not found' });
+    if (existing.userId !== Number(userId)) return res.status(403).json({ error: 'Not authorized' });
+    const updated = await prisma.discussionReply.update({ where: { id }, data: { body: String(body).slice(0, 10000), updatedAt: new Date() }, include: { user: true } });
+    res.json(serializeReply(updated));
+  } catch (error) {
+    console.error('Error editing reply:', error);
+    res.status(500).json({ error: 'Failed to edit reply' });
+  }
+});
+
+// Delete a reply (author only)
+app.delete('/api/replies/:id', async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { userId } = req.body;
+    if (!id || !userId) return res.status(400).json({ error: 'id and userId required' });
+    const existing = await prisma.discussionReply.findUnique({ where: { id }, select: { userId: true } });
+    if (!existing) return res.status(404).json({ error: 'Reply not found' });
+    if (existing.userId !== Number(userId)) return res.status(403).json({ error: 'Not authorized' });
+    await prisma.discussionReply.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting reply:', error);
+    res.status(500).json({ error: 'Failed to delete reply' });
+  }
+>>>>>>> Stashed changes
 });
 >>>>>>> Stashed changes
 

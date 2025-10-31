@@ -62,8 +62,14 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
   }, [scrollSentinel.current, hasMore, page, clubId]);
 
   const handleCreate = async (data) => {
-    await createThread(data);
-    await load(1);
+    try {
+      await createThread(data);
+      await load(1);
+    } catch (err) {
+      const msg = err?.message || 'Failed to create discussion';
+      if (typeof window !== 'undefined') alert(msg);
+      throw err;
+    }
   };
 
   return (

@@ -61,7 +61,14 @@ export async function createThread({ clubId, title, body, author, chapterIndex =
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error('Failed to create thread');
+  if (!res.ok) {
+    let msg = 'Failed to create thread';
+    try {
+      const data = await res.json();
+      if (data && data.error) msg = data.error;
+    } catch {}
+    throw new Error(msg);
+  }
   const data = await res.json();
   return data.discussion;
 }

@@ -909,10 +909,23 @@ app.post('/api/discussion', async (req, res) => {
       return res.status(404).json({ error: 'Club not found.' });
     }
 
-    const membership = await prisma.clubMember.findUnique({
+    let membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId } },
-      select: { role: true },
+      select: { id: true, role: true },
     });
+
+    // If not a member yet, auto-join as MEMBER so they can post
+    if (!membership) {
+      try {
+        const created = await prisma.clubMember.create({
+          data: { clubId, userId, progress: 0, role: Role.MEMBER },
+          select: { id: true, role: true },
+        });
+        membership = created;
+      } catch (_) {
+        // If creation fails for any reason, keep membership as null and block
+      }
+    }
 
     if (!membership || ![Role.HOST, Role.MODERATOR, Role.MEMBER].includes(membership.role)) {
       return res.status(403).json({ error: 'You must be a club member to create a discussion.' });

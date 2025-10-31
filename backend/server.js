@@ -390,6 +390,7 @@ app.post("/api/clubs", async (req, res) => {
         clubId: newClub.id,
         userId: Number(creatorId),
         progress: 0,
+        role: HOST,
       }
     });
 
@@ -638,6 +639,7 @@ app.post("/api/clubs/:id/join", async (req, res) => {
         clubId: Number(id),
         userId: Number(userId),
         progress: 0,
+        role: MEMBER,
       },
       include: {
         user: {
@@ -795,6 +797,71 @@ app.get("/api/users/:id/clubs-joined", async (req, res) => {
     console.error("❌ Error fetching user club memberships:", error);
     res.status(500).json({ error: "Server error while fetching memberships." });
   }
+});
+
+//create new discussion post
+app.post("/api/discussion", async(req, res) => {
+        try {
+                const {bookClubID, userID, message, media = [] } = req.body;
+                if(!bookClubID || !userID || !message) {
+                    return res.status(400).json({error: "bookClubID, userID, and message required."});
+                }
+
+                const club = await prisma.club.findUnique({
+                    where: {id: Number(bookCLubID) },
+                    });
+                if (!club) {
+                    return res.status(404).json({error: "Club not found."});
+                }
+
+                const membership = await prisma.ClubMember.findUnique({
+                    where: {
+                              userIDBookClubID: {
+                                        userID: Number(userID),
+                                        clubID: Number(bookClubID),
+                              },
+                    },
+                    select: {role: true},
+                    });
+
+                if(!["HOST", "MODERATOR"].includes(membership.role)) {
+                    return res.status(403).json({error: "You are not authorized to create a discussion."});
+                }
+
+                const newDiscussion = await prisma.discussionPost.create({
+                    data: {
+                              bookClubID: Number(bookClubID),
+                              userID: Number(userID),
+                              hasMedia: media.length > 0,
+                              content: {
+                                        create: {
+                                        message,
+                                        bookClubID: Number(bookClubID),
+                                        },
+                              },
+                    media: {
+                              create: media.map(file => ({
+                                        file: file.path || file.url,
+                                        fileType: file.type,
+                                        bookClubID: Number(bookClubID),
+                                        })),
+                              },
+                    },
+                    include: {
+                    user: {select: {id: true, name: true, email: true}},
+                    content: true,
+                    media: true,
+                },
+          });
+
+          res.status(201).json ({
+                    message: "Discussion post created.",
+                    discussion: newDiscussion,
+          });
+
+          } catch (error) {
+                    console.error("Error creating discussion post:", error);
+          }
 });
 
 // SPA fallback for React Router (serve index.html for non-API routes)

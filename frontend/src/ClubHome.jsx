@@ -1,9 +1,24 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import ThreadList from "./components/threads/ThreadList";
 import axios from "axios";
+import useClub from "./hooks/useClub";
+import useClubMembers from "./hooks/useClubMembers";
 import { useUser } from "./contexts/UserContext";
 import UserDropdown from "./components/UserDropdown";
 import ProfileEdit from "./ProfileEdit";
+import LiveChat from "./components/club/LiveChat";
+import DiscussionsPanel from "./components/club/DiscussionsPanel";
+import MembersRoles from "./components/club/MembersRoles";
+import PastReads from "./components/club/PastReads";
+import MyProgressCard from "./components/club/MyProgressCard";
+import JoinClubCard from "./components/club/JoinClubCard";
+import MemberProgress from "./components/club/MemberProgress";
+import UpdateProgressModal from "./components/club/UpdateProgressModal";
+import ReadingGoalModal from "./components/club/ReadingGoalModal";
+import ActionsCard from "./components/club/ActionsCard";
+import AssignBookModal from "./components/club/AssignBookModal";
+import CurrentBookCard from "./components/club/CurrentBookCard";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
@@ -532,105 +547,62 @@ export default function ClubHome() {
                 </div>
                 <div className="space-y-3">
                   {currentBook ? (
-                    <div className="border border-[#e6dac8] bg-[#faf6ed] rounded p-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                      {currentBook.cover && (
-                        <img src={currentBook.cover} alt={currentBook.title} className="w-full mb-3 rounded" />
-                      )}
-                      <h3 className="font-semibold text-gray-800 mb-2">{currentBook.title}</h3>
-                      <p className="text-sm text-gray-600 mb-1">by {currentBook.authors}</p>
-                      {currentBook.year && (
-                        <p className="text-xs text-gray-500">Published: {currentBook.year}</p>
-                      )}
-                      {currentBook.genre && (
-                        <p className="text-xs text-gray-500">Genre: {currentBook.genre}</p>
-                      )}
-                      {user && user.id === club.creatorId && club.readingGoal && (
-                        <button
-                          onClick={() => {
-                            setEditReadingGoal(club.readingGoal || "");
-                            setEditGoalDeadline(goalDeadline);
-                            setIsGoalModalOpen(true);
-                          }}
-                          className="mt-3 w-full px-4 py-2 text-sm rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          Update Goal
-                        </button>
-                      )}
-                    </div>
+                    <CurrentBookCard
+                      currentBook={currentBook}
+                      isHost={user && user.id === club.creatorId}
+                      club={club}
+                      goalDeadline={goalDeadline}
+                      onUpdateGoal={() => {
+                        setEditReadingGoal(club.readingGoal || "");
+                        setEditGoalDeadline(goalDeadline);
+                        setIsGoalModalOpen(true);
+                      }}
+                      onRemoveBook={async () => {
+                        try {
+                          const res = await fetch(`${API_BASE}/api/clubs/${club.id}/book`, {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: user.id }),
+                          });
+                          const data = await res.json();
+                          if (res.ok) {
+                            setCurrentBook(null);
+                          } else {
+                            alert(data.error || "Failed to remove book.");
+                          }
+                        } catch (err) {
+                          console.error(err);
+                          alert("Error removing book.");
+                        }
+                      }}
+                    />
                   ) : (
                     <div className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded" style={{ fontFamily: "Times New Roman, serif" }}>
                       <p className="text-sm text-gray-600">
-                        {user && user.id === club.creatorId 
-                          ? "Click + to assign a book" 
-                          : "No book assigned yet"}
+                        {user && user.id === club.creatorId ? "Click + to assign a book" : "No book assigned yet"}
                       </p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Discussions */}
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Discussions
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Join active discussions.
-                  </p>
-                </div>
-                {(isMember || (user && user.id === club.creatorId)) && (
-                  <button
-                    type="button"
-                    className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-                    style={{ fontFamily: "Times New Roman, serif" }}
-                    onClick={() => alert("New discussion functionality coming soon!")}
-                  >
-                    New Discussion
-                  </button>
-                )}
-                <div className="text-center py-2 border border-[#e6dac8] bg-[#efe6d7] rounded" style={{ fontFamily: "Times New Roman, serif" }}>
-                  <p className="text-sm text-gray-600">
-                    Discussion placeholder
-                  </p>
-                </div>
-                <div className="text-center py-2 border border-[#e6dac8] bg-[#efe6d7] rounded" style={{ fontFamily: "Times New Roman, serif" }}>
-                  <p className="text-sm text-gray-600">
-                    Discussion placeholder
-                  </p>
-                </div>
-              </div>
+              {/* Discussions moved to center column below Live Chat */}
 
-              {/* Past Reads */}
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-                <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                  Past Reads
-                </h2>
-                <div className="space-y-2">
-                  <div className="px-4 py-2 rounded border border-[#ddcdb7] bg-[#faf6ed] text-sm text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Past read placeholder
-                  </div>
-                  <div className="px-4 py-2 rounded border border-[#ddcdb7] bg-[#faf6ed] text-sm text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Past read placeholder
-                  </div>
-                </div>
-              </div>
+              <PastReads />
+
+              <MembersRoles members={members} />
             </aside>
 
             {/* CENTER COLUMN */}
             <section className="lg:col-span-6 space-y-4">
-              {/* Live Chat Section */}
-              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                  Live Chat
-                </h3>
-                <div className="h-96 border border-[#ddcdb7] rounded-lg flex items-center justify-center bg-[#faf6ed]">
-                  <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Live chat placeholder - members can chat here
-                  </p>
-                </div>
-              </div>
+              <LiveChat />
+
+              <DiscussionsPanel
+                clubId={club?.id}
+                user={user}
+                isMember={isMember}
+                isHost={user && club && user.id === club.creatorId}
+              />
             </section>
 
             {/* RIGHT SIDEBAR */}
@@ -639,50 +611,15 @@ export default function ClubHome() {
               {user && (
                 <>
                   {(isMember || user.id === club.creatorId) && club.readingGoal && club.goalDeadline && getDaysRemaining(club.goalDeadline) && !getDaysRemaining(club.goalDeadline).includes("Overdue") ? (
-                    /* Show progress if member or host */
-                    <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-                      <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                        My Progress
-                      </h3>
-                      {currentBook && (
-                        <>
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs text-gray-600 mb-1">
-                              <span style={{ fontFamily: "Times New Roman, serif" }}>{club.readingGoal}</span>
-                              <span style={{ fontFamily: "Times New Roman, serif" }}>{userProgress}%</span>
-                            </div>
-                            <div className="w-full bg-gray-200 rounded-full h-3">
-                              <div className="bg-[#774C30] h-3 rounded-full transition-all" style={{ width: `${userProgress}%` }}></div>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => setIsProgressModalOpen(true)}
-                            className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
-                            Update Progress
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    <MyProgressCard
+                      club={club}
+                      currentBook={currentBook}
+                      userProgress={userProgress}
+                      onOpenProgress={() => setIsProgressModalOpen(true)}
+                    />
                   ) : user.id !== club.creatorId && !isMember ? (
                     /* Show join button if not a member and not the host */
-                    <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-                      <h3 className="text-base font-semibold text-gray-800 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
-                        Join This Book Club
-                      </h3>
-              <p className="text-sm text-gray-600 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                        Join to track your reading progress and see other members' progress.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleJoinClub}
-                        className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                        style={{ fontFamily: "Times New Roman, serif" }}
-                      >
-                        Join Book Club
-                      </button>
-                    </div>
+                    <JoinClubCard onJoin={handleJoinClub} />
                   ) : null}
                 </>
               )}
@@ -999,112 +936,57 @@ export default function ClubHome() {
         </div>
       )}
 
+      {/* Assign Book Modal */}
+      <AssignBookModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSearchQuery("");
+          setSearchResults([]);
+          setSelectedBook(null);
+          setBookDetails({ title: "", authors: "", cover: "", description: "", year: "", genre: "" });
+          setReadingGoal("");
+          setGoalDeadline("");
+        }}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        handleSearch={handleSearch}
+        searchResults={searchResults}
+        selectedBook={selectedBook}
+        handleSelectBook={handleSelectBook}
+        bookDetails={bookDetails}
+        setBookDetails={setBookDetails}
+        readingGoal={readingGoal}
+        setReadingGoal={setReadingGoal}
+        goalDeadline={goalDeadline}
+        setGoalDeadline={setGoalDeadline}
+        handleAssignBook={handleAssignBook}
+      />
+
       {/* Progress Update Modal */}
-      {isProgressModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full" style={{ backgroundColor: "#FDFBF6" }}>
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                Update Progress
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Progress (0-100%)
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={userProgress}
-                    onChange={(e) => setUserProgress(parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                  <div className="text-center text-sm text-gray-600 mt-2" style={{ fontFamily: "Times New Roman, serif" }}>
-                    {userProgress}%
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setIsProgressModalOpen(false)}
-                  className="px-6 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-gray-50 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleUpdateProgress(userProgress)}
-                  className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Update
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpdateProgressModal
+        open={isProgressModalOpen}
+        onClose={() => setIsProgressModalOpen(false)}
+        userProgress={userProgress}
+        onUpdate={(value, opts) => {
+          if (opts?.preview) {
+            setUserProgress(value);
+          } else {
+            handleUpdateProgress(value);
+          }
+        }}
+      />
 
       {/* Update Goal Modal */}
-      {isGoalModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full" style={{ backgroundColor: "#FDFBF6" }}>
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                Update Reading Goal
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Goal (e.g., "Read chapters 1-3")
-                  </label>
-                  <input
-                    type="text"
-                    value={editReadingGoal}
-                    onChange={(e) => setEditReadingGoal(e.target.value)}
-                    placeholder="Enter reading goal"
-                    className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                    Deadline
-                  </label>
-                  <input
-                    type="date"
-                    value={editGoalDeadline}
-                    onChange={(e) => setEditGoalDeadline(e.target.value)}
-                    className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => {
-                    setIsGoalModalOpen(false);
-                    setEditReadingGoal("");
-                    setEditGoalDeadline("");
-                  }}
-                  className="px-6 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-gray-50 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleUpdateGoal}
-                  className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  Update
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ReadingGoalModal
+        open={isGoalModalOpen}
+        onClose={() => setIsGoalModalOpen(false)}
+        editReadingGoal={editReadingGoal}
+        editGoalDeadline={editGoalDeadline}
+        setEditReadingGoal={setEditReadingGoal}
+        setEditGoalDeadline={setEditGoalDeadline}
+        onUpdate={handleUpdateGoal}
+      />
 
       <ProfileEdit
         isOpen={isEditModalOpen}

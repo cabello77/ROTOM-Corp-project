@@ -87,7 +87,7 @@ model DiscussionPost {
 model DiscussionPostContent {
   id         Int             @id @default(autoincrement())
   message    String
-  discussionId Int
+  discussionId Int @unique
   discussion DiscussionPost @relation(fields: [discussionId], references: [id])
 }
 
@@ -95,7 +95,7 @@ model DiscussionPostMedia {
   id           Int            @id @default(autoincrement())
   file         String
   fileType     String
-  discussionId Int
+  discussionId Int @unique
   discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 }
 

@@ -72,7 +72,6 @@ model DiscussionPost {
   hasMedia     Boolean               @default(false)
   clubId       Int
   userId       Int
-  contentId    Int                   @unique
   title        String
   chapterIndex Int?
   tags         Json?
@@ -80,7 +79,7 @@ model DiscussionPost {
   locked       Boolean               @default(false)
   club         Club                  @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content      DiscussionPostContent @relation(name: "DiscussionToContent", fields: [contentId], references: [id], onDelete: Cascade)
+  content      DiscussionPostContent?
   media        DiscussionPostMedia[]
   replies      DiscussionReply[]
 }
@@ -88,7 +87,8 @@ model DiscussionPost {
 model DiscussionPostContent {
   id         Int             @id @default(autoincrement())
   message    String
-  discussion DiscussionPost? @relation(name: "DiscussionToContent")
+  discussionId Int
+  discussion DiscussionPost @relation(fields: [discussionId], references: [id])
 }
 
 model DiscussionPostMedia {

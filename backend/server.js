@@ -486,7 +486,7 @@ app.get("/api/clubs", async (req, res) => {
       orderBy: { name: "asc" }, 
     });
 
-    console.log("📚 All clubs found:", clubs);
+    console.log("All clubs found:", clubs);
     res.json(Array.isArray(clubs) ? clubs : []);
   } catch (error) {
     console.error("❌ Error fetching clubs:", error);
@@ -952,8 +952,9 @@ app.post('/api/discussion', async (req, res) => {
 
     const newDiscussion = await prisma.discussionPost.create({
       data: {
-        clubId,
-        userId,
+        // Explicitly connect required relations to satisfy Prisma's checked create input
+        club: { connect: { id: clubId } },
+        user: { connect: { id: userId } },
         hasMedia: Array.isArray(media) && media.length > 0,
         title: String(title).slice(0, 120),
         chapterIndex: chapterIndex != null ? Math.max(1, Number(chapterIndex) || 1) : null,

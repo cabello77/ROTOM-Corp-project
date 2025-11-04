@@ -66,37 +66,40 @@ enum Role {
 }
 
 model DiscussionPost {
-  id           Int                   @id @default(autoincrement())
-  datePosted   DateTime              @default(now())
-  dateEdited   DateTime?
-  hasMedia     Boolean               @default(false)
-  clubId       Int
-  userId       Int
-  title        String
-  chapterIndex Int?
-  tags         Json?
-  pinned       Boolean               @default(false)
-  locked       Boolean               @default(false)
-  club         Club                  @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  content      DiscussionPostContent?
-  media        DiscussionPostMedia[]
-  replies      DiscussionReply[]
+id Int @id @default(autoincrement())
+datePosted DateTime @default(now())
+dateEdited DateTime?
+hasMedia Boolean @default(false)
+clubId Int
+userId Int
+title String
+chapterIndex Int?
+tags Json?
+pinned Boolean @default(false)
+locked Boolean @default(false)
+contentId Int @unique
+
+club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+content DiscussionPostContent @relation("Post_Content", fields: [contentId], references: [id], onDelete: Cascade)
+media DiscussionPostMedia[]
+replies DiscussionReply[]
 }
 
 model DiscussionPostContent {
-  id         Int             @id @default(autoincrement())
-  message    String
-  discussionId Int @unique
-  discussion DiscussionPost @relation(fields: [discussionId], references: [id])
+id Int @id @default(autoincrement())
+message String
+
+post DiscussionPost? @relation("Post_Content")
 }
 
 model DiscussionPostMedia {
-  id           Int            @id @default(autoincrement())
-  file         String
-  fileType     String
-  discussionId Int @unique
-  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+id Int @id @default(autoincrement())
+file String
+fileType String
+discussionId Int
+discussion DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 }
 
 model DiscussionReply {

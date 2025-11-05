@@ -1142,6 +1142,166 @@ app.delete('/api/replies/:id', async (req, res) => {
   }
 });
 
+//create friendship/send friend request (user sends request to friend)
+app.post('api/friends', async(req, res) => {
+          try {
+                    const {userId, friendId} = req.body;
+                    if (!userId || !friendId) {
+                              return res.status(400).json({error: 'userId and friendId are required'});
+                    }
+
+                    if (userId == friendId) {
+                              return res.status(400).json({error: "You cannot send a friend request to yourself."});
+                    }
+
+                    const existingRequest = await prisma.friend.findFirst ({
+                              where: {
+                                        OR: [
+                                                  {userId, friendId},
+                                                  {userId: friendId, friendId, userId},
+                                        ],
+                              },
+                    });
+
+                    if(existingRequest) {
+                              return res.status(400).json({error: "Friend request or friendship already exists."});
+                    }
+
+                    const friendship = await prisma.friend.create ({
+                              data: {
+                                        userId: Number(userId),
+                                        friendId: Number(friendId),
+                                        status: "PENDING",
+                    },
+                    });
+                    res.json({message: "Friend request sent.", friendship});
+          } catch (error) {
+                    console.error('Error sending friend request:', error);
+                    res.status(500).json({error: 'Failed to send friend request'});
+          }
+});
+
+//accept or decline friend request
+app.post("/api/friends/respond", async (req, res) => {
+          try {
+                    const {userId, friendId, friendStatus} = req.body;
+
+                    if (!userId || !friendId || !friendStatus) {
+                              return res.status(400).json({error: "userId, friendId, and friendStatus are required."});
+                    } 
+                    
+                    const request = await prisma.friend.findFirst({
+                              where: {
+                                        userId: friendId,
+                                        friendId: userId,
+                                        status: "PENDING",
+                              }
+                    });
+
+                    if (!request) {
+                              return res.status(404).json({error: "No pending friend request."});
+                    }
+
+                    const updatedStatus = await prisma.friend.update ({
+                              where: {id: request.id},
+                              data: {status: friendStatus},
+                    });
+
+                    if (friendStatus == "ACCEPTED") {
+                              const reverseExists = await prisma.friend.findFirst({
+                                        where: {
+                                                  userId: userId,
+                                                  friendId: friendId,
+                                        },
+                              });
+
+                              if(!reverseExists) {
+                                        await prisma.friend.create({
+                                                  data: {
+                                                            userId: userId,
+                                                            friendId: friendId,
+                                                            status: "ACCEPTED",
+                                                  },
+                                        });
+                              }
+
+                              res.json("Friend request accepted.");
+                    }
+
+                    if (friendStatus == "DECLINED")
+                    {
+                              res.json("Friend request declined.");
+                    }
+
+          } catch (error) {
+                    console.error("Error responding to friend request: ", error);
+                    res.status(500).json({error: "Server error while responding to friend request."});
+          }
+});
+
+//getting friends of user
+app.get("/api/friends/:userId", async(req, res) => {
+          const userId = Number(req.params.userId);
+          try {
+                    const friends = await prisma.friend.findMany ({
+                              where: { userId, status: "ACCEPTED"},
+                              include: {
+                                        friend: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile : {
+                                                                      select: {
+                                                                                username: true,
+                                                                                profilePicture: true,
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              },
+                    });
+                    
+                    res.json({friends});
+
+          } catch (error) {
+                    console.error("Error getting friends: ", error);
+                    res.status(500).json({error: "Failed to get friends."});
+          }
+});
+
+//delete friendship when user wants to remove friend
+app.delete('/api/friends/:id', async (req, res) => {
+          try {
+                    const userId = Number(req.params.userId);
+                    const friendId = Number(req.params.friendId);
+                    const friendship = await prisma.friend.findFirst({
+                              where: {
+                                        status: "ACCEPTED",
+                                        OR: [{userId: userId, friendId: friendId},
+                                        {userId: friendId, friendId: userId},
+                                        ]
+                              },
+                    });
+
+                    if (!friendship) {
+                              return res.status(400).json({error: "No existing friendship between the users."});
+                    }
+                    await prisma.friend.deleteMany({
+                              where: {
+                                        OR: [
+                                                  {userId: userId, friendId: friendId},
+                                                  {userId: friendId, friendId, userId},
+                                        ],
+                              },
+                    });
+
+                    res.json({message: "Friend deleted."});
+          } catch (error) {
+                    console.error("Error removing friendship: ", error);
+                    res.status(500).json({error: "Failed to remove friend."});
+          }
+});
+
 // SPA fallback for React Router (serve index.html for non-API routes)
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {

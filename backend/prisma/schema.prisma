@@ -20,6 +20,22 @@ model User {
   discussionReplies  DiscussionReply[]
 }
 
+model Friend {
+        id	          Int @id @default(cuid())
+	userID	          Int 
+	user	          User @relation(fields: [userID], references: [id])
+	friendID	  Int 
+	friend		  User @relation(fields: [friendID], references: [id])
+	status	          FriendStatus //PENDING, ACCEPTED, or REJECTED
+	@@unique([userID, friendID])
+}
+
+enum FriendStatus {
+        PENDING
+	ACCEPTED
+	REJECTED
+}
+
 model Profile {
   id             Int      @id @default(autoincrement())
   username       String   @unique

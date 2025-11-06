@@ -6,6 +6,10 @@ import UserHome from "./UserHome";
 import ClubCreate from "./ClubCreate";
 import ClubHome from "./ClubHome";
 import ClubDiscover from "./ClubDiscover";
+import Friends from "./Friends";
+import AddFriend from "./AddFriend";
+import Notifications from "./Notifications";
+import FriendProfile from "./FriendProfile";
 
 
 export default function AppRoutes() {
@@ -18,6 +22,10 @@ export default function AppRoutes() {
       <Route path="/clubs/new" element={<ClubCreate />} />
       <Route path="/clubs/:id" element={<ClubHome />} />
       <Route path="/clubs" element={<ClubDiscover />} />
+      <Route path="/friends" element={<Friends />} />
+      <Route path="/friends/:friendId" element={<FriendProfile />} />
+      <Route path="/add-friend" element={<AddFriend />} />
+      <Route path="/notifications" element={<Notifications />} />
     </Routes>
   );
 }

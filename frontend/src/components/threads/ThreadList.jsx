@@ -22,11 +22,21 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
   const scrollSentinel = useRef(null);
 
   const load = async (nextPage) => {
+    if (loading) return; // Prevent concurrent loads
     setLoading(true);
-    const res = await fetchThreads(clubId, { page: nextPage, size: pageSize, sort: 'activity' });
-    setItems((prev) => (nextPage === 1 ? res.items : [...prev, ...res.items]));
-    setHasMore(res.hasMore);
-    setLoading(false);
+    try {
+      const res = await fetchThreads(clubId, { page: nextPage, size: pageSize, sort: 'activity' });
+      setItems((prev) => (nextPage === 1 ? res.items : [...prev, ...res.items]));
+      setHasMore(res.hasMore);
+    } catch (err) {
+      console.error('Error loading threads:', err);
+      setHasMore(false); // Stop infinite scroll on error
+      if (nextPage === 1) {
+        console.error('Failed to load discussions:', err.message || err);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -67,7 +77,7 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
       await load(1);
     } catch (err) {
       const msg = err?.message || 'Failed to create discussion';
-      if (typeof window !== 'undefined') alert(msg);
+      console.error("Failed to create discussion:", msg);
       throw err;
     }
   };

@@ -9,6 +9,7 @@ import ClubRightSidebar from "./components/club/ClubRightSidebar";
 import ClubHeader from "./components/club/ClubHeader";
 import ClubTitleBar from "./components/club/ClubTitleBar";
 import ClubModals from "./components/club/ClubModals";
+import InviteFriendsModal from "./components/club/InviteFriendsModal";
 import { searchBooks } from "./services/books";
 import { deleteClub, joinClub, leaveClub, updateMemberProgress, updateClubGoal, assignBookToClub } from "./services/clubActions";
 import useClubData from "./hooks/useClubData";
@@ -33,17 +34,18 @@ export default function ClubHome() {
   const [editGoalDeadline, setEditGoalDeadline] = useState("");
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [returnPath, setReturnPath] = useState(null);
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
 // Handle delete club (only creator can do this)
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this club? This cannot be undone.")) return;
     try {
       await deleteClub(API_BASE, club.id, user.id);
-      alert("Club deleted successfully.");
+      console.log("Club deleted successfully.");
       navigate("/user-home");
     } catch (err) {
-      console.error(err);
-      alert(err.message || "Error deleting club.");
+      console.error("Error deleting club:", err);
+      console.error(err.message || "Error deleting club.");
     }
   };
 
@@ -107,7 +109,7 @@ export default function ClubHome() {
         const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
         setMembers(membersRes.data);
         
-        alert("Successfully joined the book club!");
+        console.log("Successfully joined the book club!");
       } else if (status === 400) {
         // User is already a member
         setIsMember(true);
@@ -123,11 +125,11 @@ export default function ClubHome() {
         }
       } else {
         // Other errors
-        alert(data.error || "Failed to join club.");
+        console.error("Failed to join club:", data.error || "Unknown error");
       }
     } catch (err) {
       console.error("Error joining club:", err);
-      alert("Error joining club. Please try again.");
+      console.error("Error joining club. Please try again.");
     }
   };
 
@@ -140,11 +142,11 @@ export default function ClubHome() {
       setCurrentUserMemberData(null);
       setUserProgress(0);
       setMembers(members.filter(m => m.userId !== user.id));
-      alert("You have left the book club.");
+      console.log("You have left the book club.");
       navigate("/user-home");
     } catch (err) {
       console.error("Error leaving club:", err);
-      alert("Error leaving club. Please try again.");
+      console.error("Error leaving club. Please try again.");
     }
   };
 
@@ -157,10 +159,10 @@ export default function ClubHome() {
       const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
       setMembers(membersRes.data);
       setIsProgressModalOpen(false);
-      alert("Progress updated!");
+      console.log("Progress updated!");
     } catch (err) {
       console.error("Error updating progress:", err);
-      alert("Error updating progress. Please try again.");
+      console.error("Error updating progress. Please try again.");
     }
   };
 
@@ -180,7 +182,7 @@ export default function ClubHome() {
       setClub(clubRes.data);
     } catch (err) {
       console.error("Error updating goal:", err);
-      alert("Error updating goal. Please try again.");
+      console.error("Error updating goal. Please try again.");
     }
   };
 
@@ -192,7 +194,7 @@ export default function ClubHome() {
       setSearchResults(books);
     } catch (err) {
       console.error("Error searching books:", err);
-      alert("Error searching for books. Please try again.");
+      console.error("Error searching for books. Please try again.");
     }
   };
 
@@ -224,7 +226,7 @@ export default function ClubHome() {
       setGoalDeadline("");
     } catch (err) {
       console.error("Error assigning book:", err);
-      alert("Error assigning book. Please try again.");
+      console.error("Error assigning book. Please try again.");
     }
   };
 
@@ -275,11 +277,10 @@ export default function ClubHome() {
                   if (res.ok) {
                     setCurrentBook(null);
                   } else {
-                    alert(data.error || "Failed to remove book.");
+                    console.error("Failed to remove book:", data.error || "Unknown error");
                   }
                 } catch (err) {
-                  console.error(err);
-                  alert("Error removing book.");
+                  console.error("Error removing book:", err);
                 }
               }}
             />
@@ -307,12 +308,23 @@ export default function ClubHome() {
               onJoinClub={handleJoinClub}
               onDeleteClub={handleDelete}
               onLeaveClub={handleLeaveClub}
+              onInviteMembers={() => setIsInviteModalOpen(true)}
             />
           </div>
         </div>
       </main>
 
       {/* Book Assignment Modal removed; using AssignBookModal below */}
+
+      <InviteFriendsModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+        clubId={id}
+        inviterId={user?.id}
+        onInviteSent={() => {
+          console.log("Invitations sent successfully");
+        }}
+      />
 
       <ClubModals
         isModalOpen={isModalOpen}

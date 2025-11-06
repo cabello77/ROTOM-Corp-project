@@ -1,6 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
+  const navigate = useNavigate();
+  
   return (
     <aside className="lg:col-span-3 space-y-4">
       {/* My Book Clubs */}
@@ -61,28 +63,50 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
         </h2>
         <div className="flex flex-wrap gap-3">
           {friendsList.length ? (
-            friendsList.map((friend) => (
-              <span
-                key={friend}
-                className="px-4 py-2 rounded-full border border-[#ddcdb7] bg-[#faf6ed] text-sm text-gray-700"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                {friend}
-              </span>
-            ))
+            friendsList.map((friend) => {
+              const friendData = friend.friend || friend;
+              const profilePicture = friendData.profile?.profilePicture;
+              const avatarSrc = profilePicture 
+                ? (profilePicture.startsWith("http://") || profilePicture.startsWith("https://") 
+                    ? profilePicture 
+                    : `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"}${profilePicture}`)
+                : null;
+              const name = friendData.name || friendData.profile?.username || 'Unknown';
+              
+              return (
+                <div
+                  key={friendData.id || friend.id || name}
+                  className="relative group cursor-pointer"
+                  title={name}
+                  onClick={() => navigate(`/friends/${friendData.id || friend.id}`)}
+                >
+                  <div className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt={name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
+                        <span className="text-lg text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+                          {name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
           ) : (
             <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
               Add friends to see them here.
             </p>
           )}
         </div>
-        <button
-          type="button"
-          className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+        <Link
+          to="/add-friend"
+          className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
           style={{ fontFamily: "Times New Roman, serif" }}
         >
           Add Friends
-        </button>
+        </Link>
       </div>
     </aside>
   );

@@ -3,7 +3,7 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
-const { PrismaClient, Role } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -115,10 +115,19 @@ app.get("/api/db-test", async (req, res) => {
 // Get all users
 app.get('/api/users', async (req, res) => {
   try {
+    // Set cache headers to prevent stale data
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    
     const users = await prisma.user.findMany({
       include: { profile: true },
     });
-    res.json(users.map(serializeUser));
+    
+    // Filter out any null or invalid users
+    const validUsers = users.filter(user => user && user.id);
+    
+    res.json(validUsers.map(serializeUser));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -418,7 +427,6 @@ app.post("/api/clubs", async (req, res) => {
         clubId: newClub.id,
         userId: Number(creatorId),
         progress: 0,
-        role: Role.HOST,
       }
     });
 
@@ -667,7 +675,6 @@ app.post("/api/clubs/:id/join", async (req, res) => {
         clubId: Number(id),
         userId: Number(userId),
         progress: 0,
-        role: Role.MEMBER,
       },
       include: {
         user: {
@@ -705,6 +712,198 @@ app.delete("/api/clubs/:id/leave", async (req, res) => {
   } catch (error) {
     console.error("❌ Error leaving club:", error);
     res.status(500).json({ error: "Server error while leaving club." });
+  }
+});
+
+// Send club invitation
+app.post("/api/clubs/:id/invite", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { inviterId, inviteeId } = req.body;
+
+    const clubId = Number(id);
+    const inviter = Number(inviterId);
+    const invitee = Number(inviteeId);
+
+    // Validate inputs
+    if (!inviter || !invitee) {
+      return res.status(400).json({ error: "Inviter and invitee IDs are required" });
+    }
+
+    // Check if club exists
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
+    if (!club) {
+      return res.status(404).json({ error: "Club not found" });
+    }
+
+    // Check if inviter is a member of the club
+    const inviterMember = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: inviter } }
+    });
+    if (!inviterMember) {
+      return res.status(403).json({ error: "You must be a member of the club to invite others" });
+    }
+
+    // Check if invitee is already a member
+    const existingMember = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: invitee } }
+    });
+    if (existingMember) {
+      return res.status(400).json({ error: "User is already a member of this club" });
+    }
+
+    // Check if users are friends
+    const friendship = await prisma.friend.findFirst({
+      where: {
+        OR: [
+          { userID: inviter, friendID: invitee, status: "ACCEPTED" },
+          { userID: invitee, friendID: inviter, status: "ACCEPTED" }
+        ]
+      }
+    });
+    if (!friendship) {
+      return res.status(403).json({ error: "You can only invite your friends to join the club" });
+    }
+
+    // Check if there's already a pending invitation
+    const existingInvitation = await prisma.clubInvitation.findUnique({
+      where: { clubId_inviteeId: { clubId, inviteeId: invitee } }
+    });
+    if (existingInvitation && existingInvitation.status === "PENDING") {
+      return res.status(400).json({ error: "An invitation has already been sent to this user" });
+    }
+
+    // Create or update invitation
+    const invitation = await prisma.clubInvitation.upsert({
+      where: { clubId_inviteeId: { clubId, inviteeId: invitee } },
+      update: { status: "PENDING", inviterId: inviter, updatedAt: new Date() },
+      create: {
+        clubId,
+        inviterId: inviter,
+        inviteeId: invitee,
+        status: "PENDING",
+      },
+      include: {
+        club: { select: { id: true, name: true } },
+        inviter: { select: { id: true, name: true, profile: { select: { profilePicture: true } } } },
+        invitee: { select: { id: true, name: true } },
+      },
+    });
+
+    res.json({ message: "Invitation sent successfully", invitation });
+  } catch (error) {
+    console.error("❌ Error sending club invitation:", error);
+    res.status(500).json({ error: "Server error while sending invitation." });
+  }
+});
+
+// Get club invitations received by a user
+app.get("/api/users/:id/club-invitations", async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    
+    const invitations = await prisma.clubInvitation.findMany({
+      where: {
+        inviteeId: userId,
+        status: "PENDING",
+      },
+      include: {
+        club: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            creatorId: true,
+          },
+        },
+        inviter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            profile: {
+              select: {
+                profilePicture: true,
+                username: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({ invitations });
+  } catch (error) {
+    console.error("❌ Error fetching club invitations:", error);
+    res.status(500).json({ error: "Server error while fetching invitations." });
+  }
+});
+
+// Respond to club invitation (accept or reject)
+app.post("/api/clubs/:id/invitations/:invitationId/respond", async (req, res) => {
+  try {
+    const { id, invitationId } = req.params;
+    const { userId, status } = req.body; // status: "ACCEPTED" or "REJECTED"
+
+    const clubId = Number(id);
+    const invId = Number(invitationId);
+    const user = Number(userId);
+
+    if (!["ACCEPTED", "REJECTED"].includes(status)) {
+      return res.status(400).json({ error: "Status must be ACCEPTED or REJECTED" });
+    }
+
+    // Check if invitation exists and belongs to the user
+    const invitation = await prisma.clubInvitation.findUnique({
+      where: { id: invId },
+      include: { club: true },
+    });
+
+    if (!invitation) {
+      return res.status(404).json({ error: "Invitation not found" });
+    }
+
+    if (invitation.inviteeId !== user) {
+      return res.status(403).json({ error: "You are not authorized to respond to this invitation" });
+    }
+
+    if (invitation.clubId !== clubId) {
+      return res.status(400).json({ error: "Invitation does not match the club" });
+    }
+
+    if (invitation.status !== "PENDING") {
+      return res.status(400).json({ error: "Invitation has already been responded to" });
+    }
+
+    // Update invitation status
+    await prisma.clubInvitation.update({
+      where: { id: invId },
+      data: { status, updatedAt: new Date() },
+    });
+
+    // If accepted, add user to club
+    if (status === "ACCEPTED") {
+      // Check if user is already a member (edge case)
+      const existingMember = await prisma.clubMember.findUnique({
+        where: { clubId_userId: { clubId, userId: user } }
+      });
+
+      if (!existingMember) {
+        await prisma.clubMember.create({
+          data: {
+            clubId,
+            userId: user,
+            progress: 0,
+          },
+        });
+      }
+    }
+
+    res.json({ message: `Invitation ${status.toLowerCase()} successfully` });
+  } catch (error) {
+    console.error("❌ Error responding to invitation:", error);
+    res.status(500).json({ error: "Server error while responding to invitation." });
   }
 });
 
@@ -765,20 +964,27 @@ app.put("/api/clubs/:id/members/:userId/progress", async (req, res) => {
       where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
     });
 
-    // If member doesn't exist but user is the creator, create membership automatically
-    if (!member && Number(userId) === club.creatorId) {
-      member = await prisma.clubMember.create({
-        data: {
-          clubId: Number(id),
-          userId: Number(userId),
-          progress: 0,
-          role: Role.HOST,
-        }
-      });
-    }
-
+    // If member doesn't exist, create membership automatically
+    // This allows users who joined to update progress even if membership creation had issues
     if (!member) {
-      return res.status(404).json({ error: "Member not found" });
+      try {
+        member = await prisma.clubMember.create({
+          data: {
+            clubId: Number(id),
+            userId: Number(userId),
+            progress: 0,
+          }
+        });
+      } catch (createError) {
+        // If creation fails (e.g., duplicate), try to find it again
+        member = await prisma.clubMember.findUnique({
+          where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
+        });
+        if (!member) {
+          console.error("Error creating/finding membership:", createError);
+          return res.status(500).json({ error: "Failed to create or find membership" });
+        }
+      }
     }
 
     const updatedMember = await prisma.clubMember.update({
@@ -940,6 +1146,17 @@ async function setReplyVote(prisma, replyId, userId, value) {
 app.get('/api/clubs/:id/discussions', async (req, res) => {
   try {
     const clubId = Number(req.params.id);
+    
+    if (isNaN(clubId) || clubId <= 0) {
+      return res.status(400).json({ error: 'Invalid club ID' });
+    }
+
+    // Verify club exists
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
+    if (!club) {
+      return res.status(404).json({ error: 'Club not found' });
+    }
+
     const page = Math.max(1, parseInt(req.query.page || '1', 10));
     const size = Math.min(50, Math.max(1, parseInt(req.query.size || '10', 10)));
 
@@ -958,7 +1175,8 @@ app.get('/api/clubs/:id/discussions', async (req, res) => {
     res.json({ items: mapped, total, page, size, hasMore: (page - 1) * size + mapped.length < total });
   } catch (error) {
     console.error('Error listing discussions:', error);
-    res.status(500).json({ error: 'Failed to list discussions' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ error: 'Failed to list discussions', details: error.message });
   }
 });
 
@@ -1006,15 +1224,15 @@ app.post('/api/discussion', async (req, res) => {
 
     let membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId } },
-      select: { id: true, role: true },
+      select: { id: true },
     });
 
-    // If not a member yet, auto-join as MEMBER so they can post
+    // If not a member yet, auto-join so they can post
     if (!membership) {
       try {
         const created = await prisma.clubMember.create({
-          data: { clubId, userId, progress: 0, role: Role.MEMBER },
-          select: { id: true, role: true },
+          data: { clubId, userId, progress: 0 },
+          select: { id: true },
         });
         membership = created;
       } catch (_) {
@@ -1022,7 +1240,7 @@ app.post('/api/discussion', async (req, res) => {
       }
     }
 
-    if (!membership || ![Role.HOST, Role.MODERATOR, Role.MEMBER].includes(membership.role)) {
+    if (!membership) {
       return res.status(403).json({ error: 'You must be a club member to create a discussion.' });
     }
 
@@ -1198,97 +1416,8 @@ app.delete('/api/replies/:id', async (req, res) => {
   }
 });
 
-// Get a single discussion with replies
-app.get('/api/discussion/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const thread = await prisma.discussionPost.findUnique({
-      where: { id },
-      include: { user: true, content: true },
-    });
-    if (!thread) return res.status(404).json({ error: 'Discussion not found' });
-
-    const replies = await prisma.discussionReply.findMany({
-      where: { discussionId: id },
-      include: { user: true },
-      orderBy: [{ createdAt: 'desc' }],
-    });
-
-    res.json({ thread: serializeDiscussion(thread), replies: replies.map(serializeReply) });
-  } catch (error) {
-    console.error('Error fetching discussion:', error);
-    res.status(500).json({ error: 'Failed to fetch discussion' });
-  }
-});
-
-
-
-// Create a reply
-app.post('/api/discussion/:id/replies', async (req, res) => {
-  try {
-    const discussionId = Number(req.params.id);
-    const { userId, parentId = null, body } = req.body;
-    if (!discussionId || !userId || !body) {
-      return res.status(400).json({ error: 'discussionId (in URL), userId and body are required' });
-    }
-
-    const discussion = await prisma.discussionPost.findUnique({ where: { id: discussionId }, select: { id: true, locked: true } });
-    if (!discussion) return res.status(404).json({ error: 'Discussion not found' });
-    if (discussion.locked) return res.status(403).json({ error: 'Discussion is locked' });
-
-    const reply = await prisma.discussionReply.create({
-      data: {
-        discussionId,
-        parentId: parentId ? Number(parentId) : null,
-        userId: Number(userId),
-        body: String(body).slice(0, 10000),
-      },
-      include: { user: true },
-    });
-
-    res.status(201).json(serializeReply(reply));
-  } catch (error) {
-    console.error('Error creating reply:', error);
-    res.status(500).json({ error: 'Failed to create reply' });
-  }
-});
-
-// Edit a reply (author only)
-app.patch('/api/replies/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const { userId, body } = req.body;
-    if (!id || !userId || !body) return res.status(400).json({ error: 'id, userId and body required' });
-    const existing = await prisma.discussionReply.findUnique({ where: { id }, select: { userId: true } });
-    if (!existing) return res.status(404).json({ error: 'Reply not found' });
-    if (existing.userId !== Number(userId)) return res.status(403).json({ error: 'Not authorized' });
-    const updated = await prisma.discussionReply.update({ where: { id }, data: { body: String(body).slice(0, 10000), updatedAt: new Date() }, include: { user: true } });
-    res.json(serializeReply(updated));
-  } catch (error) {
-    console.error('Error editing reply:', error);
-    res.status(500).json({ error: 'Failed to edit reply' });
-  }
-});
-
-// Delete a reply (author only)
-app.delete('/api/replies/:id', async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    const { userId } = req.body;
-    if (!id || !userId) return res.status(400).json({ error: 'id and userId required' });
-    const existing = await prisma.discussionReply.findUnique({ where: { id }, select: { userId: true } });
-    if (!existing) return res.status(404).json({ error: 'Reply not found' });
-    if (existing.userId !== Number(userId)) return res.status(403).json({ error: 'Not authorized' });
-    await prisma.discussionReply.delete({ where: { id } });
-    res.json({ ok: true });
-  } catch (error) {
-    console.error('Error deleting reply:', error);
-    res.status(500).json({ error: 'Failed to delete reply' });
-  }
-});
-
 //create friendship/send friend request (user sends request to friend)
-app.post('api/friends', async(req, res) => {
+app.post('/api/friends', async(req, res) => {
           try {
                     const {userId, friendId} = req.body;
                     if (!userId || !friendId) {
@@ -1302,8 +1431,8 @@ app.post('api/friends', async(req, res) => {
                     const existingRequest = await prisma.friend.findFirst ({
                               where: {
                                         OR: [
-                                                  {userId, friendId},
-                                                  {userId: friendId, friendId, userId},
+                                                  {userID: Number(userId), friendID: Number(friendId)},
+                                                  {userID: Number(friendId), friendID: Number(userId)},
                                         ],
                               },
                     });
@@ -1314,11 +1443,16 @@ app.post('api/friends', async(req, res) => {
 
                     const friendship = await prisma.friend.create ({
                               data: {
-                                        userId: Number(userId),
-                                        friendId: Number(friendId),
+                                        userID: Number(userId),
+                                        friendID: Number(friendId),
                                         status: "PENDING",
                     },
                     });
+                    
+                    // TODO: Create notification for the friend when notification system is implemented
+                    // For now, the friend request is stored in the database and can be retrieved
+                    // by querying pending requests where friendId matches the recipient
+                    
                     res.json({message: "Friend request sent.", friendship});
           } catch (error) {
                     console.error('Error sending friend request:', error);
@@ -1337,8 +1471,8 @@ app.post("/api/friends/respond", async (req, res) => {
                     
                     const request = await prisma.friend.findFirst({
                               where: {
-                                        userId: friendId,
-                                        friendId: userId,
+                                        userID: Number(friendId),
+                                        friendID: Number(userId),
                                         status: "PENDING",
                               }
                     });
@@ -1355,27 +1489,40 @@ app.post("/api/friends/respond", async (req, res) => {
                     if (friendStatus == "ACCEPTED") {
                               const reverseExists = await prisma.friend.findFirst({
                                         where: {
-                                                  userId: userId,
-                                                  friendId: friendId,
+                                                  userID: Number(userId),
+                                                  friendID: Number(friendId),
                                         },
                               });
 
                               if(!reverseExists) {
                                         await prisma.friend.create({
                                                   data: {
-                                                            userId: userId,
-                                                            friendId: friendId,
+                                                            userID: Number(userId),
+                                                            friendID: Number(friendId),
                                                             status: "ACCEPTED",
                                                   },
                                         });
                               }
 
-                              res.json("Friend request accepted.");
+                              // Get user names for notification message
+                              const [accepter, requester] = await Promise.all([
+                                        prisma.user.findUnique({ where: { id: Number(userId) }, select: { name: true } }),
+                                        prisma.user.findUnique({ where: { id: Number(friendId) }, select: { name: true } }),
+                              ]);
+
+                              res.json({
+                                        message: "Friend request accepted.",
+                                        accepterName: accepter?.name || "User",
+                                        requesterName: requester?.name || "User",
+                              });
                     }
 
-                    if (friendStatus == "DECLINED")
-                    {
-                              res.json("Friend request declined.");
+                    if (friendStatus == "DECLINED") {
+                              // Delete the pending request when declined
+                              await prisma.friend.delete({
+                                        where: { id: request.id },
+                              });
+                              res.json({ message: "Friend request declined." });
                     }
 
           } catch (error) {
@@ -1384,12 +1531,213 @@ app.post("/api/friends/respond", async (req, res) => {
           }
 });
 
+//getting pending friend requests sent by user (must be before /api/friends/:userId)
+app.get("/api/friends/:userId/pending", async(req, res) => {
+          const userId = Number(req.params.userId);
+          try {
+                    const pendingRequests = await prisma.friend.findMany ({
+                              where: { userID: userId, status: "PENDING"},
+                              include: {
+                                        friend: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile : {
+                                                                      select: {
+                                                                                username: true,
+                                                                                profilePicture: true,
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              },
+                    });
+                    
+                    res.json({pendingRequests});
+
+          } catch (error) {
+                    console.error("Error getting pending friend requests: ", error);
+                    res.status(500).json({error: "Failed to get pending friend requests."});
+          }
+});
+
+//getting pending friend requests received by user (for notifications) - must be before /api/friends/:userId
+app.get("/api/friends/:userId/received", async(req, res) => {
+          const userId = Number(req.params.userId);
+          try {
+                    const receivedRequests = await prisma.friend.findMany ({
+                              where: { friendID: userId, status: "PENDING"},
+                              include: {
+                                        user: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile : {
+                                                                      select: {
+                                                                                username: true,
+                                                                                profilePicture: true,
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              },
+                              orderBy: { id: 'desc' },
+                    });
+                    
+                    res.json({receivedRequests});
+
+          } catch (error) {
+                    console.error("Error getting received friend requests: ", error);
+                    res.status(500).json({error: "Failed to get received friend requests."});
+          }
+});
+
+//get friend profile (only if they are friends) - MUST be before /api/friends/:userId
+app.get("/api/friends/:userId/:friendId/profile", async (req, res) => {
+          console.log('=== Friend profile route hit ===');
+          console.log('Request path:', req.path);
+          console.log('Request params:', req.params);
+          console.log('Request method:', req.method);
+          try {
+                    const userId = Number(req.params.userId);
+                    const friendId = Number(req.params.friendId);
+                    console.log('Parsed userId:', userId, 'friendId:', friendId);
+                    
+                    if (isNaN(userId) || isNaN(friendId)) {
+                              return res.status(400).json({error: "Invalid user IDs"});
+                    }
+                    
+                    // Check if they are friends
+                    console.log('Checking friendship...');
+                    const friendship = await prisma.friend.findFirst({
+                              where: {
+                                        status: "ACCEPTED",
+                                        OR: [
+                                                  {userID: userId, friendID: friendId},
+                                                  {userID: friendId, friendID: userId},
+                                        ]
+                              },
+                    });
+                    console.log('Friendship check result:', friendship ? 'Found' : 'Not found');
+
+                    if (!friendship) {
+                              console.log('Not friends, returning 403');
+                              return res.status(403).json({error: "You are not friends with this user."});
+                    }
+
+                    console.log('Friends confirmed, fetching profile...');
+                    // Get friend's full profile data
+                    const friendProfile = await prisma.user.findUnique({
+                              where: { id: friendId },
+                              include: {
+                                        profile: true,
+                                        memberships: {
+                                                  select: {
+                                                            id: true,
+                                                            progress: true,
+                                                            clubId: true,
+                                                            club: {
+                                                                      select: {
+                                                                                id: true,
+                                                                                name: true,
+                                                                                description: true,
+                                                                                currentBookId: true,
+                                                                                currentBookData: true,
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              },
+                    });
+
+                    if (!friendProfile) {
+                              console.log('Friend profile not found');
+                              return res.status(404).json({error: "User not found."});
+                    }
+
+                    console.log('Friend profile found, fetching friends list...');
+                    // Get friends - need to check both directions
+                    const friendsAsUser = await prisma.friend.findMany({
+                              where: {
+                                        userID: friendId,
+                                        status: "ACCEPTED",
+                              },
+                              include: {
+                                        friend: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile: {
+                                                                      select: {
+                                                                                username: true,
+                                                                                profilePicture: true,
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              },
+                    });
+
+                    const friendsAsFriend = await prisma.friend.findMany({
+                              where: {
+                                        friendID: friendId,
+                                        status: "ACCEPTED",
+                              },
+                              include: {
+                                        user: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile: {
+                                                                      select: {
+                                                                                username: true,
+                                                                                profilePicture: true,
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              },
+                    });
+
+                    // Combine and deduplicate friends
+                    const allFriends = [
+                              ...(friendsAsUser || []).map(f => f.friend).filter(Boolean),
+                              ...(friendsAsFriend || []).map(f => f.user).filter(Boolean),
+                    ];
+                    const uniqueFriends = Array.from(
+                              new Map(allFriends.filter(f => f && f.id).map(f => [f.id, f])).values()
+                    );
+
+                    // Format the response
+                    const clubs = friendProfile.memberships ? friendProfile.memberships.map(m => ({
+                              ...(m.club || {}),
+                              progress: m.progress || 0,
+                    })).filter(c => c && c.id) : [];
+
+                    const friends = uniqueFriends;
+
+                    console.log('Friend profile data prepared, sending response...');
+                    res.json({
+                              id: friendProfile.id,
+                              name: friendProfile.name,
+                              profile: friendProfile.profile || null,
+                              clubs: clubs || [],
+                              friends: friends || [],
+                              friendsCount: (friends || []).length,
+                    });
+          } catch (error) {
+                    console.error("Error getting friend profile: ", error);
+                    console.error("Error stack: ", error.stack);
+                    res.status(500).json({error: "Failed to get friend profile.", details: error.message});
+          }
+});
+
 //getting friends of user
 app.get("/api/friends/:userId", async(req, res) => {
           const userId = Number(req.params.userId);
           try {
                     const friends = await prisma.friend.findMany ({
-                              where: { userId, status: "ACCEPTED"},
+                              where: { userID: userId, status: "ACCEPTED"},
                               include: {
                                         friend: {
                                                   select: {
@@ -1415,15 +1763,16 @@ app.get("/api/friends/:userId", async(req, res) => {
 });
 
 //delete friendship when user wants to remove friend
-app.delete('/api/friends/:id', async (req, res) => {
+app.delete('/api/friends/:userId/:friendId', async (req, res) => {
           try {
                     const userId = Number(req.params.userId);
                     const friendId = Number(req.params.friendId);
                     const friendship = await prisma.friend.findFirst({
                               where: {
                                         status: "ACCEPTED",
-                                        OR: [{userId: userId, friendId: friendId},
-                                        {userId: friendId, friendId: userId},
+                                        OR: [
+                                                  {userID: Number(userId), friendID: Number(friendId)},
+                                                  {userID: Number(friendId), friendID: Number(userId)},
                                         ]
                               },
                     });
@@ -1434,8 +1783,8 @@ app.delete('/api/friends/:id', async (req, res) => {
                     await prisma.friend.deleteMany({
                               where: {
                                         OR: [
-                                                  {userId: userId, friendId: friendId},
-                                                  {userId: friendId, friendId, userId},
+                                                  {userID: Number(userId), friendID: Number(friendId)},
+                                                  {userID: Number(friendId), friendID: Number(userId)},
                                         ],
                               },
                     });

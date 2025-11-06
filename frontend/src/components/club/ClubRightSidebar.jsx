@@ -13,10 +13,12 @@ export default function ClubRightSidebar({
   onJoinClub,
   onDeleteClub,
   onLeaveClub,
+  onInviteMembers,
 }) {
   const isHost = user && club && user.id === club.creatorId;
   const remainingLabel = club?.goalDeadline ? getDaysRemainingLabel(club.goalDeadline) : null;
-  const showMyProgress = (isMember || isHost) && club?.readingGoal && club?.goalDeadline && remainingLabel && !remainingLabel.includes("Overdue");
+  // Show My Progress Card for any member or host (the card itself checks if currentBook exists)
+  const showMyProgress = (isMember || isHost);
 
   return (
     <aside className="lg:col-span-3 space-y-4">
@@ -76,7 +78,7 @@ export default function ClubRightSidebar({
               type="button"
               className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
               style={{ fontFamily: "Times New Roman, serif" }}
-              onClick={() => alert("Invite functionality coming soon!")}
+              onClick={onInviteMembers}
             >
               Invite Members
             </button>

@@ -1,6 +1,36 @@
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useUser } from "../../contexts/UserContext";
+import { getReceivedFriendRequests } from "../../services/friends";
+import { getClubInvitations } from "../../services/clubInvitations";
 import RecentThreadsByClub from "../threads/RecentThreadsByClub";
 
 export default function HomeCenterFeed({ allClubs = [] }) {
+  const { user } = useUser();
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  // Fetch notification count
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    const fetchNotificationCount = async () => {
+      try {
+        const [requests, clubInvites] = await Promise.all([
+          getReceivedFriendRequests(user.id).catch(() => []),
+          getClubInvitations(user.id).catch(() => [])
+        ]);
+        setNotificationCount(requests.length + clubInvites.length);
+      } catch (err) {
+        console.error("Error fetching notification count:", err);
+        setNotificationCount(0);
+      }
+    };
+
+    fetchNotificationCount();
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchNotificationCount, 10000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
   const clubIds = allClubs.map((c) => c.id);
   const clubMap = Object.fromEntries(allClubs.map((c) => [c.id, { name: c.name || `Club ${c.id}` }]));
 
@@ -17,11 +47,19 @@ export default function HomeCenterFeed({ allClubs = [] }) {
               style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
             />
           </div>
-          <button className="w-10 h-10 rounded-full border border-[#ddcdb7] text-gray-600 hover:bg-[#efe5d5] transition-colors flex items-center justify-center">
+          <Link
+            to="/notifications"
+            className="relative w-10 h-10 rounded-full border border-[#ddcdb7] text-gray-600 hover:bg-[#efe5d5] transition-colors flex items-center justify-center"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-          </button>
+            {notificationCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {notificationCount > 9 ? '9+' : notificationCount}
+              </span>
+            )}
+          </Link>
         </div>
       </div>
 

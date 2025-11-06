@@ -19,21 +19,25 @@ model User {
   discussionPosts    DiscussionPost[]
   discussionReplies  DiscussionReply[]
   // Friend relations (two directions)
-  sentFriendRequests     Friend[]           @relation("Friend_User")
-  receivedFriendRequests Friend[]           @relation("Friend_Friend")
+  friendsAsFriend     Friend[]            @relation("FriendUsers")
+  friendsAsUser       Friend[]            @relation("UserFriends")
   // Vote relations
   discussionPostVotes    DiscussionPostVote[]
   discussionReplyVotes   DiscussionReplyVote[]
+  // Club invitation relations
+  sentInvitations        ClubInvitation[]      @relation("Inviter")
+  receivedInvitations    ClubInvitation[]     @relation("Invitee")
 }
 
 model Friend {
-        id	          Int @id @default(autoincrement())
-	userID	          Int 
-	user	          User @relation("Friend_User", fields: [userID], references: [id])
-	friendID	  Int 
-	friend		  User @relation("Friend_Friend", fields: [friendID], references: [id])
-	status	          FriendStatus //PENDING, ACCEPTED, or REJECTED
-	@@unique([userID, friendID])
+  id       Int          @id @default(autoincrement())
+  userID   Int
+  friendID Int
+  status   FriendStatus
+  friend   User         @relation("FriendUsers", fields: [friendID], references: [id])
+  user     User         @relation("UserFriends", fields: [userID], references: [id])
+
+  @@unique([userID, friendID])
 }
 
 enum FriendStatus {
@@ -54,23 +58,23 @@ model Profile {
 }
 
 model Club {
-  id              Int              @id @default(autoincrement())
+  id              Int             @id @default(autoincrement())
   name            String
   description     String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime        @default(now())
   creatorId       Int
-  creator         User             @relation(fields: [creatorId], references: [id])
+  creator         User            @relation(fields: [creatorId], references: [id])
   currentBookId   String?
   currentBookData Json?
   readingGoal     String?
   goalDeadline    DateTime?
   members         ClubMember[]
-  discussions     DiscussionPost[]
+  discussionPosts DiscussionPost[]
+  invitations     ClubInvitation[]
 }
 
 model ClubMember {
   id       Int      @id @default(autoincrement())
-  role     Role
   clubId   Int
   userId   Int
   progress Int      @default(0)
@@ -81,62 +85,77 @@ model ClubMember {
   @@unique([clubId, userId])
 }
 
-enum Role {
-  HOST
-  MODERATOR
-  MEMBER
+model ClubInvitation {
+  id        Int      @id @default(autoincrement())
+  clubId    Int
+  inviterId Int
+  inviteeId Int
+  status    ClubInvitationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  inviter  User     @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee  User     @relation("Invitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, inviteeId])
+  @@index([inviteeId])
+  @@index([clubId])
+}
+
+enum ClubInvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
 
 model DiscussionPost {
-id Int @id @default(autoincrement())
-datePosted DateTime @default(now())
-dateEdited DateTime?
-hasMedia Boolean @default(false)
-clubId Int
-userId Int
-title String
-chapterIndex Int?
-tags Json?
-pinned Boolean @default(false)
-locked Boolean @default(false)
-contentId Int @unique
-
-club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
-user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-content DiscussionPostContent @relation("Post_Content", fields: [contentId], references: [id], onDelete: Cascade)
-media DiscussionPostMedia[]
-replies DiscussionReply[]
- votes DiscussionPostVote[]
+  id          Int                   @id @default(autoincrement())
+  datePosted  DateTime              @default(now())
+  dateEdited  DateTime?
+  hasMedia    Boolean               @default(false)
+  title       String
+  chapterIndex Int?
+  locked      Boolean               @default(false)
+  pinned      Boolean               @default(false)
+  tags        Json?
+  clubId      Int
+  userId      Int
+  contentId   Int                   @unique
+  club        Club                 @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     DiscussionPostContent @relation("PostContent", fields: [contentId], references: [id], onDelete: Cascade)
+  media       DiscussionPostMedia[]
+  replies     DiscussionReply[]
+  votes       DiscussionPostVote[]
 }
 
 model DiscussionPostContent {
-id Int @id @default(autoincrement())
-message String
-
-post DiscussionPost? @relation("Post_Content")
+  id        Int            @id @default(autoincrement())
+  message   String
+  post      DiscussionPost? @relation("PostContent")
 }
 
 model DiscussionPostMedia {
-id Int @id @default(autoincrement())
-file String
-fileType String
-discussionId Int
-discussion DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  id           Int          @id @default(autoincrement())
+  file         String
+  fileType     String
+  discussionId Int
+  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 }
 
 model DiscussionReply {
-  id           Int              @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   discussionId Int
   parentId     Int?
   userId       Int
   body         String
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @default(now())
-  discussion   DiscussionPost   @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent       DiscussionReply? @relation("ReplyToParent", fields: [parentId], references: [id])
-  children     DiscussionReply[] @relation("ReplyToParent")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       DiscussionReply? @relation("ReplyReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies      DiscussionReply[] @relation("ReplyReplies")
   votes        DiscussionReplyVote[]
 }
 

@@ -1,6 +1,6 @@
 import { getDaysRemainingDays } from "../../utils/date";
 
-export default function HomeRightSidebar({ user, avatarSrc, memberSince, clubsJoined = [], onLogout }) {
+export default function HomeRightSidebar({ user, avatarSrc, memberSince, clubsJoined = [], friendsCount = 0, onLogout }) {
   return (
     <aside className="lg:col-span-3 space-y-4">
       {/* Profile Summary Card */}
@@ -29,7 +29,7 @@ export default function HomeRightSidebar({ user, avatarSrc, memberSince, clubsJo
           </div>
           <div className="text-sm text-gray-600 space-y-1" style={{ fontFamily: "Times New Roman, serif" }}>
             <p>Member since - {memberSince}</p>
-            <p>{Array.isArray(user.friendsList) ? user.friendsList.length : 0} friends</p>
+            <p>{friendsCount} {friendsCount === 1 ? 'friend' : 'friends'}</p>
             <p>{user.profile?.bio || "Add a bio to let other readers know what you love."}</p>
           </div>
 

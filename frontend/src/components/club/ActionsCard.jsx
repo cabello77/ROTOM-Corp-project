@@ -10,7 +10,7 @@ export default function ActionsCard({ isMember, isHost, onDelete, onLeave }) {
           type="button"
           className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
           style={{ fontFamily: 'Times New Roman, serif' }}
-          onClick={() => alert('Invite functionality coming soon!')}
+          onClick={() => console.log('Invite functionality coming soon!')}
         >
           Invite Members
         </button>

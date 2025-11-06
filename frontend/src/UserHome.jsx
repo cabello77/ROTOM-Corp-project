@@ -20,6 +20,7 @@ function UserHome() {
   const [isSaving, setIsSaving] = useState(false);
   const [clubsCreated, setClubsCreated] = useState([]); // Clubs created by user
   const [clubsJoined, setClubsJoined] = useState([]); // Clubs user has joined
+  const [friendsList, setFriendsList] = useState([]); // Friends list
 
   // Memoize avatar source BEFORE any conditional returns
   const avatarSrc = useMemo(() => {
@@ -30,11 +31,6 @@ function UserHome() {
     }
     return `${API_BASE}${path}`;
   }, [user?.profile?.profilePicture]);
-
-  // Memoize friends list BEFORE any conditional returns
-  const friendsList = useMemo(() => {
-    return Array.isArray(user?.friendsList) ? user.friendsList : [];
-  }, [user?.friendsList]);
 
   // Memoize member since BEFORE any conditional returns
   const memberSince = useMemo(() => {
@@ -100,6 +96,23 @@ function UserHome() {
     }, 3000);
     
     return () => clearInterval(intervalId);
+  }, [user?.id]);
+
+  // Fetch friends list
+  useEffect(() => {
+    const fetchFriends = async () => {
+      if (!user?.id) return;
+      try {
+        const res = await axios.get(`${API_BASE}/api/friends/${user.id}`);
+        const friends = res.data.friends || [];
+        // Pass full friend objects for display in sidebar
+        setFriendsList(friends);
+      } catch (err) {
+        console.error("Error fetching friends:", err);
+        setFriendsList([]);
+      }
+    };
+    fetchFriends();
   }, [user?.id]);
 
   if (isLoading) {
@@ -194,6 +207,7 @@ function UserHome() {
         avatarSrc={avatarSrc}
         memberSince={memberSince}
         clubsJoined={clubsJoined}
+        friendsCount={friendsList.length}
         onLogout={handleLogout}
       />
     </div>

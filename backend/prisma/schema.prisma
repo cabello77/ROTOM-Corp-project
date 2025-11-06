@@ -18,14 +18,20 @@ model User {
   memberships        ClubMember[]
   discussionPosts    DiscussionPost[]
   discussionReplies  DiscussionReply[]
+  // Friend relations (two directions)
+  sentFriendRequests     Friend[]           @relation("Friend_User")
+  receivedFriendRequests Friend[]           @relation("Friend_Friend")
+  // Vote relations
+  discussionPostVotes    DiscussionPostVote[]
+  discussionReplyVotes   DiscussionReplyVote[]
 }
 
 model Friend {
-        id	          Int @id @default(cuid())
+        id	          Int @id @default(autoincrement())
 	userID	          Int 
-	user	          User @relation(fields: [userID], references: [id])
+	user	          User @relation("Friend_User", fields: [userID], references: [id])
 	friendID	  Int 
-	friend		  User @relation(fields: [friendID], references: [id])
+	friend		  User @relation("Friend_Friend", fields: [friendID], references: [id])
 	status	          FriendStatus //PENDING, ACCEPTED, or REJECTED
 	@@unique([userID, friendID])
 }
@@ -101,6 +107,7 @@ user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 content DiscussionPostContent @relation("Post_Content", fields: [contentId], references: [id], onDelete: Cascade)
 media DiscussionPostMedia[]
 replies DiscussionReply[]
+ votes DiscussionPostVote[]
 }
 
 model DiscussionPostContent {
@@ -130,5 +137,38 @@ model DiscussionReply {
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent       DiscussionReply? @relation("ReplyToParent", fields: [parentId], references: [id])
   children     DiscussionReply[] @relation("ReplyToParent")
+  votes        DiscussionReplyVote[]
+}
+
+// Votes on discussion posts
+model DiscussionPostVote {
+  id           Int            @id @default(autoincrement())
+  userId       Int
+  discussionId Int
+  // value of 1 for upvote, -1 for downvote
+  value        Int
+
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, discussionId])
+  @@index([discussionId])
+  @@index([userId])
+}
+
+// Votes on discussion replies
+model DiscussionReplyVote {
+  id       Int              @id @default(autoincrement())
+  userId   Int
+  replyId  Int
+  // value of 1 for upvote, -1 for downvote
+  value    Int
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reply    DiscussionReply  @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, replyId])
+  @@index([replyId])
+  @@index([userId])
 }
 

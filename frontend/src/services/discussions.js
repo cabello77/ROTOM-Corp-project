@@ -109,3 +109,38 @@ export async function deleteReply({ replyId, userId }) {
   return res.json();
 }
 
+// Voting APIs
+export async function getDiscussionVotes(threadId, userId) {
+  const q = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+  const res = await fetch(`${API_BASE}/api/discussion/${threadId}/votes${q}`);
+  if (!res.ok) throw new Error('Failed to fetch discussion votes');
+  return res.json();
+}
+
+export async function voteDiscussion(threadId, { userId, value }) {
+  const res = await fetch(`${API_BASE}/api/discussion/${threadId}/vote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, value }),
+  });
+  if (!res.ok) throw new Error('Failed to vote');
+  return res.json();
+}
+
+export async function getReplyVotes(replyId, userId) {
+  const q = userId ? `?userId=${encodeURIComponent(userId)}` : '';
+  const res = await fetch(`${API_BASE}/api/replies/${replyId}/votes${q}`);
+  if (!res.ok) throw new Error('Failed to fetch reply votes');
+  return res.json();
+}
+
+export async function voteReply(replyId, { userId, value }) {
+  const res = await fetch(`${API_BASE}/api/replies/${replyId}/vote`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, value }),
+  });
+  if (!res.ok) throw new Error('Failed to vote');
+  return res.json();
+}
+

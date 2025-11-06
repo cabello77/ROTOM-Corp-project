@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createReply, fetchThread, isNewBadge, setLastSeen, editReply as apiEditReply, deleteReply as apiDeleteReply } from '../../services/discussions';
+import { createReply, fetchThread, isNewBadge, setLastSeen, editReply as apiEditReply, deleteReply as apiDeleteReply, getDiscussionVotes, voteDiscussion, getReplyVotes, voteReply } from '../../services/discussions';
 
 function buildTree(replies) {
   const byParent = new Map();
@@ -14,7 +14,7 @@ function buildTree(replies) {
   return attach(null, 0);
 }
 
-function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, onEdit, onDelete }) {
+function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, onEdit, onDelete, voteSummary, onVote }) {
   const [collapsed, setCollapsed] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -40,7 +40,24 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
           <p className="text-xs text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>
             {node.author?.name || 'Unknown'} · {new Date(node.createdAt).toLocaleString()}
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {voteSummary && (
+              <div className="flex items-center gap-1" title="Vote">
+                <button
+                  type="button"
+                  disabled={!currentUser}
+                  className={`px-1 text-xs border rounded ${voteSummary?.userVote === 1 ? 'bg-[#ffeec2] border-yellow-400' : 'border-[#ddcdb7]'}`}
+                  onClick={() => onVote?.(node.id, voteSummary?.userVote === 1 ? 0 : 1)}
+                >▲</button>
+              <span className="text-xs text-gray-700 text-center" title="Up | Down">{(voteSummary?.upvotes ?? 0)} | {(voteSummary?.downvotes ?? 0)}</span>
+                <button
+                  type="button"
+                  disabled={!currentUser}
+                  className={`px-1 text-xs border rounded ${voteSummary?.userVote === -1 ? 'bg-[#ffeec2] border-yellow-400' : 'border-[#ddcdb7]'}`}
+                  onClick={() => onVote?.(node.id, voteSummary?.userVote === -1 ? 0 : -1)}
+                >▼</button>
+              </div>
+            )}
             {isNewBadge(node.updatedAt || node.createdAt) && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-100 border border-green-300 text-green-800">New</span>
             )}
@@ -101,6 +118,7 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
               onReplied={onReplied}
               onEdit={onEdit}
               onDelete={onDelete}
+              onVote={onVote}
             />
           ))}
         </div>
@@ -116,6 +134,8 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
   const [expanded, setExpanded] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [replyText, setReplyText] = useState('');
+  const [threadVotes, setThreadVotes] = useState({ upvotes: 0, downvotes: 0, score: 0, userVote: 0 });
+  const [replyVotes, setReplyVotes] = useState({});
   const composerRef = useRef(null);
   const initialVisibleCount = 3;
   const pollMs = 30000;
@@ -142,6 +162,33 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [threadId]);
+
+  // Load votes for thread and replies whenever replies or user changes
+  useEffect(() => {
+    const uid = currentUser?.id;
+    if (!threadId) return;
+    (async () => {
+      try {
+        const tv = await getDiscussionVotes(threadId, uid);
+        setThreadVotes(tv);
+      } catch {}
+      try {
+        const list = allReplies || [];
+        const results = await Promise.all(
+          list.map(async (r) => {
+            try {
+              const v = await getReplyVotes(r.id, uid);
+              return [r.id, v];
+            } catch {
+              return [r.id, { upvotes: 0, downvotes: 0, score: 0, userVote: 0 }];
+            }
+          })
+        );
+        setReplyVotes(Object.fromEntries(results));
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [threadId, allReplies, currentUser?.id]);
 
   // Build a tree and paginate only top-level comments like Instagram
   const tree = useMemo(() => buildTree(allReplies), [allReplies]);
@@ -179,6 +226,22 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
     await load();
   };
 
+  const onThreadVote = async (value) => {
+    if (!currentUser) return;
+    try {
+      const res = await voteDiscussion(threadId, { userId: currentUser.id, value });
+      setThreadVotes(res);
+    } catch {}
+  };
+
+  const onReplyVote = async (replyId, value) => {
+    if (!currentUser) return;
+    try {
+      const res = await voteReply(replyId, { userId: currentUser.id, value });
+      setReplyVotes((prev) => ({ ...prev, [replyId]: res }));
+    } catch {}
+  };
+
   if (!thread) return (
     <p className="text-sm text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
   );
@@ -199,6 +262,21 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
           by {thread.author?.name || 'Unknown'} · {new Date(thread.createdAt).toLocaleString()}
         </p>
         <div className="text-sm text-gray-800 mt-3 whitespace-pre-wrap" style={{ fontFamily: 'Times New Roman, serif' }}>{thread.body}</div>
+        <div className="mt-2 flex items-center gap-1" title="Vote">
+          <button
+            type="button"
+            disabled={!currentUser}
+            className={`px-1 text-xs border rounded ${threadVotes?.userVote === 1 ? 'bg-[#ffeec2] border-yellow-400' : 'border-[#ddcdb7]'}`}
+            onClick={() => onThreadVote(threadVotes?.userVote === 1 ? 0 : 1)}
+          >▲</button>
+          <span className="text-xs text-gray-700 text-center" title="Up | Down">{(threadVotes?.upvotes ?? 0)} | {(threadVotes?.downvotes ?? 0)}</span>
+          <button
+            type="button"
+            disabled={!currentUser}
+            className={`px-1 text-xs border rounded ${threadVotes?.userVote === -1 ? 'bg-[#ffeec2] border-yellow-400' : 'border-[#ddcdb7]'}`}
+            onClick={() => onThreadVote(threadVotes?.userVote === -1 ? 0 : -1)}
+          >▼</button>
+        </div>
         <div className="mt-2 flex justify-end">
           <button
             type="button"
@@ -259,6 +337,8 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
             onReplied={load}
             onEdit={onEdit}
             onDelete={onDelete}
+            voteSummary={replyVotes[n.id]}
+            onVote={onReplyVote}
           />
         ))}
         {tree.length > initialVisibleCount && (

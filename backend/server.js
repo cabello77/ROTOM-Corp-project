@@ -860,6 +860,82 @@ const serializeReply = (r) => ({
   updatedAt: r.updatedAt || r.createdAt,
 });
 
+// Voting helpers
+const clampVote = (v) => {
+  const n = Number(v);
+  if (n === 1) return 1;
+  if (n === -1) return -1;
+  if (n === 0) return 0;
+  return null;
+};
+
+async function getDiscussionVoteSummary(prisma, discussionId, userId) {
+  const [upvotes, downvotes, userVoteRow] = await Promise.all([
+    prisma.discussionPostVote.count({ where: { discussionId, value: 1 } }),
+    prisma.discussionPostVote.count({ where: { discussionId, value: -1 } }),
+    userId
+      ? prisma.discussionPostVote.findUnique({
+          where: { userId_discussionId: { userId, discussionId } },
+          select: { value: true },
+        })
+      : Promise.resolve(null),
+  ]);
+  const userVote = userVoteRow ? userVoteRow.value : 0;
+  return { upvotes, downvotes, score: upvotes - downvotes, userVote };
+}
+
+async function setDiscussionVote(prisma, discussionId, userId, value) {
+  const existing = await prisma.discussionPostVote.findUnique({
+    where: { userId_discussionId: { userId, discussionId } },
+  });
+  if (value === 0) {
+    if (existing) await prisma.discussionPostVote.delete({ where: { id: existing.id } });
+    return getDiscussionVoteSummary(prisma, discussionId, userId);
+  }
+  if (!existing) {
+    await prisma.discussionPostVote.create({ data: { discussionId, userId, value } });
+  } else if (existing.value === value) {
+    // toggle off on repeat
+    await prisma.discussionPostVote.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.discussionPostVote.update({ where: { id: existing.id }, data: { value } });
+  }
+  return getDiscussionVoteSummary(prisma, discussionId, userId);
+}
+
+async function getReplyVoteSummary(prisma, replyId, userId) {
+  const [upvotes, downvotes, userVoteRow] = await Promise.all([
+    prisma.discussionReplyVote.count({ where: { replyId, value: 1 } }),
+    prisma.discussionReplyVote.count({ where: { replyId, value: -1 } }),
+    userId
+      ? prisma.discussionReplyVote.findUnique({
+          where: { userId_replyId: { userId, replyId } },
+          select: { value: true },
+        })
+      : Promise.resolve(null),
+  ]);
+  const userVote = userVoteRow ? userVoteRow.value : 0;
+  return { upvotes, downvotes, score: upvotes - downvotes, userVote };
+}
+
+async function setReplyVote(prisma, replyId, userId, value) {
+  const existing = await prisma.discussionReplyVote.findUnique({
+    where: { userId_replyId: { userId, replyId } },
+  });
+  if (value === 0) {
+    if (existing) await prisma.discussionReplyVote.delete({ where: { id: existing.id } });
+    return getReplyVoteSummary(prisma, replyId, userId);
+  }
+  if (!existing) {
+    await prisma.discussionReplyVote.create({ data: { replyId, userId, value } });
+  } else if (existing.value === value) {
+    await prisma.discussionReplyVote.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.discussionReplyVote.update({ where: { id: existing.id }, data: { value } });
+  }
+  return getReplyVoteSummary(prisma, replyId, userId);
+}
+
 // List discussions for a club
 app.get('/api/clubs/:id/discussions', async (req, res) => {
   try {
@@ -1034,6 +1110,75 @@ app.patch('/api/replies/:id', async (req, res) => {
   } catch (error) {
     console.error('Error editing reply:', error);
     res.status(500).json({ error: 'Failed to edit reply' });
+  }
+});
+
+// Votes: discussion
+app.get('/api/discussion/:id/votes', async (req, res) => {
+  try {
+    const discussionId = Number(req.params.id);
+    if (!discussionId) return res.status(400).json({ error: 'Invalid discussion id' });
+    const discussion = await prisma.discussionPost.findUnique({ where: { id: discussionId }, select: { id: true } });
+    if (!discussion) return res.status(404).json({ error: 'Discussion not found' });
+    const userId = req.query.userId ? Number(req.query.userId) : undefined;
+    const summary = await getDiscussionVoteSummary(prisma, discussionId, userId);
+    res.json(summary);
+  } catch (error) {
+    console.error('Error fetching discussion votes:', error);
+    res.status(500).json({ error: 'Failed to fetch votes' });
+  }
+});
+
+app.post('/api/discussion/:id/vote', async (req, res) => {
+  try {
+    const discussionId = Number(req.params.id);
+    const { userId, value } = req.body;
+    const v = clampVote(value);
+    if (!discussionId || !userId || v === null) {
+      return res.status(400).json({ error: 'discussionId (in URL), userId and value (-1,0,1) are required' });
+    }
+    const discussion = await prisma.discussionPost.findUnique({ where: { id: discussionId }, select: { id: true, locked: true } });
+    if (!discussion) return res.status(404).json({ error: 'Discussion not found' });
+    // allow voting on locked threads (discussion is closed to new content) – adjust if needed
+    const summary = await setDiscussionVote(prisma, discussionId, Number(userId), v);
+    res.json(summary);
+  } catch (error) {
+    console.error('Error casting discussion vote:', error);
+    res.status(500).json({ error: 'Failed to cast vote' });
+  }
+});
+
+// Votes: replies
+app.get('/api/replies/:id/votes', async (req, res) => {
+  try {
+    const replyId = Number(req.params.id);
+    if (!replyId) return res.status(400).json({ error: 'Invalid reply id' });
+    const reply = await prisma.discussionReply.findUnique({ where: { id: replyId }, select: { id: true } });
+    if (!reply) return res.status(404).json({ error: 'Reply not found' });
+    const userId = req.query.userId ? Number(req.query.userId) : undefined;
+    const summary = await getReplyVoteSummary(prisma, replyId, userId);
+    res.json(summary);
+  } catch (error) {
+    console.error('Error fetching reply votes:', error);
+    res.status(500).json({ error: 'Failed to fetch votes' });
+  }
+});
+
+app.post('/api/replies/:id/vote', async (req, res) => {
+  try {
+    const replyId = Number(req.params.id);
+    const { userId, value } = req.body;
+    const v = clampVote(value);
+    if (!replyId || !userId || v === null) {
+      return res.status(400).json({ error: 'replyId (in URL), userId and value (-1,0,1) are required' });
+    }
+    const reply = await prisma.discussionReply.findUnique({ where: { id: replyId }, select: { id: true } });
+    if (!reply) return res.status(404).json({ error: 'Reply not found' });
+    const summary = await setReplyVote(prisma, replyId, Number(userId), v);
+    res.json(summary);
+  } catch (error) {
+    console.error('Error casting reply vote:', error);
+    res.status(500).json({ error: 'Failed to cast vote' });
   }
 });
 

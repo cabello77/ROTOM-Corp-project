@@ -286,7 +286,12 @@ export default function ClubHome() {
             />
             {/* CENTER COLUMN */}
             <section className="lg:col-span-6 space-y-4">
-              <LiveChat />
+              <LiveChat
+                clubId={club?.id}
+                user={user}
+                isMember={isMember}
+                apiBase={API_BASE}
+              />
 
               <DiscussionsPanel
                 clubId={club?.id}
@@ -295,6 +300,7 @@ export default function ClubHome() {
                 isHost={user && club && user.id === club.creatorId}
               />
             </section>
+
 
             {/* RIGHT SIDEBAR */}
             <ClubRightSidebar

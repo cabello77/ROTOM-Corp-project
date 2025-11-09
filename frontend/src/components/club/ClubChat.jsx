@@ -19,16 +19,13 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
     try {
       setLoading(true);
       setError(null);
-
       const res = await fetch(
         `${apiBase}/api/clubs/${clubId}/messages?userId=${user.id}`
       );
-
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed to load messages");
       }
-
       const data = await res.json();
       setMessages(data || []);
     } catch (e) {
@@ -43,7 +40,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
     }
   };
 
-  // Socket.IO setup
+  // Set up socket connection
   useEffect(() => {
     if (!canChat) return;
 

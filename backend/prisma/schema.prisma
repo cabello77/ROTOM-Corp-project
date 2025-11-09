@@ -27,6 +27,8 @@ model User {
   // Club invitation relations
   sentInvitations        ClubInvitation[]      @relation("Inviter")
   receivedInvitations    ClubInvitation[]     @relation("Invitee")
+  messages          Message[]
+
 }
 
 model Friend {
@@ -71,6 +73,7 @@ model Club {
   members         ClubMember[]
   discussionPosts DiscussionPost[]
   invitations     ClubInvitation[]
+  messages          Message[]
 }
 
 model ClubMember {
@@ -191,3 +194,15 @@ model DiscussionReplyVote {
   @@index([userId])
 }
 
+model Message {
+  id        Int      @id @default(autoincrement())
+  clubId    Int
+  userId    Int
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clubId, createdAt])
+}

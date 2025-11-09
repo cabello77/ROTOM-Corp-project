@@ -1,4 +1,6 @@
 require('dotenv').config();
+const http = require("http");
+const { Server } = require("socket.io");
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
@@ -41,6 +43,20 @@ const serializeUser = (user) => {
       : null,
   };
 };
+
+async function isClubMember(clubId, userId) {
+  if (!clubId || !userId) return false;
+  const membership = await prisma.clubMember.findUnique({
+    where: {
+      clubId_userId: {
+        clubId: Number(clubId),
+        userId: Number(userId),
+      },
+    },
+  });
+  return !!membership;
+}
+
 
 // File upload handling for avatars (optional if multer is available)
 let upload = null;
@@ -906,6 +922,40 @@ app.post("/api/clubs/:id/invitations/:invitationId/respond", async (req, res) =>
     res.status(500).json({ error: "Server error while responding to invitation." });
   }
 });
+
+// Club chat: get message history (members only)
+app.get("/api/clubs/:id/messages", async (req, res) => {
+  try {
+    const clubId = Number(req.params.id);
+    const userId = Number(req.query.userId);
+
+    if (!clubId || !userId) {
+      return res.status(400).json({ error: "clubId (in URL) and userId (query) are required" });
+    }
+
+    if (!(await isClubMember(clubId, userId))) {
+      return res.status(403).json({ error: "You must be a member of this club to view chat." });
+    }
+
+    const before = req.query.before ? new Date(req.query.before) : new Date();
+    const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+    const messages = await prisma.message.findMany({
+      where: { clubId, createdAt: { lt: before } },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        user: { select: { id: true, name: true } },
+      },
+    });
+
+    res.json(messages.reverse()); // oldest → newest
+  } catch (error) {
+    console.error("❌ Error fetching club messages:", error);
+    res.status(500).json({ error: "Server error while fetching messages." });
+  }
+});
+
 
 // Get club members
 app.get("/api/clubs/:id/members", async (req, res) => {
@@ -1804,9 +1854,94 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-// Start server
+// Start server WITH Socket.IO
 const port = process.env.PORT || 3001;
-const host = process.env.HOST || '0.0.0.0';
-app.listen(port, host, () => {
-  console.log(`✅ Server running on port ${port}`);
+const host = process.env.HOST || "0.0.0.0";
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+// Simple auth for sockets: we pass userId in query from the frontend
+io.use((socket, next) => {
+  const raw = socket.handshake.query.userId;
+  const userId = Number(raw);
+  if (!userId || Number.isNaN(userId)) {
+    return next(new Error("userId is required"));
+  }
+  socket.userId = userId;
+  next();
+});
+
+const clubRoom = (clubId) => `club:${clubId}`;
+
+io.on("connection", (socket) => {
+  console.log("🔌 Socket connected:", socket.id, "userId:", socket.userId);
+
+  // Client asks to join a club's chat room
+  socket.on("joinClub", async ({ clubId }) => {
+    try {
+      const cId = Number(clubId);
+      if (!cId) return;
+
+      const member = await isClubMember(cId, socket.userId);
+      if (!member) {
+        console.warn(`User ${socket.userId} tried to join club ${cId} but is not a member`);
+        return;
+      }
+
+      socket.join(clubRoom(cId));
+      console.log(`User ${socket.userId} joined room ${clubRoom(cId)}`);
+    } catch (e) {
+      console.error("Error in joinClub:", e);
+    }
+  });
+
+  // Send a new chat message
+  socket.on("sendMessage", async ({ clubId, content }, cb) => {
+    try {
+      const cId = Number(clubId);
+      const userId = socket.userId;
+      const text = (content || "").trim();
+
+      if (!cId || !text) {
+        return cb?.({ ok: false, error: "Invalid club or empty message" });
+      }
+
+      if (!(await isClubMember(cId, userId))) {
+        return cb?.({ ok: false, error: "Not a member of this club" });
+      }
+
+      const saved = await prisma.message.create({
+        data: {
+          clubId: cId,
+          userId,
+          content: text.slice(0, 2000),
+        },
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      });
+
+      io.to(clubRoom(cId)).emit("newMessage", saved);
+      cb?.({ ok: true, message: saved });
+    } catch (e) {
+      console.error("Error in sendMessage:", e);
+      cb?.({ ok: false, error: "Server error sending message" });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    console.log("🔌 Socket disconnected:", socket.id);
+  });
+});
+
+server.listen(port, host, () => {
+  console.log(`✅ Server with Socket.IO running on port ${port}`);
 });

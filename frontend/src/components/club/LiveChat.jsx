@@ -35,12 +35,15 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
       console.error("Error loading chat history:", e);
       setError(e.message || "Failed to load chat");
     } finally {
-      setLoading(false);
-      // scroll to bottom after initial load
-      setTimeout(() => {
-        listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
-      }, 0);
-    }
+        setLoading(false);
+        // scroll to bottom of the chat container only
+        setTimeout(() => {
+          const list = listRef.current;
+          if (list) {
+            list.scrollTop = list.scrollHeight;
+          }
+        }, 0);
+      }
   };
 
   // Socket.IO setup
@@ -67,13 +70,30 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
       setError("Live chat connection failed.");
     });
 
-    socket.on("newMessage", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
-    });
+  socket.on("newMessage", (msg) => {
+    setMessages((prev) => {
+      const list = listRef.current;
+      const isNearBottom =
+        list &&
+        list.scrollHeight - list.scrollTop - list.clientHeight < 100;
 
-    return () => {
-      socket.disconnect();
+      const updated = [...prev, msg];
+
+      if (isNearBottom && list) {
+        setTimeout(() => {
+          const l = listRef.current;
+          if (l) {
+            l.scrollTop = l.scrollHeight;
+          }
+        }, 50);
+      }
+
+      return updated;
+    });
+  });
+
+  return () => {
+    socket.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, user?.id, apiBase, isMember]);
@@ -134,16 +154,37 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
               </p>
             )}
 
-            {messages.map((m) => (
-              <div key={m.id} className="mb-1">
-                <div className="text-xs text-gray-500 mb-0.5">
-                  {m.user?.name ?? "Member"}
+              {messages.map((msg) => (
+                <div key={msg.id} className="flex items-start gap-2 mb-3">
+                  {/* Avatar */}
+                  <img
+                    src={msg.user?.profilePicture || "/default-avatar.png"}
+                    alt={msg.user?.name || "User"}
+                    className="w-8 h-8 rounded-full object-cover flex-shrink-0 border"
+                  />
+
+                  {/* Message content */}
+                  <div>
+                    <p
+                      className="text-xs text-gray-600 mb-1"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      {msg.user?.name ?? "Member"}
+                    </p>
+                    <div
+                      className="bg-white border rounded-md px-3 py-2 text-sm max-w-[80%]"
+                      style={{
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
                 </div>
-                <div className="inline-block max-w-[80%] bg-white border rounded-md px-3 py-2 text-sm">
-                  {m.content}
-                </div>
-              </div>
-            ))}
+              ))}
+
           </div>
 
           {error && (

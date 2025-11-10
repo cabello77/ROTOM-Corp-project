@@ -9,6 +9,7 @@ const { PrismaClient } = require('@prisma/client');
 
 const app = express();
 const prisma = new PrismaClient();
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 const parseUserId = (value) => {
   const parsed = Number(value);
@@ -945,17 +946,42 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
       orderBy: { createdAt: "desc" },
       take: limit,
       include: {
-        user: { select: { id: true, name: true } },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
+          },
+        },
       },
     });
 
-    res.json(messages.reverse()); // oldest → newest
+    const baseUrl =
+      process.env.BASE_URL ||
+      process.env.API_BASE_URL ||
+      `http://localhost:${port}`;
+
+    // Normalize all messages
+    const normalized = messages.reverse().map((m) => ({
+      id: m.id,
+      clubId: m.clubId,
+      content: m.content,
+      createdAt: m.createdAt,
+      user: {
+        id: m.user.id,
+        name: m.user.name,
+        profilePicture: m.user.profile?.profilePicture
+          ? `${baseUrl}${m.user.profile.profilePicture}`
+          : null,
+      },
+    }));
+
+    res.json(normalized);
   } catch (error) {
     console.error("❌ Error fetching club messages:", error);
     res.status(500).json({ error: "Server error while fetching messages." });
   }
 });
-
 
 // Get club members
 app.get("/api/clubs/:id/members", async (req, res) => {
@@ -1914,10 +1940,12 @@ io.on("connection", (socket) => {
         return cb?.({ ok: false, error: "Invalid club or empty message" });
       }
 
+      // Ensure user is a member
       if (!(await isClubMember(cId, userId))) {
         return cb?.({ ok: false, error: "Not a member of this club" });
       }
 
+      // Create message
       const saved = await prisma.message.create({
         data: {
           clubId: cId,
@@ -1925,17 +1953,45 @@ io.on("connection", (socket) => {
           content: text.slice(0, 2000),
         },
         include: {
-          user: { select: { id: true, name: true } },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profile: { select: { profilePicture: true } },
+            },
+          },
         },
       });
 
-      io.to(clubRoom(cId)).emit("newMessage", saved);
-      cb?.({ ok: true, message: saved });
+      // --- Normalize the message object ---
+      const baseUrl =
+        process.env.BASE_URL ||
+        process.env.API_BASE_URL ||
+        `http://localhost:${port}`;
+
+      const message = {
+        id: saved.id,
+        clubId: saved.clubId,
+        content: saved.content,
+        createdAt: saved.createdAt,
+        user: {
+          id: saved.user.id,
+          name: saved.user.name,
+          profilePicture: saved.user.profile?.profilePicture
+            ? `${baseUrl}${saved.user.profile.profilePicture}`
+            : null,
+        },
+      };
+
+      // Emit to all members in this club
+      io.to(`club:${cId}`).emit("newMessage", message);
+      cb?.({ ok: true, message });
     } catch (e) {
       console.error("Error in sendMessage:", e);
       cb?.({ ok: false, error: "Server error sending message" });
     }
   });
+
 
   socket.on("disconnect", () => {
     console.log("🔌 Socket disconnected:", socket.id);

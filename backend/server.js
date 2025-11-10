@@ -957,11 +957,8 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
     });
 
     const baseUrl =
-      process.env.BASE_URL ||
-      process.env.API_BASE_URL ||
-      `http://localhost:${port}`;
+      process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
 
-    // Normalize all messages
     const normalized = messages.reverse().map((m) => ({
       id: m.id,
       clubId: m.clubId,
@@ -971,7 +968,9 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
         id: m.user.id,
         name: m.user.name,
         profilePicture: m.user.profile?.profilePicture
-          ? `${baseUrl}${m.user.profile.profilePicture}`
+          ? `${baseUrl}${m.user.profile.profilePicture.startsWith("/") ? "" : "/"}${
+              m.user.profile.profilePicture
+            }`
           : null,
       },
     }));
@@ -982,6 +981,7 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
     res.status(500).json({ error: "Server error while fetching messages." });
   }
 });
+
 
 // Get club members
 app.get("/api/clubs/:id/members", async (req, res) => {
@@ -1940,12 +1940,10 @@ io.on("connection", (socket) => {
         return cb?.({ ok: false, error: "Invalid club or empty message" });
       }
 
-      // Ensure user is a member
       if (!(await isClubMember(cId, userId))) {
         return cb?.({ ok: false, error: "Not a member of this club" });
       }
 
-      // Create message
       const saved = await prisma.message.create({
         data: {
           clubId: cId,
@@ -1963,11 +1961,9 @@ io.on("connection", (socket) => {
         },
       });
 
-      // --- Normalize the message object ---
       const baseUrl =
         process.env.BASE_URL ||
-        process.env.API_BASE_URL ||
-        `http://localhost:${port}`;
+        `http://localhost:${port}`; // fine for dev; Heroku uses BASE_URL
 
       const message = {
         id: saved.id,
@@ -1978,12 +1974,13 @@ io.on("connection", (socket) => {
           id: saved.user.id,
           name: saved.user.name,
           profilePicture: saved.user.profile?.profilePicture
-            ? `${baseUrl}${saved.user.profile.profilePicture}`
+            ? `${baseUrl}${saved.user.profile.profilePicture.startsWith("/") ? "" : "/"}${
+                saved.user.profile.profilePicture
+              }`
             : null,
         },
       };
 
-      // Emit to all members in this club
       io.to(`club:${cId}`).emit("newMessage", message);
       cb?.({ ok: true, message });
     } catch (e) {
@@ -1991,6 +1988,7 @@ io.on("connection", (socket) => {
       cb?.({ ok: false, error: "Server error sending message" });
     }
   });
+
 
 
   socket.on("disconnect", () => {

@@ -174,8 +174,8 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
                     <div
                       className="bg-white border rounded-md px-3 py-2 text-sm max-w-[80%]"
                       style={{
-                        overflowWrap: "anywhere",
-                        wordBreak: "normal",
+                        overflowWrap: "keep-all",
+                        wordBreak: "break-word",
                         whiteSpace: "pre-wrap",
                       }}
                     >

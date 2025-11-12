@@ -1,172 +1,231 @@
-//DMs.jsx
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import DMChat from './DMChat';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import UserDropdown from "../UserDropdown";
+import DMChat from "./DMChat";
 
 export default function DMs() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [conversations, setConversations] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
   const [user, setUser] = useState(null);
-  
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  const [friends, setFriends] = useState([]);
+  const [dmFriends, setDmFriends] = useState([]);     // Friends with existing DMs
+  const [newChatFriends, setNewChatFriends] = useState([]); // Friends without DMs
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Get user from localStorage
+  // Load logged-in user
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      navigate('/login');
-    }
-  }, [navigate]);
+    const stored = localStorage.getItem("user");
+    if (!stored) return navigate("/login");
+    setUser(JSON.parse(stored));
+  }, []);
 
-  // Load conversations
+  // Load friends list
   useEffect(() => {
-    if (!user) return;
-    
-    const loadConversations = async () => {
+    if (!user?.id) return;
+    const loadFriends = async () => {
       try {
-        setLoading(true);
-        const res = await fetch(`${apiBase}/api/dms/conversations`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
-        
-        if (!res.ok) throw new Error('Failed to load conversations');
+        const res = await fetch(`${apiBase}/api/friends/${user.id}`);
         const data = await res.json();
-        setConversations(data || []);
-        
-        // Check if there's a conversationId in URL params
-        const conversationId = searchParams.get('conversation');
-        if (conversationId) {
-          const conv = data.find(c => c.id === conversationId);
-          if (conv) setSelectedConversation(conv);
-        }
-      } catch (error) {
-        console.error('Error loading conversations:', error);
+        const flist = (data.friends || []).map(f => f.friend || f);
+        setFriends(flist);
+      } catch (e) {
+        console.error("Error loading friends:", e);
+        setFriends([]);
+      }
+    };
+    loadFriends();
+  }, [user?.id]);
+
+  // Load DM conversations + split friends
+  useEffect(() => {
+    if (!user?.id || friends.length === 0) return;
+
+    const loadConvos = async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/dms/conversations`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+        });
+        const convos = await res.json();
+
+        const dmIds = convos.map(c =>
+          c.user1Id === user.id ? c.user2Id : c.user1Id
+        );
+
+        const withChats = friends.filter(f => dmIds.includes(f.id));
+        const withoutChats = friends.filter(f => !dmIds.includes(f.id));
+
+        setDmFriends(withChats);
+        setNewChatFriends(withoutChats);
+      } catch (e) {
+        console.error("Error loading DM conversations:", e);
       } finally {
         setLoading(false);
       }
     };
 
-    loadConversations();
-  }, [user, apiBase, searchParams]);
+    loadConvos();
+  }, [user?.id, friends]);
+
+  // Start or get DM convo
+  const openChat = async (friend) => {
+    try {
+      const res = await fetch(`${apiBase}/api/dm/get-or-create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+        body: JSON.stringify({
+          user1Id: user.id,
+          user2Id: friend.id
+        }),
+      });
+
+      const data = await res.json();
+      setSelectedConversation(data.conversationId);
+      setSelectedFriend(friend);
+    } catch (e) {
+      console.error("Error creating DM:", e);
+    }
+  };
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-amber-50/30">
-      <div className="max-w-7xl mx-auto p-4">
-        {/* Header */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-800">Messages</h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Chat with your friends
-              </p>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
+
+      {/* PLOTLINE HEADER */}
+      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
+              Plotline
             </div>
-            <button
-              onClick={() => navigate('/friends')}
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition text-sm font-medium"
-            >
-              Start New Chat
-            </button>
+            <div className="flex items-center space-x-3">
+              <UserDropdown />
+            </div>
           </div>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Conversations List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-3">Conversations</h2>
-              
+      {/* BODY */}
+      <div className="max-w-7xl mx-auto p-6 w-full">
+
+        {/* PAGE HEADER */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+            Messages
+          </h1>
+
+          <button
+            onClick={() => navigate("/add-friend")}
+            className="px-4 py-2 bg-[#774C30] text-white rounded-lg hover:opacity-90 text-sm"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Add Friends
+          </button>
+        </div>
+
+        {/* TOP BUBBLE ROW → only friends you haven't DM'd yet */}
+        {newChatFriends.length > 0 && (
+          <div className="mb-6 flex items-center gap-3 overflow-x-auto pb-2">
+            {newChatFriends.map(f => {
+              const avatar = f.profile?.profilePicture
+                ? (f.profile.profilePicture.startsWith("http")
+                    ? f.profile.profilePicture
+                    : `${apiBase}${f.profile.profilePicture}`)
+                : null;
+
+              return (
+                <div
+                  key={f.id}
+                  className="cursor-pointer w-14 h-14 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow hover:shadow-md flex-shrink-0"
+                  title={`Message ${f.name}`}
+                  onClick={() => openChat(f)}
+                >
+                  {avatar ? (
+                    <img src={avatar} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="bg-[#efe2cf] w-full h-full flex items-center justify-center text-lg font-semibold text-gray-700">
+                      {f.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* MAIN GRID */}
+        <div className="grid grid-cols-12 gap-6">
+
+          {/* LEFT SIDEBAR — existing DM friends */}
+          <div className="col-span-12 md:col-span-4 lg:col-span-3">
+            <div className="bg-white rounded-xl border border-[#e3d8c8] shadow-sm p-4 space-y-2">
+
+              <h2 className="text-lg font-semibold text-gray-800 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+                Your Chats
+              </h2>
+
               {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-500">Loading...</p>
-                </div>
-              ) : conversations.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-gray-500 mb-3">No conversations yet</p>
-                  <button
-                    onClick={() => navigate('/friends')}
-                    className="text-sm text-amber-600 hover:text-amber-700 font-medium"
-                  >
-                    Message a friend →
-                  </button>
-                </div>
+                <p className="text-sm text-gray-500">Loading…</p>
+              ) : dmFriends.length === 0 ? (
+                <p className="text-sm text-gray-600 italic">No active conversations.</p>
               ) : (
-                <div className="space-y-2">
-                  {conversations.map((conv) => {
-                    // Get the friend (the other user in the conversation)
-                    const friend = conv.user1?.id === user.id ? conv.user2 : conv.user1;
-                    
-                    return (
-                      <button
-                        key={conv.id}
-                        onClick={() => setSelectedConversation(conv)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg hover:bg-amber-50 transition text-left ${
-                          selectedConversation?.id === conv.id ? 'bg-amber-100' : ''
-                        }`}
-                      >
-                        <img
-                          src={
-                            friend?.profile?.profilePicture
-                              ? (friend.profile.profilePicture.startsWith('http')
-                                  ? friend.profile.profilePicture
-                                  : `${apiBase}${friend.profile.profilePicture}`)
-                              : 'https://via.placeholder.com/40'
-                          }
-                          alt={friend?.name || 'Friend'}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-amber-100"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-800 truncate">
-                            {friend?.name || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {conv.lastMessage?.content || 'Start chatting...'}
-                          </p>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+                dmFriends.map(f => {
+                  const avatar = f.profile?.profilePicture
+                    ? (f.profile.profilePicture.startsWith("http")
+                        ? f.profile.profilePicture
+                        : `${apiBase}${f.profile.profilePicture}`)
+                    : null;
+
+                  return (
+                    <div
+                      key={f.id}
+                      onClick={() => openChat(f)}
+                      className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-[#f4ebdf] transition"
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d7c4a9]">
+                        {avatar ? (
+                          <img src={avatar} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="bg-[#efe2cf] w-full h-full flex items-center justify-center text-sm font-semibold text-gray-700">
+                            {f.name?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      <p className="text-sm font-medium text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+                        {f.name}
+                      </p>
+                    </div>
+                  );
+                })
               )}
+
             </div>
           </div>
 
-          {/* Chat Area */}
-          <div className="lg:col-span-2">
+          {/* RIGHT CHAT PANEL */}
+          <div className="col-span-12 md:col-span-8 lg:col-span-9">
             {selectedConversation ? (
               <DMChat
-                conversationId={selectedConversation.id}
+                conversationId={selectedConversation}
+                friend={selectedFriend}
                 user={user}
                 apiBase={apiBase}
-                friend={selectedConversation.user1?.id === user.id ? selectedConversation.user2 : selectedConversation.user1}
               />
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-8 text-center">
-                <div className="max-w-sm mx-auto">
-                  <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                    Select a conversation
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Choose a conversation from the list to start messaging
-                  </p>
-                </div>
+              <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-10 text-center text-gray-600"
+                   style={{ fontFamily: "Times New Roman, serif" }}>
+                Select a friend to start messaging.
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>

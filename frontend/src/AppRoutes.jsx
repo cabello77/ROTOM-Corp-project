@@ -10,6 +10,8 @@ import Friends from "./Friends";
 import AddFriend from "./AddFriend";
 import Notifications from "./Notifications";
 import FriendProfile from "./FriendProfile";
+import DMs from "./DMs";
+
 
 
 export default function AppRoutes() {
@@ -26,6 +28,7 @@ export default function AppRoutes() {
       <Route path="/friends/:friendId" element={<FriendProfile />} />
       <Route path="/add-friend" element={<AddFriend />} />
       <Route path="/notifications" element={<Notifications />} />
+      <Route path="/dms" element={<DMs />} />
     </Routes>
   );
 }

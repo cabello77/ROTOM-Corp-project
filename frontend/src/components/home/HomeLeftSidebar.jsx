@@ -108,6 +108,47 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
           Add Friends
         </Link>
       </div>
+      {/* Direct Messages */}
+    <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+      <h2
+        className="text-lg font-semibold text-gray-800"
+        style={{ fontFamily: "Times New Roman, serif" }}
+      >
+        Direct Messages
+      </h2>
+
+      <div className="flex flex-wrap gap-3">
+        {/* Example placeholder avatars */}
+        <div
+          className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center bg-[#efe2cf] cursor-pointer"
+        >
+          <span
+            className="text-lg text-gray-700 font-semibold"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            A
+          </span>
+        </div>
+        <div
+          className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center bg-[#efe2cf] cursor-pointer"
+        >
+          <span
+            className="text-lg text-gray-700 font-semibold"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            B
+          </span>
+        </div>
+      </div>
+
+      <Link
+        to="/dms"
+        className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+        style={{ fontFamily: "Times New Roman, serif" }}
+      >
+        Open Messages
+      </Link>
+    </div>
     </aside>
   );
 }

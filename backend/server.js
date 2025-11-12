@@ -1990,6 +1990,43 @@ io.on("connection", (socket) => {
   });
 
 
+// === DIRECT MESSAGE HANDLERS ===
+socket.on("send_dm", async ({ conversationId, senderId, content, receiverId }) => {
+  try {
+    // ✅ Ensure conversation exists first
+    const convo = await prisma.directMessage.upsert({
+      where: { id: conversationId },
+      update: {},
+      create: {
+        user1: { connect: { id: senderId } },
+        user2: { connect: { id: receiverId } },
+      },
+    });
+
+    // ✅ Create the message in that conversation
+    const message = await prisma.dMMessage.create({
+      data: {
+        content,
+        sender: { connect: { id: senderId } },
+        convo: { connect: { id: convo.id } },
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
+          },
+        },
+      },
+    });
+
+    io.to(`dm_${convo.id}`).emit("receive_dm", message);
+    console.log("💬 DM sent:", message);
+  } catch (error) {
+    console.error("Error sending DM:", error);
+  }
+});
 
   socket.on("disconnect", () => {
     console.log("🔌 Socket disconnected:", socket.id);
@@ -2178,42 +2215,46 @@ app.get("/api/dm/user/:userId", async(req, res) => {
 
 //create socket channel for DMs bewteen two users
 io.on("connection", (socket) => {
-          console.log("User connected:", socket.id);
-          socket.on("join_dm", (conversationId) => {
-                    socket.join(`dm_${conversationId}`);
-                    console.log(`Socket ${socket.id} joined dm_${conversationId}`);
-          });
+  console.log("✅ User connected:", socket.id);
 
-          socket.on("send_dm", async({conversationId, senderId, content}) => {
-                    try 
-                    {
-                              const message = await prisma.dMMessage.create({
-                                        data: {
-                                                  conversationId,
-                                                  senderId,
-                                                  content,
-                                        },
-                                        include: {
-                                                  sender: {
-                                                            select: {
-                                                                      id: true,
-                                                                      name: true,
-                                                                      profile: {
-                                                                                select: {profilePicture: true},
-                                                                      },
-                                                            },
-                                                  },
-                                        },
-                              });
+  socket.on("join_dm", (conversationId) => {
+    socket.join(`dm_${conversationId}`);
+    console.log(`Socket ${socket.id} joined dm_${conversationId}`);
+  });
 
-                              io.to(`dm_${conversationId}`).emit("recieve_dm", message)
-                    } catch (error) {
-                              console.error("Error sending DM: ", error);
-                    }
-          });
+  socket.on("send_dm", async ({ conversationId, senderId, content }) => {
+    try {
+      // example create/save message
+      const message = { conversationId, senderId, content };
+      io.to(`dm_${conversationId}`).emit("recieve_dm", message);
+      console.log("💬 DM sent:", message);
+    } catch (err) {
+      console.error("❌ Error sending DM:", err);
+    }
+  });
 
-          socket.on("disconnect", () => {
-                    console.log("User disconnected: ", socket.id);
-          });
+  socket.on("disconnect", () => {
+    console.log("🔌 Socket disconnected:", socket.id);
+  });
 });
 
+app.get("/api/dms/:conversationId/messages", async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+
+    const messages = await prisma.dMMessage.findMany({
+      where: { conversationId: Number(conversationId) },
+      include: {
+        sender: {
+          select: { id: true, name: true, profile: { select: { profilePicture: true } } },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    res.json(messages);
+  } catch (err) {
+    console.error("Error loading DM messages:", err);
+    res.status(500).json({ error: "Failed to load messages" });
+  }
+});

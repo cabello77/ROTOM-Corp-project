@@ -1999,3 +1999,221 @@ io.on("connection", (socket) => {
 server.listen(port, host, () => {
   console.log(`✅ Server with Socket.IO running on port ${port}`);
 });
+
+//checking friendship bewteen users so that only friends can send DMs to each other
+async function areFriends(userA, userB, prisma) 
+{
+          const friendship = await prisma.friend.findFirst ({
+                    where: {
+                              OR: [
+                                        {userId: userA, friendId: userB, status: "ACCEPTED"},
+                                        {userId: userB, friendId, userA, status: "ACCEPTED"},
+                              ],
+                    },
+          });
+
+          return !!friendship;
+}
+
+//create DMs between two users
+app.post("/api/dm/start", async(req, res) => {
+          const {user1Id, user2Id} = req.body;
+          if (!user1Id || !user2Id)
+          {
+                    return res.status(400).json({error: "Both user Ids are required."});
+          }
+
+          try 
+          {
+                    const friends = await areFriends(user1Id, user2Id, prisma);
+                    if (!friends) {
+                              return res.status(403).json({error: "Cannot DM user that is not a friend."});
+                    }
+
+                    const [a, b] = user1Id < user2Id ? [user1Id, user2Id] : [user2Id, user1Id];
+                    let convo = await prisma.directMessage.findUnique ({
+                              where: {user1Id_user2Id: {user1Id: a, user2Id: b}},
+                    });
+
+                    if (!conversation) {
+                              conversation = await prisma.directMessage.create({
+                                        data: {user1Id: a, user2Id: b},
+                              });
+                    }
+
+                    res.json(conversation);
+          } catch (error) {
+                    console.error(error);
+                    res.status(500).json({error: "DM conversation could not be created/started."});
+          }
+});
+
+//send DM
+app.post("/api/dm/:conversationId/message", async(req, res) => {
+          const {conversationId} = req.params;
+          const {senderId, content} = req.body;
+
+          if(!senderId || !content)
+          {
+                    return res.status(400).json({error: "Sender and message required."});
+          }
+
+          try 
+          {
+                    const conversation = await prisma.directMessage.findUnique({
+                              where: {id: Number(conversationId)}
+                    });
+                    if (!conversation) {
+                              return res.status(404).json({error: "Conversation not started between users."});
+                    }
+
+                    const receiverId = 
+                    conversation.user1Id === Number(senderId) ? conversation.user2Id : conversation.user1Id;
+                    const friends = await areFriends(senderId, receiverId, prisma);
+                    if (!friends) {
+                              return res.status(403).json({error: "Cannot send message to user that is not a friend."});
+                    }
+
+                    const message = await prisma.dMMessage.create({
+                              data: {
+                                        conversationId: Number(conversationId),
+                                        senderId,
+                                        content,
+                              },
+                    });
+
+                    const fullMessage = await prisma.dMMessage.findUnique ({
+                              where: {id: message.id},
+                              include: {
+                                        sender: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile: {
+                                                                      select: {profilePicture: true},
+                                                            },
+                                                  },
+                                        },
+                              },
+                    });
+                    res.json(fullMessage);
+          } catch (error) {
+                    console.error(error);
+                    res.status(500).json({error: "Could not send DM message"});
+          }
+});
+
+//get DM messages between two users
+app.get("/api/dm/:conversationId/messages", async(req, res) => {
+          const {conversationId} = req.params;
+
+          try 
+          {
+                    const messages = await prisma.dMMessage.findMany ({
+                              where: {conversationId: Number(conversationId)},
+                              include: {
+                                        sender: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile: {
+                                                                      select: {profilePicture: true},
+                                                            },
+                                                  },
+                                        },
+                              },
+                              orderBy: {createdAt: "asc"},
+                    });
+          } catch (error) {
+                    console.error(error);
+                    res.status(500).json({error: "Failed to load DMs."});
+          }
+});
+
+//get user's DMs 
+app.get("/api/dm/user/:userId", async(req, res) => {
+          const {userId} = req.params;
+          try 
+          {
+                    const dms = await prisma.directMessage.findMany ({
+                              where: {
+                                        OR: [{user1Id: Number(userId)}, {user2Id: Number(userId)}],
+                              },
+
+                              include: {
+                                        user1: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile: {
+                                                                      select: {profilePicture: true},
+                                                            },
+                                                  },
+                                        },
+                                        user2: {
+                                                  select: {
+                                                            id: true,
+                                                            name: true,
+                                                            profile: {
+                                                                      select: {profilePicture: true},
+                                                            },
+                                                  },
+                                        },
+                                        messages: {
+                                                  orderBy: {createdAt: "desc"},
+                                                  take: 1,
+                                                  select: {
+                                                            content: true,
+                                                            createdAt: true,
+                                                  },
+                                        },
+                              },
+                    });
+                    res.json(dms);
+          } catch (error) {
+                    console.error(error);
+                    res.status(500).json({error: "Falied to get user's DMs."});
+          }
+});
+
+//create socket channel for DMs bewteen two users
+io.on("connection", (socket) => {
+          console.log("User connected:", socket.id);
+          socket.on("join_dm", (conversationId) => {
+                    socket.join(`dm_${conversationId}`);
+                    console.log(`Socket ${socket.id} joined dm_${conversationId}`);
+          });
+
+          socket.on("send_dm", async({conversationId, senderId, content}) => {
+                    try 
+                    {
+                              const message = await prisma.dMMessage.create({
+                                        data: {
+                                                  conversationId,
+                                                  senderId,
+                                                  content,
+                                        },
+                                        include: {
+                                                  sender: {
+                                                            select: {
+                                                                      id: true,
+                                                                      name: true,
+                                                                      profile: {
+                                                                                select: {profilePicture: true},
+                                                                      },
+                                                            },
+                                                  },
+                                        },
+                              });
+
+                              io.to(`dm_${conversationId}`).emit("recieve_dm", message)
+                    } catch (error) {
+                              console.error("Error sending DM: ", error);
+                    }
+          });
+
+          socket.on("disconnect", () => {
+                    console.log("User disconnected: ", socket.id);
+          });
+});
+

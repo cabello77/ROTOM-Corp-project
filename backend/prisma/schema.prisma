@@ -206,3 +206,23 @@ model Message {
 
   @@index([clubId, createdAt])
 }
+
+model DirectMessage {
+  id        Int      @id @default(autoincrement())
+  user1Id   Int
+  user2Id   Int
+  user1     User @relation(fields: [user1Id], references: [id], onDelete: Cascade)
+  user2     User @relation(fields: [user2Id], references: [id], onDelete: Cascade)
+  messages  DMMessage[]
+  @@unique([user1Id, user2Id])
+}
+
+model DMMessage {
+  id        Int      @id @default(autoincrement())
+  convoId   Int
+  senderId  Int
+  createdAt DateTime @default(now())
+  content   String   @db.Text
+  convo     DirectMessage @relation(fields: [convoId], references: [id])
+  sender    User @relation(fields: [senderId], references: [id])
+}

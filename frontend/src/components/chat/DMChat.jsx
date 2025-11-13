@@ -72,32 +72,38 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
   return (
     <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <img
-            src={
-              friend?.profile?.profilePicture
-                ? friend.profile.profilePicture.startsWith("http")
-                  ? friend.profile.profilePicture
-                  : `${apiBase}${friend.profile.profilePicture}`
-                : "https://via.placeholder.com/40"
-            }
-            alt={friend?.name || "Friend"}
-            className="w-10 h-10 rounded-full border border-[#d7c4a9]"
-          />
-          <h2
-            className="text-lg font-semibold text-gray-800"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
-            {friend?.name || "Direct Message"}
-          </h2>
-        </div>
-        {(loading || connecting) && (
-          <span className="text-xs text-gray-500">
-            {loading ? "Loading…" : "Connecting…"}
-          </span>
-        )}
-      </div>
+<div className="flex items-center gap-3 mb-4">
+  <img
+    src={
+      friend?.profile?.profilePicture
+        ? (friend.profile.profilePicture.startsWith("http")
+            ? friend.profile.profilePicture
+            : `${apiBase}${friend.profile.profilePicture}`)
+        : "https://via.placeholder.com/40"
+    }
+    alt={friend?.name || "Friend"}
+    className="w-12 h-12 rounded-full border border-[#d7c4a9] object-cover"
+  />
+
+  <div className="flex flex-col">
+    <h2
+      className="text-lg font-semibold text-gray-800"
+      style={{ fontFamily: "Times New Roman, serif" }}
+    >
+      {friend?.name}
+    </h2>
+    <p className="text-xs text-gray-500 italic" style={{ fontFamily: "Times New Roman, serif" }}>
+      Direct Message
+    </p>
+  </div>
+
+  {(loading || connecting) && (
+    <span className="ml-auto text-xs text-gray-500">
+      {loading ? "Loading…" : "Connecting…"}
+    </span>
+  )}
+</div>
+
 
       {/* Chat Messages */}
       <div

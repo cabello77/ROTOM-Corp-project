@@ -67,15 +67,31 @@ socket.on("join_dm", (conversationId) => {
   console.log(`User ${userId} joined DM room ${conversationId}`);
 });
 
-//sending DM
-socket.on("send_dm", async ({ conversationId, senderId, receiverId, content }) => {
+socket.on("send_dm", async ({ conversationId, senderId, content }) => {
   try {
-    if (!senderId || !receiverId || !content) {
-      console.warn("Invalid DM payload", { conversationId, senderId, receiverId, content });
+    if (!senderId || !content) {
+      console.warn("Invalid DM payload", { conversationId, senderId, content });
       return;
     }
 
-    // Ensure friendship exists
+    // Fetch or create conversation
+    let convo = null;
+    if (conversationId) {
+      convo = await prisma.directMessage.findUnique({
+        where: { id: Number(conversationId) },
+      });
+    }
+
+    if (!convo) {
+      console.warn("Conversation not found; cannot determine receiver.");
+      return;
+    }
+
+    // Determine receiver automatically
+    const receiverId =
+      convo.user1Id === senderId ? convo.user2Id : convo.user1Id;
+
+    // Ensure they are friends
     const areFriends = await prisma.friend.findFirst({
       where: {
         status: "ACCEPTED",
@@ -91,25 +107,12 @@ socket.on("send_dm", async ({ conversationId, senderId, receiverId, content }) =
       return;
     }
 
-    let convo = null;
-    if (conversationId) {
-      convo = await prisma.directMessage.findUnique({ where: { id: Number(conversationId) } });
-    }
-
-    if (!convo) {
-      const [a, b] = senderId < receiverId ? [senderId, receiverId] : [receiverId, senderId];
-      convo = await prisma.directMessage.upsert({
-        where: { user1Id_user2Id: { user1Id: a, user2Id: b } },
-        update: {},
-        create: { user1Id: a, user2Id: b },
-      });
-    }
-
+    // Save message
     const message = await prisma.dMMessage.create({
       data: {
         content,
-        sender: { connect: { id: senderId } },
-        conversation: { connect: { id: convo.id } },
+        senderId: senderId,
+        conversationId: convo.id,
       },
       include: {
         sender: {

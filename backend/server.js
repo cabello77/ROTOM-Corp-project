@@ -2016,12 +2016,14 @@ async function areFriends(userA, userB, prisma)
           return !!friendship;
 }
 
-// get DM messages between two users
+// Get all messages for a given DM conversation
 app.get("/api/dm/:conversationId/messages", async (req, res) => {
   const { conversationId } = req.params;
+
   try {
     const messages = await prisma.dMMessage.findMany({
       where: { conversationId: Number(conversationId) },
+      orderBy: { createdAt: "asc" },
       include: {
         sender: {
           select: {
@@ -2031,14 +2033,63 @@ app.get("/api/dm/:conversationId/messages", async (req, res) => {
           },
         },
       },
-      orderBy: { createdAt: "asc" },
     });
+
     res.json(messages);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to load DMs." });
+  } catch (error) {
+    console.error("Error fetching DM messages:", error);
+    res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
+
+
+// Get or create a DM conversation between two users
+app.post("/api/dm/get-or-create", async (req, res) => {
+  const { user1Id, user2Id } = req.body;
+
+  if (!user1Id || !user2Id) {
+    return res.status(400).json({ error: "Missing user1Id or user2Id" });
+  }
+
+  try {
+    const [a, b] = user1Id < user2Id ? [user1Id, user2Id] : [user2Id, user1Id];
+
+    const convo = await prisma.directMessage.upsert({
+      where: {
+        user1Id_user2Id: { user1Id: a, user2Id: b },
+      },
+      update: {},
+      create: { user1Id: a, user2Id: b },
+      include: {
+        user1: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
+          },
+        },
+        user2: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
+          },
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { id: true, content: true, createdAt: true },
+        },
+      },
+    });
+
+    res.json(convo);
+  } catch (error) {
+    console.error("Error getting or creating DM:", error);
+    res.status(500).json({ error: "Failed to get or create DM" });
+  }
+});
+
 
 
 //get user's DMs 

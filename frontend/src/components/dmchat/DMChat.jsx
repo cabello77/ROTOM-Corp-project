@@ -17,7 +17,7 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
     if (!canChat) return;
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/api/dms/${conversationId}/messages`);
+      const res = await fetch(`${apiBase}/api/dm/${conversationId}/messages`);
       const data = await res.json();
       setMessages(Array.isArray(data) ? data : []);
     } catch (e) {
@@ -43,7 +43,7 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
 
     socket.on("connect", () => setConnecting(false));
 
-    socket.on("recieve_dm", (msg) => {
+    socket.on("receive_dm", (msg) => {
       setMessages((prev) => [...prev, msg]);
       listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
     });
@@ -57,7 +57,6 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
     socketRef.current.emit("send_dm", {
       conversationId,
       senderId: user.id,
-      receiverId: friend.id,
       content: text.trim(),
     });
 

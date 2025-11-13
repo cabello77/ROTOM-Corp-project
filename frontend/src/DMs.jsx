@@ -1,6 +1,6 @@
 import { useState } from "react";
 import DMList from "./DMList";
-import DMChat from "./components/chat/DMChat";
+import DMChat from "./components/dmchat/DMChat";
 import { useUser } from "./contexts/UserContext";
 import UserDropdown from "./components/UserDropdown";
 
@@ -19,22 +19,16 @@ export default function DMs() {
         fontFamily: "Times New Roman, serif",
       }}
     >
-      {/* ===== HEADER (Matches UserHome) ===== */}
-      <header
-        className="text-white shadow"
-        style={{ backgroundColor: "#774C30" }}
-      >
+      {/* ===== HEADER ===== */}
+      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            {/* Left: App Name */}
             <div
               className="text-6xl md:text-8xl italic"
               style={{ fontFamily: "Kapakana, cursive" }}
             >
               Plotline
             </div>
-
-            {/* Right: Profile Dropdown */}
             <div className="flex items-center space-x-3">
               <UserDropdown />
             </div>
@@ -43,18 +37,25 @@ export default function DMs() {
       </header>
 
       {/* ===== MAIN CONTENT ===== */}
-      <main className="flex-grow max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 px-6 py-10">
-        {/* Friend List */}
-        <div className="lg:col-span-4 bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-4 h-[70vh] overflow-y-auto">
-          <h2 className="text-lg font-semibold mb-4">Your Friends</h2>
-          <DMList onSelect={(friend) => setSelectedFriend(friend)} />
+      <main className="flex-grow max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* Sidebar = col-span-3 */}
+        <div className="lg:col-span-3 bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-4 h-[80vh] overflow-y-auto">
+          <h2 className="text-lg font-semibold mb-4">Your Messages</h2>
+
+          <DMList
+            onSelect={(friend, convoId) => {
+              setSelectedFriend(friend);
+              setConversationId(convoId);
+            }}
+          />
         </div>
 
-        {/* Chat Panel */}
-        <div className="lg:col-span-8">
+        {/* Chat Panel = col-span-9 */}
+        <div className="lg:col-span-9">
           {selectedFriend ? (
             <DMChat
-              conversationId={conversationId || selectedFriend.id} // placeholder
+              conversationId={conversationId}
               user={user}
               apiBase={API_BASE}
               friend={selectedFriend}

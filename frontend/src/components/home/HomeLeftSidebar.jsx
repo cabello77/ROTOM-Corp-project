@@ -118,28 +118,53 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
       </h2>
 
       <div className="flex flex-wrap gap-3">
-        {/* Example placeholder avatars */}
+  {friendsList.length ? (
+    friendsList.map((friend) => {
+      const friendData = friend.friend || friend;
+
+      const profilePicture = friendData.profile?.profilePicture;
+      const avatarSrc = profilePicture
+        ? (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")
+            ? profilePicture
+            : `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"}${profilePicture}`)
+        : null;
+
+      const name = friendData.name || friendData.profile?.username || "Friend";
+
+      return (
         <div
-          className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center bg-[#efe2cf] cursor-pointer"
+          key={friendData.id}
+          className="relative group cursor-pointer"
+          title={`Message ${name}`}
+          onClick={() => navigate("/dms", { state: { friend: friendData } })}
         >
-          <span
-            className="text-lg text-gray-700 font-semibold"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
-            A
-          </span>
+          <div className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition">
+            {avatarSrc ? (
+              <img src={avatarSrc} alt={name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
+                <span
+                  className="text-lg text-gray-700 font-semibold"
+                  style={{ fontFamily: "Times New Roman, serif" }}
+                >
+                  {name.charAt(0).toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <div
-          className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center bg-[#efe2cf] cursor-pointer"
-        >
-          <span
-            className="text-lg text-gray-700 font-semibold"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
-            B
-          </span>
-        </div>
-      </div>
+      );
+    })
+  ) : (
+    <p
+      className="text-sm text-gray-600"
+      style={{ fontFamily: "Times New Roman, serif" }}
+    >
+      No friends available for messaging.
+    </p>
+  )}
+</div>
+
 
       <Link
         to="/dms"

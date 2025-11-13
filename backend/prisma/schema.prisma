@@ -224,7 +224,7 @@ model DMMessage {
   id               Int      @id @default(autoincrement())
   conversationId   Int
   senderId         Int
-  reciverId        
+  receiverId        
   content          String
   createdAt        DateTime @default(now())
 

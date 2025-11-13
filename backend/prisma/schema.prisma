@@ -28,7 +28,8 @@ model User {
   sentInvitations        ClubInvitation[]      @relation("Inviter")
   receivedInvitations    ClubInvitation[]     @relation("Invitee")
   messages          Message[]
-  directMessages    DirectMessage[]       @relation("DirectMessages")
+  directMessagesSent          DirectMessage[]       @relation("SentMessages")
+  directMessagesReceived      DirectMessage[]                        @relation("ReceivedMessages")
   dmMessagesSent    DMMessage[]         @relation("UserSentMessages")
   dmMessagesReceived    DMMessage[]         @relation("UserReceivedMessages")
 }

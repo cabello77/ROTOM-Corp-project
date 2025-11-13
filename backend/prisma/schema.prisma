@@ -230,4 +230,5 @@ model DMMessage {
 
   conversation     DirectMessage @relation(fields: [conversationId], references: [id])
   sender           User   @relation("UserMessages", fields: [senderId], references: [id])
+  receiver         User @relation(fields: [receiverId], references: [id])
 }

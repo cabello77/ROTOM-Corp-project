@@ -54,14 +54,77 @@ function setupSocket(io) {
 
         if (ack) ack({ ok: true });
       } catch (error) {
-        console.error("❌ Error sending message:", error);
+        console.error("Error sending message:", error);
         if (ack) ack({ ok: false, error: error.message });
       }
     });
 
+    // Join a DM room
+    socket.on("join_dm", (conversationId) => {
+      if (!conversationId) return;
+      socket.join(`dm_${conversationId}`);
+      console.log(`User ${userId} joined DM room dm_${conversationId}`);
+    });
+
+    // Send a DM message
+    socket.on("send_dm", async ({ conversationId, senderId, receiverId, content }) => {
+      try {
+        if (!conversationId || !senderId || !receiverId || !content) {
+          console.warn("Invalid DM payload:", { conversationId, senderId, receiverId, content });
+          return;
+        }
+
+        const areFriends = await prisma.friend.findFirst({
+          where: {
+            status: "ACCEPTED",
+            OR: [
+              { userID: senderId, friendID: receiverId },
+              { userID: receiverId, friendID: senderId },
+            ],
+          },
+        });
+        if (!areFriends) {
+          console.warn(`User ${senderId} tried to DM non-friend ${receiverId}`);
+          return;
+        }
+
+        const convo = await prisma.directMessage.upsert({
+          where: { id: conversationId },
+          update: {},
+          create: {
+            user1: { connect: { id: senderId } },
+            user2: { connect: { id: receiverId } },
+          },
+        });
+
+        const message = await prisma.dMMessage.create({
+          data: {
+            content,
+            sender: { connect: { id: senderId } },
+            conversation: { connect: { id: convo.id } },
+          },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                profile: { select: { profilePicture: true } },
+              },
+            },
+          },
+        });
+
+        io.to(`dm_${convo.id}`).emit("receive_dm", message);
+        console.log(`DM sent in conversation ${convo.id}`);
+      } catch (error) {
+        console.error("Error sending DM:", error);
+      }
+    });
+
+
     // Optional: notify when a user disconnects
     socket.on("disconnect", () => {
-      console.log(`❌ Socket disconnected: ${socket.id} (userId: ${userId ?? "unknown"})`);
+      console.log(`Socket disconnected: ${socket.id} (userId: ${userId ?? "unknown"})`);
     });
   });
 }

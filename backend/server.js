@@ -1989,43 +1989,81 @@ io.on("connection", (socket) => {
     }
   });
 
+// DM socket handlers
+socket.on("join_dm", (conversationId) => {
+    if (!conversationId) return;
+    socket.join(`dm_${conversationId}`);
+    console.log(`User ${socket.userId} joined DM room dm_${conversationId}`);
+});
 
-// === DIRECT MESSAGE HANDLERS ===
-socket.on("send_dm", async ({ conversationId, senderId, content, receiverId }) => {
-  try {
-    // ✅ Ensure conversation exists first
-    const convo = await prisma.directMessage.upsert({
-      where: { id: conversationId },
-      update: {},
-      create: {
-        user1: { connect: { id: senderId } },
-        user2: { connect: { id: receiverId } },
-      },
-    });
+socket.on("send_dm", async ({ conversationId, senderId, receiverId, content }) => {
+    try {
+        // Validate payload
+        if (!senderId || !receiverId || !content) {
+            console.warn("Invalid DM payload:", { conversationId, senderId, receiverId, content });
+            return;
+        }
 
-    // ✅ Create the message in that conversation
-    const message = await prisma.dMMessage.create({
-      data: {
-        content,
-        sender: { connect: { id: senderId } },
-        convo: { connect: { id: convo.id } },
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } },
-          },
-        },
-      },
-    });
+        // Check friendship
+        const areFriends = await prisma.friend.findFirst({
+            where: {
+                status: "ACCEPTED",
+                OR: [
+                    { userID: senderId, friendID: receiverId },
+                    { userID: receiverId, friendID: senderId },
+                ],
+            },
+        });
 
-    io.to(`dm_${convo.id}`).emit("receive_dm", message);
-    console.log("💬 DM sent:", message);
-  } catch (error) {
-    console.error("Error sending DM:", error);
-  }
+        if (!areFriends) {
+            console.warn(`User ${senderId} tried to DM non-friend ${receiverId}`);
+            return;
+        }
+
+        // Ensure a conversation exists
+        let convo;
+        if (conversationId) {
+            convo = await prisma.directMessage.findUnique({ where: { id: conversationId } });
+        }
+
+        if (!convo) {
+            // Normalize user IDs to avoid duplicates
+            const [a, b] = senderId < receiverId ? [senderId, receiverId] : [receiverId, senderId];
+            convo = await prisma.directMessage.upsert({
+                where: { user1Id_user2Id: { user1Id: a, user2Id: b } },
+                update: {},
+                create: { user1Id: a, user2Id: b },
+            });
+        }
+
+        // Create the DM message
+        const message = await prisma.dMMessage.create({
+            data: {
+                content,
+                sender: { connect: { id: senderId } },
+                convo: { connect: { id: convo.id } },
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        profile: { select: { profilePicture: true } },
+                    },
+                },
+            },
+        });
+
+        // Join the room if not already joined
+        socket.join(`dm_${convo.id}`);
+
+        // Emit the message to all clients in the DM room
+        io.to(`dm_${convo.id}`).emit("receive_dm", message);
+        console.log(`DM sent in conversation ${convo.id}`, message);
+
+    } catch (error) {
+        console.error("Error sending DM:", error);
+    }
 });
 
   socket.on("disconnect", () => {
@@ -2052,94 +2090,6 @@ async function areFriends(userA, userB, prisma)
           return !!friendship;
 }
 
-//create DMs between two users
-app.post("/api/dm/start", async(req, res) => {
-          const {user1Id, user2Id} = req.body;
-          if (!user1Id || !user2Id)
-          {
-                    return res.status(400).json({error: "Both user Ids are required."});
-          }
-
-          try 
-          {
-                    const friends = await areFriends(user1Id, user2Id, prisma);
-                    if (!friends) {
-                              return res.status(403).json({error: "Cannot DM user that is not a friend."});
-                    }
-
-                    const [a, b] = user1Id < user2Id ? [user1Id, user2Id] : [user2Id, user1Id];
-                    let convo = await prisma.directMessage.findUnique ({
-                              where: {user1Id_user2Id: {user1Id: a, user2Id: b}},
-                    });
-
-                    if (!conversation) {
-                              conversation = await prisma.directMessage.create({
-                                        data: {user1Id: a, user2Id: b},
-                              });
-                    }
-
-                    res.json(conversation);
-          } catch (error) {
-                    console.error(error);
-                    res.status(500).json({error: "DM conversation could not be created/started."});
-          }
-});
-
-//send DM
-app.post("/api/dm/:conversationId/message", async(req, res) => {
-          const {conversationId} = req.params;
-          const {senderId, content} = req.body;
-
-          if(!senderId || !content)
-          {
-                    return res.status(400).json({error: "Sender and message required."});
-          }
-
-          try 
-          {
-                    const conversation = await prisma.directMessage.findUnique({
-                              where: {id: Number(conversationId)}
-                    });
-                    if (!conversation) {
-                              return res.status(404).json({error: "Conversation not started between users."});
-                    }
-
-                    const receiverId = 
-                    conversation.user1Id === Number(senderId) ? conversation.user2Id : conversation.user1Id;
-                    const friends = await areFriends(senderId, receiverId, prisma);
-                    if (!friends) {
-                              return res.status(403).json({error: "Cannot send message to user that is not a friend."});
-                    }
-
-                    const message = await prisma.dMMessage.create({
-                              data: {
-                                        conversationId: Number(conversationId),
-                                        senderId,
-                                        content,
-                              },
-                    });
-
-                    const fullMessage = await prisma.dMMessage.findUnique ({
-                              where: {id: message.id},
-                              include: {
-                                        sender: {
-                                                  select: {
-                                                            id: true,
-                                                            name: true,
-                                                            profile: {
-                                                                      select: {profilePicture: true},
-                                                            },
-                                                  },
-                                        },
-                              },
-                    });
-                    res.json(fullMessage);
-          } catch (error) {
-                    console.error(error);
-                    res.status(500).json({error: "Could not send DM message"});
-          }
-});
-
 //get DM messages between two users
 app.get("/api/dm/:conversationId/messages", async(req, res) => {
           const {conversationId} = req.params;
@@ -2161,6 +2111,7 @@ app.get("/api/dm/:conversationId/messages", async(req, res) => {
                               },
                               orderBy: {createdAt: "asc"},
                     });
+                    res.json(messages);
           } catch (error) {
                     console.error(error);
                     res.status(500).json({error: "Failed to load DMs."});
@@ -2213,48 +2164,6 @@ app.get("/api/dm/user/:userId", async(req, res) => {
           }
 });
 
-//create socket channel for DMs bewteen two users
-io.on("connection", (socket) => {
-  console.log("✅ User connected:", socket.id);
 
-  socket.on("join_dm", (conversationId) => {
-    socket.join(`dm_${conversationId}`);
-    console.log(`Socket ${socket.id} joined dm_${conversationId}`);
-  });
 
-  socket.on("send_dm", async ({ conversationId, senderId, content }) => {
-    try {
-      // example create/save message
-      const message = { conversationId, senderId, content };
-      io.to(`dm_${conversationId}`).emit("recieve_dm", message);
-      console.log("💬 DM sent:", message);
-    } catch (err) {
-      console.error("❌ Error sending DM:", err);
-    }
-  });
 
-  socket.on("disconnect", () => {
-    console.log("🔌 Socket disconnected:", socket.id);
-  });
-});
-
-app.get("/api/dms/:conversationId/messages", async (req, res) => {
-  try {
-    const { conversationId } = req.params;
-
-    const messages = await prisma.dMMessage.findMany({
-      where: { conversationId: Number(conversationId) },
-      include: {
-        sender: {
-          select: { id: true, name: true, profile: { select: { profilePicture: true } } },
-        },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    res.json(messages);
-  } catch (err) {
-    console.error("Error loading DM messages:", err);
-    res.status(500).json({ error: "Failed to load messages" });
-  }
-});

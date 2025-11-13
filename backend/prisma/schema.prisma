@@ -215,17 +215,18 @@ model DirectMessage {
   user2Id   Int
   user1     User @relation("SentMessages", fields: [user1Id], references: [id], onDelete: Cascade)
   user2     User @relation("ReceivedMessages", fields: [user2Id], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
   messages  DMMessage[]
-  @@unique([user1Id, user2Id])
+  @@unique([user1Id, user2Id], name: "user1Id_user2Id")
 }
 
 model DMMessage {
-  id        Int      @id @default(autoincrement())
-  convoId   Int
-  senderId  Int
-  content   String
-  createdAt DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  conversationId   Int
+  senderId         Int
+  content          String
+  createdAt        DateTime @default(now())
 
-  convo     DirectMessage @relation(fields: [convoId], references: [id])
-  sender    User          @relation("UserMessages", fields: [senderId], references: [id])
+  conversation     DirectMessage @relation(fields: [conversationId], references: [id])
+  sender           User   @relation("UserMessages", fields: [senderId], references: [id])
 }

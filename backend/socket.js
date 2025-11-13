@@ -59,68 +59,77 @@ function setupSocket(io) {
       }
     });
 
-    // Join a DM room
-    socket.on("join_dm", (conversationId) => {
-      if (!conversationId) return;
-      socket.join(`dm_${conversationId}`);
-      console.log(`User ${userId} joined DM room dm_${conversationId}`);
+
+//joining DM
+socket.on("join_dm", (conversationId) => {
+  if (!conversationId) return;
+  socket.join(`dm_${conversationId}`);
+  console.log(`User ${userId} joined DM room ${conversationId}`);
+});
+
+//sending DM
+socket.on("send_dm", async ({ conversationId, senderId, receiverId, content }) => {
+  try {
+    if (!senderId || !receiverId || !content) {
+      console.warn("Invalid DM payload", { conversationId, senderId, receiverId, content });
+      return;
+    }
+
+    // Ensure friendship exists
+    const areFriends = await prisma.friend.findFirst({
+      where: {
+        status: "ACCEPTED",
+        OR: [
+          { userID: senderId, friendID: receiverId },
+          { userID: receiverId, friendID: senderId },
+        ],
+      },
     });
 
-    // Send a DM message
-    socket.on("send_dm", async ({ conversationId, senderId, receiverId, content }) => {
-      try {
-        if (!conversationId || !senderId || !receiverId || !content) {
-          console.warn("Invalid DM payload:", { conversationId, senderId, receiverId, content });
-          return;
-        }
+    if (!areFriends) {
+      console.warn(`User ${senderId} tried to DM non-friend ${receiverId}`);
+      return;
+    }
 
-        const areFriends = await prisma.friend.findFirst({
-          where: {
-            status: "ACCEPTED",
-            OR: [
-              { userID: senderId, friendID: receiverId },
-              { userID: receiverId, friendID: senderId },
-            ],
-          },
-        });
-        if (!areFriends) {
-          console.warn(`User ${senderId} tried to DM non-friend ${receiverId}`);
-          return;
-        }
+    let convo = null;
+    if (conversationId) {
+      convo = await prisma.directMessage.findUnique({ where: { id: Number(conversationId) } });
+    }
 
-        const convo = await prisma.directMessage.upsert({
-          where: { id: conversationId },
-          update: {},
-          create: {
-            user1: { connect: { id: senderId } },
-            user2: { connect: { id: receiverId } },
-          },
-        });
+    if (!convo) {
+      const [a, b] = senderId < receiverId ? [senderId, receiverId] : [receiverId, senderId];
+      convo = await prisma.directMessage.upsert({
+        where: { user1Id_user2Id: { user1Id: a, user2Id: b } },
+        update: {},
+        create: { user1Id: a, user2Id: b },
+      });
+    }
 
-        const message = await prisma.dMMessage.create({
-          data: {
-            content,
-            sender: { connect: { id: senderId } },
-            conversation: { connect: { id: convo.id } },
+    const message = await prisma.dMMessage.create({
+      data: {
+        content,
+        sender: { connect: { id: senderId } },
+        conversation: { connect: { id: convo.id } },
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
           },
-          include: {
-            sender: {
-              select: {
-                id: true,
-                name: true,
-                profile: { select: { profilePicture: true } },
-              },
-            },
-          },
-        });
-
-        io.to(`dm_${convo.id}`).emit("receive_dm", message);
-        console.log(`DM sent in conversation ${convo.id}`);
-      } catch (error) {
-        console.error("Error sending DM:", error);
-      }
+        },
+      },
     });
 
+    socket.join(`dm_${convo.id}`);
+    io.to(`dm_${convo.id}`).emit("receive_dm", message);
+
+    console.log(`DM sent in conversation ${convo.id}`);
+  } catch (err) {
+    console.error("Error sending DM:", err);
+  }
+});
 
     // Optional: notify when a user disconnects
     socket.on("disconnect", () => {

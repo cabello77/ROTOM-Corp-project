@@ -28,9 +28,9 @@ model User {
   sentInvitations        ClubInvitation[]      @relation("Inviter")
   receivedInvitations    ClubInvitation[]     @relation("Invitee")
   messages          Message[]
-  sentMessages      DirectMessage[]       @relation("SentMessages")
-  receivedMessages  DirectMessage[]        @relation("ReceivedMessages")
-  dmMessagesSent     DMMessage[]         @relation("UserMessages")
+  directMessages    DirectMessage[]       @relation("DirectMessages")
+  dmMessagesSent    DMMessage[]         @relation("UserSentMessages")
+  dmMessagesReceived    DMMessage[]         @relation("UserReceivedMessages")
 }
 
 model Friend {
@@ -229,6 +229,8 @@ model DMMessage {
   createdAt        DateTime @default(now())
 
   conversation     DirectMessage @relation(fields: [conversationId], references: [id])
-  sender           User   @relation("UserMessages", fields: [senderId], references: [id])
-  receiver         User @relation("DMMessageReceiver", fields: [receiverId], references: [id])
+
+  sender           User @relation("UserSentMessages", fields: [senderId], references: [id])
+  receiver         User @relation("UserReceivedMessages", fields: [receiverId], references: [id])
 }
+

@@ -59,14 +59,7 @@ function setupSocket(io) {
       }
     });
 
-
-//joining DM
-socket.on("join_dm", (conversationId) => {
-  if (!conversationId) return;
-  socket.join(`dm_${conversationId}`);
-  console.log(`User ${userId} joined DM room ${conversationId}`);
-});
-
+//sending dm
 socket.on("send_dm", async ({ conversationId, senderId, content }) => {
   try {
     if (!senderId || !content) {
@@ -74,24 +67,18 @@ socket.on("send_dm", async ({ conversationId, senderId, content }) => {
       return;
     }
 
-    // Fetch or create conversation
-    let convo = null;
-    if (conversationId) {
-      convo = await prisma.directMessage.findUnique({
-        where: { id: Number(conversationId) },
-      });
-    }
+    const convo = await prisma.directMessage.findUnique({
+      where: { id: Number(conversationId) },
+    });
 
     if (!convo) {
       console.warn("Conversation not found; cannot determine receiver.");
       return;
     }
 
-    // Determine receiver automatically
     const receiverId =
       convo.user1Id === senderId ? convo.user2Id : convo.user1Id;
 
-    // Ensure they are friends
     const areFriends = await prisma.friend.findFirst({
       where: {
         status: "ACCEPTED",
@@ -106,12 +93,11 @@ socket.on("send_dm", async ({ conversationId, senderId, content }) => {
       console.warn(`User ${senderId} tried to DM non-friend ${receiverId}`);
       return;
     }
-
-    // Save message
     const message = await prisma.dMMessage.create({
       data: {
         content,
-        senderId: senderId,
+        senderId,
+        receiverId,
         conversationId: convo.id,
       },
       include: {

@@ -2032,6 +2032,13 @@ app.get("/api/dm/:conversationId/messages", async (req, res) => {
             profile: { select: { profilePicture: true } },
           },
         },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
+          },
+        },
       },
     });
 
@@ -2041,7 +2048,6 @@ app.get("/api/dm/:conversationId/messages", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
-
 
 // Get or create a DM conversation between two users
 app.post("/api/dm/get-or-create", async (req, res) => {
@@ -2078,7 +2084,22 @@ app.post("/api/dm/get-or-create", async (req, res) => {
         messages: {
           orderBy: { createdAt: "desc" },
           take: 1,
-          select: { id: true, content: true, createdAt: true },
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                profile: { select: { profilePicture: true } },
+              },
+            },
+            receiver: {
+              select: {
+                id: true,
+                name: true,
+                profile: { select: { profilePicture: true } },
+              },
+            },
+          },
         },
       },
     });
@@ -2089,8 +2110,6 @@ app.post("/api/dm/get-or-create", async (req, res) => {
     res.status(500).json({ error: "Failed to get or create DM" });
   }
 });
-
-
 
 //get user's DMs 
 app.get("/api/dm/user/:userId", async(req, res) => {

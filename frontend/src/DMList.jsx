@@ -20,10 +20,14 @@ export default function DMList({ onSelect }) {
 
         const mapped = {};
         for (const f of list) {
-          const convo = await axios.post(`${API_BASE}/api/dm/get-or-create`, {
-            user1Id: user.id,
-            user2Id: f.id
-          });
+          const user1Id = Math.min(user.id, f.id);
+          const user2Id = Math.max(user.id, f.id);
+
+const convo = await axios.post(`${API_BASE}/api/dm/get-or-create`, {
+    user1Id,
+    user2Id
+});
+
 
           mapped[f.id] = convo.data;
         }

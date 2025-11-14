@@ -59,23 +59,46 @@ function setupSocket(io) {
       }
     });
 
-//sending dm
+//join DM
+socket.on("join_dm", (conversationId) => {
+  if (!conversationId) return;
+  socket.join(`dm_${conversationId}`);
+  console.log(`User ${userId} joined DM room ${conversationId}`);
+});
+
+//send DM
 socket.on("send_dm", async ({ conversationId, senderId, content }) => {
   try {
-    if (!senderId || !content) {
+    if (!senderId || !content || !conversationId) {
       console.warn("Invalid DM payload", { conversationId, senderId, content });
       return;
     }
+
+    console.log("📩 Incoming DM payload:", {
+        conversationId,
+         senderId,
+         content
+        });
 
     const convo = await prisma.directMessage.findUnique({
       where: { id: Number(conversationId) },
     });
 
-    if (!convo) {
-      console.warn("Conversation not found; cannot determine receiver.");
-      return;
-    }
+        if (!convo) {
+                console.log("No conversation found — creating new one.");
 
+                const sender = senderId;
+                const receiver = receiverId;
+
+                const [a, b] = sender < receiver ? [sender, receiver] : [receiver, sender];
+
+                convo = await prisma.directMessage.create({
+                data: {
+                user1Id: a,
+                user2Id: b
+                }
+        });
+}
     const receiverId =
       convo.user1Id === senderId ? convo.user2Id : convo.user1Id;
 
@@ -93,6 +116,7 @@ socket.on("send_dm", async ({ conversationId, senderId, content }) => {
       console.warn(`User ${senderId} tried to DM non-friend ${receiverId}`);
       return;
     }
+
     const message = await prisma.dMMessage.create({
       data: {
         content,
@@ -108,10 +132,16 @@ socket.on("send_dm", async ({ conversationId, senderId, content }) => {
             profile: { select: { profilePicture: true } },
           },
         },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } },
+          },
+        },
       },
     });
 
-    socket.join(`dm_${convo.id}`);
     io.to(`dm_${convo.id}`).emit("receive_dm", message);
 
     console.log(`DM sent in conversation ${convo.id}`);
@@ -119,6 +149,7 @@ socket.on("send_dm", async ({ conversationId, senderId, content }) => {
     console.error("Error sending DM:", err);
   }
 });
+
 
     // Optional: notify when a user disconnects
     socket.on("disconnect", () => {

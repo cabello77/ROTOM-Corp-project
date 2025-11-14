@@ -7,6 +7,8 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
 const { setupSocket } = require("./socket");
+const socketHandler = require("./socket");
+socketHandler(io);
 
 const app = express();
 const prisma = new PrismaClient();
@@ -2017,22 +2019,15 @@ async function areFriends(userA, userB, prisma)
 }
 
 // Get all messages for a given DM conversation
-app.get("/api/dm/:conversationId/messages", async (req, res) => {
-  const { conversationId } = req.params;
-
+app.get("/api/dms/:convoId/messages", async (req, res) => {
   try {
+    const convoId = req.params.convoId;
+
     const messages = await prisma.dMMessage.findMany({
-      where: { conversationId: Number(conversationId) },
+      where: { convoId },
       orderBy: { createdAt: "asc" },
       include: {
         sender: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } },
-          },
-        },
-        receiver: {
           select: {
             id: true,
             name: true,
@@ -2043,11 +2038,12 @@ app.get("/api/dm/:conversationId/messages", async (req, res) => {
     });
 
     res.json(messages);
-  } catch (error) {
-    console.error("Error fetching DM messages:", error);
-    res.status(500).json({ error: "Failed to fetch messages" });
+  } catch (err) {
+    console.error("Error fetching DM messages:", err);
+    res.status(500).json({ error: "Failed to load messages" });
   }
 });
+
 
 // Get or create a DM conversation between two users
 app.post("/api/dm/get-or-create", async (req, res) => {

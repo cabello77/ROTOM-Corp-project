@@ -19,18 +19,20 @@ export default function DMList({ onSelect }) {
         setFriends(list);
 
         const mapped = {};
+
         for (const f of list) {
           const user1Id = Math.min(user.id, f.id);
           const user2Id = Math.max(user.id, f.id);
 
-const convo = await axios.post(`${API_BASE}/api/dm/get-or-create`, {
-    user1Id,
-    user2Id
-});
-
+          // backend must return: { id, lastMessage, unreadCount }
+          const convo = await axios.post(`${API_BASE}/api/dm/get-or-create`, {
+            user1Id,
+            user2Id
+          });
 
           mapped[f.id] = convo.data;
         }
+
         setDmData(mapped);
 
       } catch (err) {
@@ -54,7 +56,9 @@ const convo = await axios.post(`${API_BASE}/api/dm/get-or-create`, {
             <div
               key={friend.id}
               className="flex items-center gap-3 p-3 rounded-lg border border-[#e3d8c8] bg-white hover:bg-[#f8f2e9] cursor-pointer"
-              onClick={() => onSelect(friend, convo?.id)}
+              onClick={() =>
+                onSelect(friend, convo?.id || convo?.conversationId)
+              }
             >
               <img
                 src={

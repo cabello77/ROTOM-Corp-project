@@ -50,7 +50,7 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
       setError("Could not connect to DM chat.");
     });
 
-    socket.on("recieve_dm", (msg) => {
+    socket.on("receive_dm", (msg) => {
       setMessages((prev) => [...prev, msg]);
       listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
     });
@@ -58,14 +58,23 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
     return () => socket.disconnect();
   }, [conversationId, user?.id, apiBase]);
 
-  const handleSend = () => {
+    if (!conversationId) return null;
+    const handleSend = () => {
     if (!canChat || !socketRef.current) return;
     const content = text.trim();
     if (!content) return;
 
-    socketRef.current.emit("send_dm", { conversationId, senderId: user.id, receiverId: friend.id, content });
+    socketRef.current.emit("send_dm", {
+      conversationId,
+      senderId: user.id,
+      receiverId: friend.id,   // REQUIRED
+      content,
+    });
+
     setText("");
-  };
+  };   // ← YOU WERE MISSING THIS BRACKET + SEMICOLON
+
+
 
   if (!conversationId) return null;
 

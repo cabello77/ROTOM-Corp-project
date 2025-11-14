@@ -14,12 +14,15 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
 
   const canChat = Boolean(user?.id && conversationId);
 
+  // Load message history
   const loadHistory = async () => {
     if (!canChat) return;
     try {
       setLoading(true);
+
       const res = await fetch(`${apiBase}/api/dm/${conversationId}/messages`);
       const data = await res.json();
+
       setMessages(Array.isArray(data) ? data : []);
     } catch (e) {
       setError("Failed to load messages");
@@ -27,37 +30,49 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
       setLoading(false);
       setTimeout(() => {
         listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
+      }, 100);
     }
   };
 
+  // Setup socket on convo change
   useEffect(() => {
     if (!canChat) return;
 
     loadHistory();
     setConnecting(true);
 
-    const socket = io(apiBase, { query: { userId: user.id } });
+    const socket = io(apiBase, {
+      query: { userId: user.id },
+    });
+
     socketRef.current = socket;
 
+    // Join room
     socket.emit("join_dm", conversationId);
 
     socket.on("connect", () => setConnecting(false));
 
     socket.on("receive_dm", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+      if (msg.convoId !== conversationId) return; // ignore wrong convo
+
+      setMessages(prev => [...prev, msg]);
+
+      setTimeout(() => {
+        listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+      }, 80);
     });
 
     return () => socket.disconnect();
   }, [conversationId, user?.id]);
 
+  // SEND message
   const sendMessage = () => {
-    if (!text.trim()) return;
+    if (!text.trim() || !socketRef.current) return;
 
     socketRef.current.emit("send_dm", {
       conversationId,
       senderId: user.id,
+      receiverId: friend.id,      // REQUIRED FIX
       content: text.trim(),
     });
 
@@ -83,12 +98,8 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
         />
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">
-            {friend?.name}
-          </h2>
-          <p className="text-xs text-gray-500 italic">
-            Direct Message
-          </p>
+          <h2 className="text-lg font-semibold text-gray-800">{friend?.name}</h2>
+          <p className="text-xs text-gray-500 italic">Direct Message</p>
         </div>
 
         {(loading || connecting) && (
@@ -98,22 +109,18 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
         )}
       </div>
 
-      {/* CHAT MESSAGES */}
+      {/* CHAT LIST */}
       <div
         ref={listRef}
         className="h-[28rem] overflow-y-auto bg-[#faf6ed] border border-[#e3d8c8] rounded-lg p-3 space-y-3"
       >
         {messages.length === 0 ? (
-          <p className="text-center text-gray-500 italic">
-            No messages yet. Say hello!
-          </p>
+          <p className="text-center text-gray-500 italic">No messages yet. Say hello!</p>
         ) : (
           messages.map((m) => (
             <div
               key={m.id}
-              className={`flex ${
-                m.senderId === user.id ? "justify-end" : "justify-start"
-              }`}
+              className={`flex ${m.senderId === user.id ? "justify-end" : "justify-start"}`}
             >
               <div
                 className={`px-3 py-2 max-w-[70%] text-sm rounded-xl border ${

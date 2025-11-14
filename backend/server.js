@@ -7,8 +7,7 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
 const { setupSocket } = require("./socket");
-const socketHandler = require("./socket");
-socketHandler(io);
+const dmRoutes = require('./routes/dmRoutes');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -1907,8 +1906,6 @@ io.use((socket, next) => {
   socket.userId = userId;
   next();
 });
-
-setupSocket(io);
 
 const clubRoom = (clubId) => `club:${clubId}`;
 

@@ -7,7 +7,7 @@ import UserDropdown from "./components/UserDropdown";
 import HomeLeftSidebar from "./components/home/HomeLeftSidebar";
 import HomeCenterFeed from "./components/home/HomeCenterFeed";
 import HomeRightSidebar from "./components/home/HomeRightSidebar";
-import DMs from "./DMs";
+import DMs from "./components/chat/DMs";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";

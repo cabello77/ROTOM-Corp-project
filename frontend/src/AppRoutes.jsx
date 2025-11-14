@@ -10,8 +10,7 @@ import Friends from "./Friends";
 import AddFriend from "./AddFriend";
 import Notifications from "./Notifications";
 import FriendProfile from "./FriendProfile";
-import DMs from "./DMs";
-
+import DMs from "./components/chat/DMs";
 
 
 export default function AppRoutes() {

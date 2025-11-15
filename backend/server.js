@@ -1934,7 +1934,14 @@ io.on("connection", (socket) => {
     try {
       const cId = Number(clubId);
       const userId = socket.userId;
-      const text = (content || "").trim();
+      const raw = (content ?? "").toString();
+
+      const text = raw
+        .replace(/[\u200B-\u200D\uFEFF]/g, "")
+        .replace(/[\r\n\u2028\u2029]+/g, " ")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+
 
       if (!cId || !text) {
         return cb?.({ ok: false, error: "Invalid club or empty message" });

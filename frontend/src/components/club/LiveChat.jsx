@@ -172,11 +172,11 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
                       {msg.user?.name ?? "Member"}
                     </p>
                     <div
-                      className="bg-white border rounded-md px-3 py-2 text-sm max-w-[32rem]"
+                      className="bg-white border rounded-md px-3 py-2 text-sm max-w-[80%]"
                       style={{
-                        whiteSpace: "normal",        // collapse any accidental newlines
-                        wordBreak: "normal",         // don't break inside words
-                        overflowWrap: "break-word",  // only break *very* long words/URLs
+                        overflowWrap: "keep-all",
+                        wordBreak: "break-word",
+                        whiteSpace: "pre-wrap",
                       }}
                     >
                       {msg.content}

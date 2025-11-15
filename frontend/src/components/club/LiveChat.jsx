@@ -11,7 +11,27 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
   const listRef = useRef(null);
   const socketRef = useRef(null);
 
-  const canChat = Boolean(isMember && user && user.id && clubId);
+  const canChat = Boolean(isMember && user && user.id && clubId);\
+
+  function resolveAvatar(apiBase, user) {
+  const path = user?.profilePicture;
+
+  // 1. If user does NOT have a picture → use generated "initial" avatar
+  if (!path) {
+      const firstLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
+      // Return the same placeholder style you use on UserHome
+      return `https://ui-avatars.com/api/?name=${firstLetter}&background=EEE&color=555&size=64&rounded=true`;
+    }
+
+    // 2. If full URL → return as is
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+
+    // 3. If relative path → prefix backend URL
+    return `${apiBase}${path}`;
+  }
+
 
   // Load initial history
   const loadHistory = async () => {
@@ -158,10 +178,11 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
                 <div key={msg.id} className="flex items-start gap-2 mb-3">
                   {/* Avatar */}
                   <img
-                    src={msg.user?.profilePicture || "/default-avatar.png"}
+                    src={resolveAvatar(apiBase, msg.user)}
                     alt={msg.user?.name || "User"}
                     className="w-8 h-8 rounded-full object-cover flex-shrink-0 border"
                   />
+
 
                   {/* Message content */}
                   <div>

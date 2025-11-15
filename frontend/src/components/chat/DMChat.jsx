@@ -18,7 +18,7 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
   // STEP 1️⃣ — Ensure conversation exists
   const ensureConversationExists = async () => {
     try {
-      const res = await fetch(`${apiBase}/api/dm/get-or-create`, {
+      const res = await fetch(`${apiBase}/api/dms/get-or-create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

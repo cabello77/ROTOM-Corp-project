@@ -4,148 +4,140 @@ import { io } from "socket.io-client";
 export default function DMChat({ conversationId, user, apiBase, friend }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [connecting, setConnecting] = useState(false);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const listRef = useRef(null);
   const socketRef = useRef(null);
+  const listRef = useRef(null);
 
-  const canChat = Boolean(user && user.id && conversationId);
+  // Scroll to bottom helper
+  const scrollBottom = () => {
+    listRef.current?.scrollTo({
+      top: listRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  };
 
+  // Load past messages
   const loadHistory = async () => {
-    if (!canChat) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await fetch(`${apiBase}/api/dms/${conversationId}/messages`);
-      if (!res.ok) throw new Error("Failed to load messages");
+      const res = await fetch(`${apiBase}/api/dm/messages/${conversationId}`);
       const data = await res.json();
-      setMessages(data || []);
-    } catch (e) {
-      setError(e.message);
+      setMessages(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load history:", err);
     } finally {
       setLoading(false);
-      setTimeout(() => {
-        listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
-      }, 0);
+      setTimeout(scrollBottom, 100);
     }
   };
 
+  // Setup socket + load messages on conversation change
   useEffect(() => {
-    if (!canChat) return;
+    if (!conversationId) return;
 
     loadHistory();
-    setConnecting(true);
 
     const socket = io(apiBase, { query: { userId: user.id } });
     socketRef.current = socket;
 
     socket.emit("join_dm", conversationId);
 
-    socket.on("connect", () => setConnecting(false));
-    socket.on("connect_error", () => setError("Could not connect to chat."));
-
     socket.on("receive_dm", (msg) => {
       setMessages((prev) => [...prev, msg]);
-      listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+      scrollBottom();
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.disconnect();
+    };
   }, [conversationId]);
 
-  const handleSend = () => {
-    const content = text.trim();
-    if (!content || !canChat) return;
+  // Send a message
+  const sendMessage = () => {
+    if (!text.trim()) return;
+
     socketRef.current.emit("send_dm", {
-      conversationId,
+      convoId: conversationId,
       senderId: user.id,
       receiverId: friend.id,
-      content
+      content: text.trim(),
     });
+
     setText("");
   };
 
-  const avatar = friend?.profile?.profilePicture
-    ? (friend.profile.profilePicture.startsWith("http")
-        ? friend.profile.profilePicture
-        : `${apiBase}${friend.profile.profilePicture}`)
-    : null;
-
   return (
-    <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+    <div className="bg-white border border-[#e3d8c8] rounded-xl shadow p-6 h-full flex flex-col">
 
       {/* HEADER */}
-      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#e3d8c8]">
-        <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d7c4a9]">
-          {avatar ? (
-            <img src={avatar} className="w-full h-full object-cover" />
-          ) : (
-            <div className="bg-[#efe2cf] w-full h-full flex items-center justify-center text-sm text-gray-700 font-semibold">
-              {friend?.name?.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-            {friend?.name}
-          </h2>
-          <p className="text-xs text-gray-500 italic">Direct Message</p>
-        </div>
-
-        {(loading || connecting) && (
-          <span className="text-xs text-gray-500 ml-auto">
-            {loading ? "Loading…" : "Connecting…"}
-          </span>
-        )}
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[#e3d8c8]">
+        <h2
+          className="text-xl font-semibold"
+          style={{ fontFamily: "Times New Roman, serif" }}
+        >
+          {friend?.name}
+        </h2>
       </div>
 
-      {/* CHAT WINDOW */}
+      {/* MESSAGE AREA */}
       <div
         ref={listRef}
-        className="h-[22rem] overflow-y-auto bg-[#faf6ed] border border-[#e3d8c8] rounded-lg p-3 space-y-3"
+        className="flex-1 overflow-y-auto bg-[#faf6ed] border border-[#e3d8c8] rounded-lg p-4 space-y-3"
       >
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${m.senderId === user.id ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`inline-block max-w-[70%] px-3 py-2 rounded-xl text-sm border`}
-              style={{
-                backgroundColor: m.senderId === user.id ? "#efe6d7" : "#ffffff",
-                borderColor: "#ddcdb7",
-                fontFamily: "Times New Roman, serif",
-              }}
-            >
-              {m.content}
+        {/* LOADING STATE */}
+        {loading && (
+          <p className="text-center text-gray-500 text-sm italic">
+            Loading chat…
+          </p>
+        )}
+
+        {/* EMPTY CHAT MESSAGE */}
+        {!loading && messages.length === 0 && (
+          <p className="text-center text-gray-600 text-lg italic mt-20"
+             style={{ fontFamily: "Times New Roman, serif" }}>
+            New chat. Start the conversation!
+          </p>
+        )}
+
+        {/* CHAT MESSAGES */}
+        {messages.map((m) => {
+          const mine = m.senderId === user.id;
+          return (
+            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+              <div
+                className={`px-4 py-2 max-w-[70%] rounded-xl text-sm shadow ${
+                  mine
+                    ? "bg-[#e7d4c3]"
+                    : "bg-white border border-[#e3d8c8]"
+                }`}
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                {m.content}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* INPUT */}
+      {/* INPUT BAR */}
       <div className="mt-4 flex gap-2">
         <input
+          className="flex-1 border border-[#d7c4a9] rounded-lg px-3 py-2 text-sm"
+          placeholder="Type a message…"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder="Type a message…"
-          className="flex-1 border border-[#ddcdb7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#d7bfa2]"
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           style={{ fontFamily: "Times New Roman, serif" }}
         />
         <button
-          onClick={handleSend}
-          className="px-4 py-2 rounded-lg bg-[#774C30] text-white hover:opacity-90 text-sm"
+          onClick={sendMessage}
+          className="px-4 py-2 bg-[#774C30] text-white rounded-lg hover:opacity-90 text-sm"
           style={{ fontFamily: "Times New Roman, serif" }}
         >
           Send
         </button>
       </div>
-
-      {error && (
-        <p className="mt-3 text-xs text-red-600">{error}</p>
-      )}
     </div>
   );
 }

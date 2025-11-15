@@ -8,7 +8,7 @@ export default function DMs() {
   const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
   const [user, setUser] = useState(null);
-  const [friendsList, setFriendsList] = useState([]);
+  const [friends, setFriends] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,7 +20,7 @@ export default function DMs() {
     setUser(JSON.parse(stored));
   }, []);
 
-  // Load friends
+  // Load friends list
   useEffect(() => {
     if (!user?.id) return;
 
@@ -29,14 +29,18 @@ export default function DMs() {
         const res = await fetch(`${apiBase}/api/friends/${user.id}`);
         const data = await res.json();
 
-        const list = (data.friends || []).map(f =>
-          f.friend ? f.friend : f
-        );
+        const flist = (data.friends || []).map((f) => {
+          if (f.friend) return f.friend;
+          if (f.user) return f.user;
+          if (f.userFriend) return f.userFriend;
+          if (f.friendUser) return f.friendUser;
+          return f;
+        });
 
-        setFriendsList(list);
+        setFriends(flist);
       } catch (e) {
         console.error("Error loading friends:", e);
-        setFriendsList([]);
+        setFriends([]);
       } finally {
         setLoading(false);
       }
@@ -45,36 +49,47 @@ export default function DMs() {
     loadFriends();
   }, [user?.id]);
 
-  // Create or get an existing DM
-  const openChat = async (friend) => {
-    try {
-      const res = await fetch(`${apiBase}/api/dm/get-or-create`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify({
-          user1Id: user.id,
-          user2Id: friend.id
-        })
-      });
+ const openChat = async (friend) => {
+  try {
+    const res = await fetch(`${apiBase}/api/dm/conversation`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify({
+        user1Id: user.id,
+        user2Id: friend.id,
+      }),
+    });
 
-      const data = await res.json();
-      setSelectedConversation(data.conversationId);
-      setSelectedFriend(friend);
-    } catch (e) {
-      console.error("Error creating DM:", e);
+    const data = await res.json();
+
+    if (!data.conversationId) {
+      console.error("Invalid DM response:", data);
+      return;
     }
-  };
+
+    setSelectedConversation(data.conversationId);
+    setSelectedFriend(friend);
+  } catch (e) {
+    console.error("Error creating DM:", e);
+  }
+};
+
 
   if (!user) return null;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ backgroundColor: "#F7F1E2" }}
+    >
       {/* HEADER */}
-      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
+      <header
+        className="text-white shadow"
+        style={{ backgroundColor: "#774C30" }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div
@@ -90,9 +105,8 @@ export default function DMs() {
         </div>
       </header>
 
-      {/* BODY */}
+      {/* BODY CONTENT */}
       <div className="max-w-7xl mx-auto p-6 w-full">
-
         <h1
           className="text-2xl font-semibold text-gray-800 mb-6"
           style={{ fontFamily: "Times New Roman, serif" }}
@@ -100,12 +114,11 @@ export default function DMs() {
           Messages
         </h1>
 
+        {/* MAIN GRID */}
         <div className="grid grid-cols-12 gap-6">
-
-          {/* FRIEND SIDEBAR */}
+          {/* LEFT SIDEBAR - all friends */}
           <div className="col-span-12 md:col-span-4 lg:col-span-3">
             <div className="bg-white rounded-xl border border-[#e3d8c8] shadow-sm p-4 space-y-2">
-
               <h2
                 className="text-lg font-semibold text-gray-800 mb-2"
                 style={{ fontFamily: "Times New Roman, serif" }}
@@ -114,30 +127,31 @@ export default function DMs() {
               </h2>
 
               {loading ? (
-                <p className="text-sm text-gray-500">Loading…</p>
-              ) : friendsList.length === 0 ? (
+                <p className="text-sm text-gray-500">Loading...</p>
+              ) : friends.length === 0 ? (
                 <p className="text-sm text-gray-600 italic">
-                  No friends yet.
+                  You haven’t added any friends yet.
                 </p>
               ) : (
-                friendsList.map(f => {
+                friends.map((f) => {
                   const avatar = f.profile?.profilePicture
-                    ? (f.profile.profilePicture.startsWith("http")
-                        ? f.profile.profilePicture
-                        : `${apiBase}${f.profile.profilePicture}`)
+                    ? f.profile.profilePicture.startsWith("http")
+                      ? f.profile.profilePicture
+                      : `${apiBase}${f.profile.profilePicture}`
                     : null;
 
                   return (
                     <div
                       key={f.id}
                       onClick={() => openChat(f)}
-                      className={`flex items-center gap-3 p-2 cursor-pointer rounded transition ${
-                        selectedFriend?.id === f.id ? "bg-[#f4ebdf]" : "hover:bg-[#f4ebdf]"
-                      }`}
+                      className="flex items-center gap-3 p-2 cursor-pointer rounded hover:bg-[#f4ebdf] transition"
                     >
                       <div className="w-10 h-10 rounded-full overflow-hidden border border-[#d7c4a9]">
                         {avatar ? (
-                          <img src={avatar} className="w-full h-full object-cover" />
+                          <img
+                            src={avatar}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <div className="bg-[#efe2cf] w-full h-full flex items-center justify-center text-sm font-semibold text-gray-700">
                             {f.name?.charAt(0).toUpperCase()}
@@ -155,11 +169,10 @@ export default function DMs() {
                   );
                 })
               )}
-
             </div>
           </div>
 
-          {/* CHAT PANEL */}
+          {/* RIGHT CHAT PANEL */}
           <div className="col-span-12 md:col-span-8 lg:col-span-9">
             {selectedConversation ? (
               <DMChat
@@ -177,7 +190,6 @@ export default function DMs() {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

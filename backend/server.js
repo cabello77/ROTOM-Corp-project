@@ -1444,6 +1444,7 @@ app.post('/api/discussion/:id/vote', async (req, res) => {
   }
 });
 
+
 // Votes: replies
 app.get('/api/replies/:id/votes', async (req, res) => {
   try {
@@ -1874,13 +1875,6 @@ app.delete('/api/friends/:userId/:friendId', async (req, res) => {
           }
 });
 
-// SPA fallback for React Router (serve index.html for non-API routes)
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API route not found' });
-  }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
 
 // Start server WITH Socket.IO
 const port = process.env.PORT || 3001;
@@ -1996,54 +1990,89 @@ io.on("connection", (socket) => {
   });
 });
 
+// SPA fallback for React Router (serve index.html for non-API routes)
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
 server.listen(port, host, () => {
   console.log(`✅ Server with Socket.IO running on port ${port}`);
 });
 
-//checking friendship bewteen users so that only friends can send DMs to each other
-async function areFriends(userA, userB, prisma) 
-{
-          const friendship = await prisma.friend.findFirst ({
-                    where: {
-                              OR: [
-                                        {userId: userA, friendId: userB, status: "ACCEPTED"},
-                                        {userId: userB, friendId, userA, status: "ACCEPTED"},
-                              ],
-                    },
-          });
+async function areFriends(userA, userB, prisma) {
+  const friendship = await prisma.friend.findFirst({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { userID: userA, friendID: userB },
+        { userID: userB, friendID: userA },
+      ],
+    },
+  });
 
-          return !!friendship;
+  return !!friendship;
 }
+// ===============================
+// 🔥 DIRECT MESSAGE (DM) ROUTES
+// MUST BE ABOVE THE WILDCARD
+// ===============================
 
-// Get all messages for a given DM conversation
-app.get("/api/dms/:convoId/messages", async (req, res) => {
+// 1️⃣ Get all DM conversations for a user
+app.get("/api/dm/conversations/:userId", async (req, res) => {
+  const { userId } = req.params;
+
   try {
-    const convoId = req.params.convoId;
-
-    const messages = await prisma.dMMessage.findMany({
-      where: { convoId },
-      orderBy: { createdAt: "asc" },
+    const convos = await prisma.directMessage.findMany({
+      where: {
+        OR: [
+          { user1Id: Number(userId) },
+          { user2Id: Number(userId) }
+        ]
+      },
       include: {
-        sender: {
+        user1: {
           select: {
             id: true,
             name: true,
-            profile: { select: { profilePicture: true } },
-          },
+            profile: { select: { profilePicture: true } }
+          }
         },
-      },
+        user2: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                profile: { select: { profilePicture: true } }
+              }
+            }
+          }
+        }
+      }
     });
 
-    res.json(messages);
+    res.json(convos);
   } catch (err) {
-    console.error("Error fetching DM messages:", err);
-    res.status(500).json({ error: "Failed to load messages" });
+    console.error("Error fetching conversations:", err);
+    res.status(500).json({ error: "Failed to load conversations" });
   }
 });
 
 
-// Get or create a DM conversation between two users
-app.post("/api/dm/get-or-create", async (req, res) => {
+// 2️⃣ Create or get DM conversation
+app.post("/api/dm/conversation", async (req, res) => {
   const { user1Id, user2Id } = req.body;
 
   if (!user1Id || !user2Id) {
@@ -2054,102 +2083,120 @@ app.post("/api/dm/get-or-create", async (req, res) => {
     const [a, b] = user1Id < user2Id ? [user1Id, user2Id] : [user2Id, user1Id];
 
     const convo = await prisma.directMessage.upsert({
-      where: {
-        user1Id_user2Id: { user1Id: a, user2Id: b },
-      },
+      where: { user1Id_user2Id: { user1Id: a, user2Id: b } },
       update: {},
       create: { user1Id: a, user2Id: b },
       include: {
-        user1: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } },
-          },
-        },
-        user2: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } },
-          },
-        },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          include: {
-            sender: {
-              select: {
-                id: true,
-                name: true,
-                profile: { select: { profilePicture: true } },
-              },
-            },
-            receiver: {
-              select: {
-                id: true,
-                name: true,
-                profile: { select: { profilePicture: true } },
-              },
-            },
-          },
-        },
-      },
+        user1: { select: { id: true, name: true } },
+        user2: { select: { id: true, name: true } }
+      }
     });
 
-    res.json(convo);
-  } catch (error) {
-    console.error("Error getting or creating DM:", error);
-    res.status(500).json({ error: "Failed to get or create DM" });
+    res.json({
+      conversationId: convo.id,
+      user1: convo.user1,
+      user2: convo.user2
+    });
+  } catch (err) {
+    console.error("DM conversation error:", err);
+    res.status(500).json({ error: "Failed to create or get DM" });
   }
 });
 
-//get user's DMs 
-app.get("/api/dm/user/:userId", async(req, res) => {
-          const {userId} = req.params;
-          try 
-          {
-                    const dms = await prisma.directMessage.findMany ({
-                              where: {
-                                        OR: [{user1Id: Number(userId)}, {user2Id: Number(userId)}],
-                              },
 
-                              include: {
-                                        user1: {
-                                                  select: {
-                                                            id: true,
-                                                            name: true,
-                                                            profile: {
-                                                                      select: {profilePicture: true},
-                                                            },
-                                                  },
-                                        },
-                                        user2: {
-                                                  select: {
-                                                            id: true,
-                                                            name: true,
-                                                            profile: {
-                                                                      select: {profilePicture: true},
-                                                            },
-                                                  },
-                                        },
-                                        messages: {
-                                                  orderBy: {createdAt: "desc"},
-                                                  take: 1,
-                                                  select: {
-                                                            content: true,
-                                                            createdAt: true,
-                                                  },
-                                        },
-                              },
-                    });
-                    res.json(dms);
-          } catch (error) {
-                    console.error(error);
-                    res.status(500).json({error: "Falied to get user's DMs."});
+// 3️⃣ Get DM messages
+app.get("/api/dm/messages/:convoId", async (req, res) => {
+  const { convoId } = req.params;
+
+  try {
+    const messages = await prisma.dMMessage.findMany({
+      where: { convoId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } }
           }
+        }
+      }
+    });
+
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching DM messages:", err);
+    res.status(500).json({ error: "Failed to load messages" });
+  }
 });
 
 
+// 4️⃣ Send DM message
+app.post("/api/dm/messages/send", async (req, res) => {
+  const { convoId, senderId, receiverId, content } = req.body;
+
+  if (!convoId || !senderId || !content) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const msg = await prisma.dMMessage.create({
+      data: {
+        convoId,
+        senderId,
+        receiverId,
+        content
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } }
+          }
+        }
+      }
+    });
+
+    res.json(msg);
+  } catch (error) {
+    console.error("Error sending DM:", error);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
 
 
+// 5️⃣ Delete DM conversation
+app.delete("/api/dm/conversation/:convoId", async (req, res) => {
+  const { convoId } = req.params;
+  try {
+    await prisma.directMessage.delete({
+      where: { id: convoId }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting DM:", error);
+    res.status(500).json({ error: "Failed to delete conversation" });
+  }
+});
+
+
+// ===============================
+// 🔥 WILDCARD ROUTE (MUST BE LAST)
+// ===============================
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
+
+
+// ===============================
+// 🚀 START SERVER
+// ===============================
+
+server.listen(port, host, () => {
+  console.log(`✅ Server with Socket.IO running on port ${port}`);
+});

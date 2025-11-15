@@ -8,27 +8,27 @@ datasource db {
 }
 
 model User {
-  id                   Int                   @id @default(autoincrement())
-  name                 String
-  email                String                @unique
-  password             String
-  createdAt            DateTime              @default(now())
-  clubs                Club[]
-  receivedInvitations  ClubInvitation[]      @relation("Invitee")
-  sentInvitations      ClubInvitation[]      @relation("Inviter")
-  memberships          ClubMember[]
-  receivedDMs          DMMessage[]           @relation("DMMessageReceiver")
-  sentDMs              DMMessage[]           @relation("DMMessageSender")
-  dmAsUser1            DirectMessage[]       @relation("DMUser1")
-  dmAsUser2            DirectMessage[]       @relation("DMUser2")
-  discussionPosts      DiscussionPost[]
-  discussionPostVotes  DiscussionPostVote[]
-  discussionReplies    DiscussionReply[]
-  discussionReplyVotes DiscussionReplyVote[]
-  friendsAsFriend      Friend[]              @relation("FriendUsers")
-  friendsAsUser        Friend[]              @relation("UserFriends")
-  messages             Message[]
-  profile              Profile?
+  id                 Int                @id @default(autoincrement())
+  name               String
+  email              String             @unique
+  password           String
+  createdAt          DateTime           @default(now())
+  profile            Profile?
+  clubs              Club[]
+  memberships        ClubMember[]
+  discussionPosts    DiscussionPost[]
+  discussionReplies  DiscussionReply[]
+  // Friend relations (two directions)
+  friendsAsFriend     Friend[]            @relation("FriendUsers")
+  friendsAsUser       Friend[]            @relation("UserFriends")
+  // Vote relations
+  discussionPostVotes    DiscussionPostVote[]
+  discussionReplyVotes   DiscussionReplyVote[]
+  // Club invitation relations
+  sentInvitations        ClubInvitation[]      @relation("Inviter")
+  receivedInvitations    ClubInvitation[]     @relation("Invitee")
+  messages          Message[]
+
 }
 
 model Friend {
@@ -40,6 +40,12 @@ model Friend {
   user     User         @relation("UserFriends", fields: [userID], references: [id])
 
   @@unique([userID, friendID])
+}
+
+enum FriendStatus {
+        PENDING
+	ACCEPTED
+	REJECTED
 }
 
 model Profile {
@@ -54,20 +60,20 @@ model Profile {
 }
 
 model Club {
-  id              Int              @id @default(autoincrement())
+  id              Int             @id @default(autoincrement())
   name            String
   description     String?
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime        @default(now())
   creatorId       Int
+  creator         User            @relation(fields: [creatorId], references: [id])
   currentBookId   String?
   currentBookData Json?
   readingGoal     String?
   goalDeadline    DateTime?
-  creator         User             @relation(fields: [creatorId], references: [id])
-  invitations     ClubInvitation[]
   members         ClubMember[]
   discussionPosts DiscussionPost[]
-  messages        Message[]
+  invitations     ClubInvitation[]
+  messages          Message[]
 }
 
 model ClubMember {
@@ -83,51 +89,58 @@ model ClubMember {
 }
 
 model ClubInvitation {
-  id        Int                  @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   clubId    Int
   inviterId Int
   inviteeId Int
   status    ClubInvitationStatus @default(PENDING)
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @default(now()) @updatedAt
-  club      Club                 @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  invitee   User                 @relation("Invitee", fields: [inviteeId], references: [id], onDelete: Cascade)
-  inviter   User                 @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  inviter  User     @relation("Inviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee  User     @relation("Invitee", fields: [inviteeId], references: [id], onDelete: Cascade)
 
   @@unique([clubId, inviteeId])
   @@index([inviteeId])
   @@index([clubId])
 }
 
+enum ClubInvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 model DiscussionPost {
-  id           Int                   @id @default(autoincrement())
-  datePosted   DateTime              @default(now())
-  dateEdited   DateTime?
-  hasMedia     Boolean               @default(false)
-  title        String
+  id          Int                   @id @default(autoincrement())
+  datePosted  DateTime              @default(now())
+  dateEdited  DateTime?
+  hasMedia    Boolean               @default(false)
+  title       String
   chapterIndex Int?
-  locked       Boolean               @default(false)
-  pinned       Boolean               @default(false)
-  tags         Json?
-  clubId       Int
-  userId       Int
-  contentId    Int                   @unique
-  club         Club                  @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  content      DiscussionPostContent @relation("PostContent", fields: [contentId], references: [id], onDelete: Cascade)
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  media        DiscussionPostMedia[]
-  votes        DiscussionPostVote[]
-  replies      DiscussionReply[]
+  locked      Boolean               @default(false)
+  pinned      Boolean               @default(false)
+  tags        Json?
+  clubId      Int
+  userId      Int
+  contentId   Int                   @unique
+  club        Club                 @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content     DiscussionPostContent @relation("PostContent", fields: [contentId], references: [id], onDelete: Cascade)
+  media       DiscussionPostMedia[]
+  replies     DiscussionReply[]
+  votes       DiscussionPostVote[]
 }
 
 model DiscussionPostContent {
-  id      Int             @id @default(autoincrement())
-  message String
-  post    DiscussionPost? @relation("PostContent")
+  id        Int            @id @default(autoincrement())
+  message   String
+  post      DiscussionPost? @relation("PostContent")
 }
 
 model DiscussionPostMedia {
-  id           Int            @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   file         String
   fileType     String
   discussionId Int
@@ -135,40 +148,46 @@ model DiscussionPostMedia {
 }
 
 model DiscussionReply {
-  id           Int                   @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   discussionId Int
   parentId     Int?
   userId       Int
   body         String
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @default(now()) @updatedAt
-  discussion   DiscussionPost        @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-  parent       DiscussionReply?      @relation("ReplyReplies", fields: [parentId], references: [id])
-  replies      DiscussionReply[]     @relation("ReplyReplies")
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       DiscussionReply? @relation("ReplyReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies      DiscussionReply[] @relation("ReplyReplies")
   votes        DiscussionReplyVote[]
 }
 
+// Votes on discussion posts
 model DiscussionPostVote {
   id           Int            @id @default(autoincrement())
   userId       Int
   discussionId Int
+  // value of 1 for upvote, -1 for downvote
   value        Int
-  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion   DiscussionPost @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, discussionId])
   @@index([discussionId])
   @@index([userId])
 }
 
+// Votes on discussion replies
 model DiscussionReplyVote {
-  id      Int             @id @default(autoincrement())
-  userId  Int
-  replyId Int
-  value   Int
-  reply   DiscussionReply @relation(fields: [replyId], references: [id], onDelete: Cascade)
-  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id       Int              @id @default(autoincrement())
+  userId   Int
+  replyId  Int
+  // value of 1 for upvote, -1 for downvote
+  value    Int
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reply    DiscussionReply  @relation(fields: [replyId], references: [id], onDelete: Cascade)
 
   @@unique([userId, replyId])
   @@index([replyId])
@@ -179,56 +198,11 @@ model Message {
   id        Int      @id @default(autoincrement())
   clubId    Int
   userId    Int
-  content   String
+  content   String   @db.Text
   createdAt DateTime @default(now())
-  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([clubId, createdAt])
-}
-
-// Replace your DirectMessage and DMMessage models with these:
-
-model DirectMessage {
-  id        String      @id @default(cuid())  // Changed from Int to String
-  user1Id   Int
-  user2Id   Int
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @default(now()) @updatedAt  // Added this
-  messages  DMMessage[]  // Changed from DMMessage to messages
-  user1     User        @relation("DMUser1", fields: [user1Id], references: [id], onDelete: Cascade)
-  user2     User        @relation("DMUser2", fields: [user2Id], references: [id], onDelete: Cascade)
-
-  @@unique([user1Id, user2Id])
-  @@index([user1Id])
-  @@index([user2Id])
-}
-
-model DMMessage {
-  id         Int           @id @default(autoincrement())
-  content    String
-  senderId   Int
-  receiverId Int
-  convoId    String        // Changed from conversationId Int to convoId String
-  createdAt  DateTime      @default(now())
-  
-  sender     User          @relation("DMMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User          @relation("DMMessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  convo      DirectMessage @relation(fields: [convoId], references: [id], onDelete: Cascade)
-  
-  @@index([convoId])
-  @@index([senderId])
-  @@index([receiverId])
-}
-
-enum FriendStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
-}
-
-enum ClubInvitationStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
 }

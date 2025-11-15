@@ -6,8 +6,6 @@ const path = require("path");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
-const { setupSocket } = require("./socket");
-const dmRoutes = require('./routes/dmRoutes');
 
 const app = express();
 const prisma = new PrismaClient();
@@ -1444,7 +1442,6 @@ app.post('/api/discussion/:id/vote', async (req, res) => {
   }
 });
 
-
 // Votes: replies
 app.get('/api/replies/:id/votes', async (req, res) => {
   try {
@@ -1875,6 +1872,13 @@ app.delete('/api/friends/:userId/:friendId', async (req, res) => {
           }
 });
 
+// SPA fallback for React Router (serve index.html for non-API routes)
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  res.sendFile(path.join(__dirname, 'public/index.html'));
+});
 
 // Start server WITH Socket.IO
 const port = process.env.PORT || 3001;
@@ -1985,217 +1989,12 @@ io.on("connection", (socket) => {
     }
   });
 
+
+
   socket.on("disconnect", () => {
     console.log("🔌 Socket disconnected:", socket.id);
   });
 });
-
-// SPA fallback for React Router (serve index.html for non-API routes)
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API route not found' });
-  }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
-
-server.listen(port, host, () => {
-  console.log(`✅ Server with Socket.IO running on port ${port}`);
-});
-
-async function areFriends(userA, userB, prisma) {
-  const friendship = await prisma.friend.findFirst({
-    where: {
-      status: "ACCEPTED",
-      OR: [
-        { userID: userA, friendID: userB },
-        { userID: userB, friendID: userA },
-      ],
-    },
-  });
-
-  return !!friendship;
-}
-// ===============================
-// 🔥 DIRECT MESSAGE (DM) ROUTES
-// MUST BE ABOVE THE WILDCARD
-// ===============================
-
-// 1️⃣ Get all DM conversations for a user
-app.get("/api/dm/conversations/:userId", async (req, res) => {
-  const { userId } = req.params;
-
-  try {
-    const convos = await prisma.directMessage.findMany({
-      where: {
-        OR: [
-          { user1Id: Number(userId) },
-          { user2Id: Number(userId) }
-        ]
-      },
-      include: {
-        user1: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } }
-          }
-        },
-        user2: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } }
-          }
-        },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          include: {
-            sender: {
-              select: {
-                id: true,
-                name: true,
-                profile: { select: { profilePicture: true } }
-              }
-            }
-          }
-        }
-      }
-    });
-
-    res.json(convos);
-  } catch (err) {
-    console.error("Error fetching conversations:", err);
-    res.status(500).json({ error: "Failed to load conversations" });
-  }
-});
-
-
-// 2️⃣ Create or get DM conversation
-app.post("/api/dm/conversation", async (req, res) => {
-  const { user1Id, user2Id } = req.body;
-
-  if (!user1Id || !user2Id) {
-    return res.status(400).json({ error: "Missing user1Id or user2Id" });
-  }
-
-  try {
-    const [a, b] = user1Id < user2Id ? [user1Id, user2Id] : [user2Id, user1Id];
-
-    const convo = await prisma.directMessage.upsert({
-      where: { user1Id_user2Id: { user1Id: a, user2Id: b } },
-      update: {},
-      create: { user1Id: a, user2Id: b },
-      include: {
-        user1: { select: { id: true, name: true } },
-        user2: { select: { id: true, name: true } }
-      }
-    });
-
-    res.json({
-      conversationId: convo.id,
-      user1: convo.user1,
-      user2: convo.user2
-    });
-  } catch (err) {
-    console.error("DM conversation error:", err);
-    res.status(500).json({ error: "Failed to create or get DM" });
-  }
-});
-
-
-// 3️⃣ Get DM messages
-app.get("/api/dm/messages/:convoId", async (req, res) => {
-  const { convoId } = req.params;
-
-  try {
-    const messages = await prisma.dMMessage.findMany({
-      where: { convoId },
-      orderBy: { createdAt: "asc" },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } }
-          }
-        }
-      }
-    });
-
-    res.json(messages);
-  } catch (err) {
-    console.error("Error fetching DM messages:", err);
-    res.status(500).json({ error: "Failed to load messages" });
-  }
-});
-
-
-// 4️⃣ Send DM message
-app.post("/api/dm/messages/send", async (req, res) => {
-  const { convoId, senderId, receiverId, content } = req.body;
-
-  if (!convoId || !senderId || !content) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  try {
-    const msg = await prisma.dMMessage.create({
-      data: {
-        convoId,
-        senderId,
-        receiverId,
-        content
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            profile: { select: { profilePicture: true } }
-          }
-        }
-      }
-    });
-
-    res.json(msg);
-  } catch (error) {
-    console.error("Error sending DM:", error);
-    res.status(500).json({ error: "Failed to send message" });
-  }
-});
-
-
-// 5️⃣ Delete DM conversation
-app.delete("/api/dm/conversation/:convoId", async (req, res) => {
-  const { convoId } = req.params;
-  try {
-    await prisma.directMessage.delete({
-      where: { id: convoId }
-    });
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Error deleting DM:", error);
-    res.status(500).json({ error: "Failed to delete conversation" });
-  }
-});
-
-
-// ===============================
-// 🔥 WILDCARD ROUTE (MUST BE LAST)
-// ===============================
-
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API route not found' });
-  }
-  res.sendFile(path.join(__dirname, 'public/index.html'));
-});
-
-
-// ===============================
-// 🚀 START SERVER
-// ===============================
 
 server.listen(port, host, () => {
   console.log(`✅ Server with Socket.IO running on port ${port}`);

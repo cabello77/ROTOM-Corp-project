@@ -1,5 +1,4 @@
-﻿//UserHome.jsx
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import ProfileEdit from "./ProfileEdit";
@@ -8,8 +7,6 @@ import UserDropdown from "./components/UserDropdown";
 import HomeLeftSidebar from "./components/home/HomeLeftSidebar";
 import HomeCenterFeed from "./components/home/HomeCenterFeed";
 import HomeRightSidebar from "./components/home/HomeRightSidebar";
-import DMs from "./components/chat/DMs";
-
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
@@ -201,7 +198,10 @@ function UserHome() {
       
       {/* LEFT SIDEBAR */}
       <HomeLeftSidebar allClubs={allClubs} friendsList={friendsList} />
+      {/* CENTER COLUMN */}
       <HomeCenterFeed allClubs={allClubs} />
+
+      {/* RIGHT SIDEBAR */}
       <HomeRightSidebar
         user={user}
         avatarSrc={avatarSrc}

@@ -1,4 +1,5 @@
-﻿import { useParams, useNavigate } from "react-router-dom";
+﻿//ClubHome.jsx
+import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";

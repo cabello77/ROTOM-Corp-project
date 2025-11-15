@@ -11,7 +11,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
   const listRef = useRef(null);
   const socketRef = useRef(null);
 
-  const canChat = Boolean(isMember && user && user.id && clubId);\
+  const canChat = Boolean(isMember && user && user.id && clubId);
 
   function resolveAvatar(apiBase, user) {
   const path = user?.profilePicture;

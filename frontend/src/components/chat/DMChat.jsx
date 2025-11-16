@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
-export default function DMChat({ conversationId, user, apiBase, friend }) {
+export default function DMChat({user, apiBase, friend }) {
+  const [conversationId, setConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,12 +14,25 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
 
   const canChat = Boolean(user && user.id && conversationId);
 
-  const loadHistory = async () => {
-    if (!canChat) return;
+  const loadConversation = async () => {
+  try {
+    const res = await fetch(
+      `${apiBase}/api/dm/conversation?userId=${user.id}&friendId=${friend.id}`
+    );
+    if (!res.ok) throw new Error("Failed to load conversation");
+    const data = await res.json();
+    setConversationId(data.conversationId);
+  } catch (e) {
+    setError(e.message);
+  }
+};
+
+const loadHistory = async (cid) => {
     try {
       setLoading(true);
-      const res = await fetch(`${apiBase}/api/dms/${conversationId}/messages`);
+      const res = await fetch(`${apiBase}/api/dm/messages/${cid}`);
       if (!res.ok) throw new Error("Failed to load messages");
+
       const data = await res.json();
       setMessages(data || []);
     } catch (e) {
@@ -32,18 +46,24 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
   };
 
   useEffect(() => {
-    if (!canChat) return;
+    setConversationId(null);
+    setMessages([]);
+    loadConversation();
+  }, [friend.id]);
 
-    loadHistory();
+  useEffect(() => {
+    if (!conversationId) return;
+
+    loadHistory(conversationId);
+
     setConnecting(true);
 
     const socket = io(apiBase, { query: { userId: user.id } });
     socketRef.current = socket;
 
-    socket.emit("join_dm", conversationId);
+    socket.emit("join_dm", { conversationId });
 
     socket.on("connect", () => setConnecting(false));
-    socket.on("connect_error", () => setError("Could not connect to chat."));
 
     socket.on("receive_dm", (msg) => {
       setMessages((prev) => [...prev, msg]);
@@ -52,6 +72,7 @@ export default function DMChat({ conversationId, user, apiBase, friend }) {
 
     return () => socket.disconnect();
   }, [conversationId]);
+
 
   const handleSend = () => {
     const content = text.trim();

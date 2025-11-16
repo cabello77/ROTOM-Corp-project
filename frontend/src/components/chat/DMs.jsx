@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import UserDropdown from "../UserDropdown";
 import DMChat from "./DMChat";
-//import DMList from "./DMList";
+
 export default function DMs() {
   const navigate = useNavigate();
   const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
   const [user, setUser] = useState(null);
   const [friends, setFriends] = useState([]);
-  const [selectedConversation, setSelectedConversation] = useState(null);
   const [selectedFriend, setSelectedFriend] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -49,34 +48,10 @@ export default function DMs() {
     loadFriends();
   }, [user?.id]);
 
- const openChat = async (friend) => {
-  try {
-    const res = await fetch(`${apiBase}/api/dm/conversation`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        user1Id: user.id,
-        user2Id: friend.id,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!data.conversationId) {
-      console.error("Invalid DM response:", data);
-      return;
-    }
-
-    setSelectedConversation(data.conversationId);
+  // Select a friend to open chat
+  const openChat = (friend) => {
     setSelectedFriend(friend);
-  } catch (e) {
-    console.error("Error creating DM:", e);
-  }
-};
-
+  };
 
   if (!user) return null;
 
@@ -116,7 +91,8 @@ export default function DMs() {
 
         {/* MAIN GRID */}
         <div className="grid grid-cols-12 gap-6">
-          {/* LEFT SIDEBAR - all friends */}
+          
+          {/* LEFT SIDEBAR - FRIEND LIST */}
           <div className="col-span-12 md:col-span-4 lg:col-span-3">
             <div className="bg-white rounded-xl border border-[#e3d8c8] shadow-sm p-4 space-y-2">
               <h2
@@ -174,13 +150,8 @@ export default function DMs() {
 
           {/* RIGHT CHAT PANEL */}
           <div className="col-span-12 md:col-span-8 lg:col-span-9">
-            {selectedConversation ? (
-              <DMChat
-                conversationId={selectedConversation}
-                friend={selectedFriend}
-                user={user}
-                apiBase={apiBase}
-              />
+            {selectedFriend ? (
+              <DMChat user={user} apiBase={apiBase} friend={selectedFriend} />
             ) : (
               <div
                 className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-10 text-center text-gray-600"
@@ -190,10 +161,12 @@ export default function DMs() {
               </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
   );
 }
+
 // repush file
 

@@ -8,27 +8,28 @@ datasource db {
 }
 
 model User {
-  id                 Int                @id @default(autoincrement())
-  name               String
-  email              String             @unique
-  password           String
-  createdAt          DateTime           @default(now())
-  profile            Profile?
-  clubs              Club[]
-  memberships        ClubMember[]
-  discussionPosts    DiscussionPost[]
-  discussionReplies  DiscussionReply[]
-  // Friend relations (two directions)
-  friendsAsFriend     Friend[]            @relation("FriendUsers")
-  friendsAsUser       Friend[]            @relation("UserFriends")
-  // Vote relations
-  discussionPostVotes    DiscussionPostVote[]
-  discussionReplyVotes   DiscussionReplyVote[]
-  // Club invitation relations
-  sentInvitations        ClubInvitation[]      @relation("Inviter")
-  receivedInvitations    ClubInvitation[]     @relation("Invitee")
-  messages          Message[]
-
+ 
+  id                   Int                   @id @default(autoincrement())
+  name                 String
+  email                String                @unique
+  password             String
+  createdAt            DateTime              @default(now())
+  clubs                Club[]
+  receivedInvitations  ClubInvitation[]      @relation("Invitee")
+  sentInvitations      ClubInvitation[]      @relation("Inviter")
+  memberships          ClubMember[]
+  receivedDMs          DMMessage[]           @relation("DMMessageReceiver")
+  sentDMs              DMMessage[]           @relation("DMMessageSender")
+  dmAsUser1            DirectMessage[]       @relation("DMUser1")
+  dmAsUser2            DirectMessage[]       @relation("DMUser2")
+  discussionPosts      DiscussionPost[]
+  discussionPostVotes  DiscussionPostVote[]
+  discussionReplies    DiscussionReply[]
+  discussionReplyVotes DiscussionReplyVote[]
+  friendsAsFriend      Friend[]              @relation("FriendUsers")
+  friendsAsUser        Friend[]              @relation("UserFriends")
+  messages             Message[]
+  profile              Profile?
 }
 
 model Friend {
@@ -206,3 +207,37 @@ model Message {
 
   @@index([clubId, createdAt])
 }
+
+model DirectMessage {
+  id        String      @id @default(cuid())  // Changed from Int to String
+  user1Id   Int
+  user2Id   Int
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @default(now()) @updatedAt  // Added this
+  messages  DMMessage[]  // Changed from DMMessage to messages
+  user1     User        @relation("DMUser1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2     User        @relation("DMUser2", fields: [user2Id], references: [id], onDelete: Cascade)
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+model DMMessage {
+  id         Int           @id @default(autoincrement())
+  content    String
+  senderId   Int
+  receiverId Int
+  convoId    String        // Changed from conversationId Int to convoId String
+  createdAt  DateTime      @default(now())
+  
+  sender     User          @relation("DMMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User          @relation("DMMessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  convo      DirectMessage @relation(fields: [convoId], references: [id], onDelete: Cascade)
+  
+  @@index([convoId])
+  @@index([senderId])
+  @@index([receiverId])
+}
+
+

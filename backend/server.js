@@ -6,6 +6,7 @@ const path = require("path");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
+const { setupSocket } = require("./socket");
 
 const app = express();
 const prisma = new PrismaClient();
@@ -93,6 +94,10 @@ let upload = null;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+
+//dm routes
+const dmRoutes = require("./routes/dm");
+app.use("/api/dm", dmRoutes);
 
 // Fallback for index.html (so root URL loads your site)
 app.get("/", (req, res) => {
@@ -1894,6 +1899,8 @@ const io = new Server(server, {
   },
 });
 
+setupSocket(io);
+
 // Simple auth for sockets: we pass userId in query from the frontend
 io.use((socket, next) => {
   const raw = socket.handshake.query.userId;
@@ -1998,4 +2005,127 @@ io.on("connection", (socket) => {
 
 server.listen(port, host, () => {
   console.log(`✅ Server with Socket.IO running on port ${port}`);
+});
+
+// 1️⃣ Get all DM conversations for a user
+app.get("/api/dm/conversations/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const convos = await prisma.directMessage.findMany({
+      where: {
+        OR: [
+          { user1Id: Number(userId) },
+          { user2Id: Number(userId) }
+        ]
+      },
+      include: {
+        user1: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } }
+          }
+        },
+        user2: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          include: {
+            sender: {
+              select: {
+                id: true,
+                name: true,
+                profile: { select: { profilePicture: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.json(convos);
+  } catch (err) {
+    console.error("Error fetching conversations:", err);
+    res.status(500).json({ error: "Failed to load conversations" });
+  }
+});
+
+//get or create DM conversation
+app.get("/api/dm/conversation", async (req, res) => {
+  const { userId, friendId } = req.query;
+
+  if (!userId || !friendId) {
+    return res.status(400).json({ error: "Missing userId or friendId" });
+  }
+
+  const u1 = Number(userId);
+  const u2 = Number(friendId);
+
+  // Try to find existing conversation
+  let convo = await prisma.directMessage.findFirst({
+    where: {
+      OR: [
+        { user1Id: u1, user2Id: u2 },
+        { user1Id: u2, user2Id: u1 }
+      ]
+    }
+  });
+
+  // If none exists, create one
+  if (!convo) {
+    convo = await prisma.directMessage.create({
+      data: { user1Id: u1, user2Id: u2 }
+    });
+  }
+
+  res.json({ conversationId: convo.id });
+});
+
+
+// 3️⃣ Get DM messages
+app.get("/api/dm/messages/:convoId", async (req, res) => {
+  const { convoId } = req.params;
+
+  try {
+    const messages = await prisma.dMMessage.findMany({
+      where: { convoId },
+      orderBy: { createdAt: "asc" },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            profile: { select: { profilePicture: true } }
+          }
+        }
+      }
+    });
+
+    res.json(messages);
+  } catch (err) {
+    console.error("Error fetching DM messages:", err);
+    res.status(500).json({ error: "Failed to load messages" });
+  }
+});
+
+
+// 5️⃣ Delete DM conversation
+app.delete("/api/dm/conversation/:convoId", async (req, res) => {
+  const { convoId } = req.params;
+  try {
+    await prisma.directMessage.delete({
+      where: { id: convoId }
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting DM:", error);
+    res.status(500).json({ error: "Failed to delete conversation" });
+  }
 });

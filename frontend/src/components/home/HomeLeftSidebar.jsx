@@ -5,6 +5,7 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
   
   return (
     <aside className="lg:col-span-3 space-y-4">
+      
       {/* My Book Clubs */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
         <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
@@ -107,8 +108,17 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
         >
           Add Friends
         </Link>
+
+        {/* ⭐ Direct Messages Section */}
+        <div
+          onClick={() => navigate("/dms")}
+          className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors cursor-pointer"
+          style={{ fontFamily: "Times New Roman, serif" }}
+        >
+          Direct Messages
+        </div>
+
       </div>
     </aside>
   );
 }
-

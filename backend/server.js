@@ -591,6 +591,18 @@ app.put("/api/clubs/:id/book", async (req, res) => {
       return res.status(403).json({ error: "You are not authorized to assign books to this club." });
     }
 
+     // If there's a current book, archive it
+    if (club.currentBookId && club.currentBookData) {
+      await prisma.clubBookHistory.create({
+        data: {
+          clubId: club.id,
+          bookId: club.currentBookId,
+          bookData: club.currentBookData,
+          finishedAt: new Date(), // or null if you want
+        },
+      });
+    }
+
     const updatedClub = await prisma.club.update({
       where: { id: Number(id) },
       data: {
@@ -605,6 +617,66 @@ app.put("/api/clubs/:id/book", async (req, res) => {
   } catch (error) {
     console.error("❌ Error assigning book:", error);
     res.status(500).json({ error: "Server error while assigning book." });
+  }
+});
+
+//get all past reads
+app.get("/api/clubs/:id/bookshelf", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const books = await prisma.clubBookHistory.findMany({
+      where: { clubId: Number(id) },
+      orderBy: { finishedAt: "desc" },
+    });
+
+    res.json(books);
+  } catch (error) {
+    console.error("Error fetching bookshelf:", error);
+    res.status(500).json({ error: "Server error fetching bookshelf." });
+  }
+});
+
+//mark book assigned to club as finished and added to past reads
+app.post("/api/clubs/:id/book/finish", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body;
+
+    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    if (!club) return res.status(404).json({ error: "Club not found" });
+
+    if (club.creatorId !== Number(userId)) {
+      return res.status(403).json({ error: "Not authorized." });
+    }
+
+    if (!club.currentBookId) {
+      return res.status(400).json({ error: "No current book to finish." });
+    }
+
+    await prisma.clubBookHistory.create({
+      data: {
+        clubId: club.id,
+        bookId: club.currentBookId,
+        bookData: club.currentBookData,
+        finishedAt: new Date(),
+      },
+    });
+
+    const updated = await prisma.club.update({
+      where: { id: Number(id) },
+      data: {
+        currentBookId: null,
+        currentBookData: null,
+        readingGoal: null,
+        goalDeadline: null,
+      },
+    });
+
+    res.json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error finishing book." });
   }
 });
 
@@ -928,6 +1000,81 @@ app.post("/api/clubs/:id/invitations/:invitationId/respond", async (req, res) =>
     res.status(500).json({ error: "Server error while responding to invitation." });
   }
 });
+
+//get all current reads for a user from all the book clubs they have joined
+app.get("/api/users/:userId/bookshelf/current", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const memberships = await prisma.clubMember.findMany({
+      where: { userId: Number(userId) },
+      include: { club: true }
+    });
+
+    const clubIds = memberships.map(m => m.clubId);
+
+    if (clubIds.length === 0) {
+      return res.json([]);
+    }
+
+    const clubs = await prisma.club.findMany({
+      where: { id: { in: clubIds } }
+    });
+
+    const currentBooks = clubs
+      .filter(c => c.currentBookId && c.currentBookData)
+      .map(c => ({
+        clubId: c.id,
+        type: "current",
+        assignedAt: c.createdAt,
+        bookId: c.currentBookId,
+        bookData: c.currentBookData
+      }));
+
+    res.json(currentBooks);
+  } catch (error) {
+    console.error("Error fetching current reads:", error);
+    res.status(500).json({ error: "Server error fetching current reads." });
+  }
+});
+
+//get all past reads for a user from all the book clubs they have joined
+app.get("/api/users/:userId/bookshelf/past", async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const memberships = await prisma.clubMember.findMany({
+      where: { userId: Number(userId) },
+      include: { club: true }
+    });
+
+    const clubIds = memberships.map(m => m.clubId);
+
+    if (clubIds.length === 0) {
+      return res.json([]);
+    }
+
+    const pastReads = await prisma.clubBookHistory.findMany({
+      where: { clubId: { in: clubIds } },
+      orderBy: { finishedAt: "desc" }
+    });
+
+    const pastBooks = pastReads.map(book => ({
+      clubId: book.clubId,
+      type: "past",
+      assignedAt: book.assignedAt,
+      finishedAt: book.finishedAt,
+      bookId: book.bookId,
+      bookData: book.bookData
+    }));
+
+    res.json(pastBooks);
+  } catch (error) {
+    console.error("Error fetching past reads:", error);
+    res.status(500).json({ error: "Server error fetching past reads." });
+  }
+});
+
 
 // Club chat: get message history (members only)
 app.get("/api/clubs/:id/messages", async (req, res) => {

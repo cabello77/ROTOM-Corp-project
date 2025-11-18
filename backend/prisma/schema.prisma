@@ -75,6 +75,17 @@ model Club {
   discussionPosts DiscussionPost[]
   invitations     ClubInvitation[]
   messages          Message[]
+  pastReads       ClubBookHistory[]
+}
+
+model ClubBookHistory {
+  id          Int      @id @default(autoincrement())
+  clubId      Int
+  club        Club     @relation(fields: [clubId], references: [id])
+  bookId      String 
+  bookData    Json
+  assignedAt  DateTime @default(now())
+  finishedAt  DateTime?
 }
 
 model ClubMember {

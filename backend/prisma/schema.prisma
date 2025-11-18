@@ -69,6 +69,7 @@ model Club {
   creator         User            @relation(fields: [creatorId], references: [id])
   currentBookId   String?
   currentBookData Json?
+  assignedAt      DateTime?
   readingGoal     String?
   goalDeadline    DateTime?
   members         ClubMember[]

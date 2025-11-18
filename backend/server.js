@@ -548,8 +548,6 @@ app.delete("/api/clubs/:id", async (req, res) => {
   }
 });
 
-
-
 // Create a test user
 app.post('/api/users', async (req, res) => {
   try {
@@ -598,6 +596,7 @@ app.put("/api/clubs/:id/book", async (req, res) => {
           clubId: club.id,
           bookId: club.currentBookId,
           bookData: club.currentBookData,
+          assignedAt: club.assignedAt ?? new Date(),
           finishedAt: new Date(), // or null if you want
         },
       });
@@ -608,6 +607,7 @@ app.put("/api/clubs/:id/book", async (req, res) => {
       data: {
         currentBookId: bookData.title || "",
         currentBookData: bookData,
+        assignedAt: new Date(),
         readingGoal: readingGoal || null,
         goalDeadline: goalDeadline ? new Date(goalDeadline) : null,
       },
@@ -659,6 +659,7 @@ app.post("/api/clubs/:id/book/finish", async (req, res) => {
         clubId: club.id,
         bookId: club.currentBookId,
         bookData: club.currentBookData,
+        assignedAt: club.assignedAt ?? new Date(),
         finishedAt: new Date(),
       },
     });
@@ -668,6 +669,7 @@ app.post("/api/clubs/:id/book/finish", async (req, res) => {
       data: {
         currentBookId: null,
         currentBookData: null,
+        assignedAt: null,
         readingGoal: null,
         goalDeadline: null,
       },
@@ -701,6 +703,7 @@ app.delete("/api/clubs/:id/book", async (req, res) => {
       data: {
         currentBookId: null,
         currentBookData: null,
+        assignedAt: null,
         readingGoal: null,
         goalDeadline: null,
       },

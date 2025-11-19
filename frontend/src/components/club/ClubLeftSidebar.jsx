@@ -11,15 +11,22 @@ export default function ClubLeftSidebar({
   onOpenAssign,
   onOpenUpdateGoal,
   onRemoveBook,
+  onFinishBook,
 }) {
   return (
     <aside className="lg:col-span-3 space-y-4">
-      {/* Current Read */}
+      
+      {/* CURRENT READ SECTION */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h2
+            className="text-lg font-semibold text-gray-800"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
             Current Read
           </h2>
+
+          {/* ASSIGN BOOK BUTTON */}
           {isHost && !currentBook && (
             <button
               onClick={onOpenAssign}
@@ -32,10 +39,12 @@ export default function ClubLeftSidebar({
               </svg>
             </button>
           )}
+
+          {/* REMOVE BOOK BUTTON */}
           {isHost && currentBook && (
             <button
               onClick={async () => {
-                if (window.confirm("Are you sure you want to remove the current book?")) {
+                if (window.confirm("Remove the current book?")) {
                   await onRemoveBook();
                 }
               }}
@@ -49,18 +58,39 @@ export default function ClubLeftSidebar({
             </button>
           )}
         </div>
+
         <div className="space-y-3">
           {currentBook ? (
-            <CurrentBookCard
-              currentBook={currentBook}
-              isHost={isHost}
-              club={club}
-              goalDeadline={goalDeadline}
-              onUpdateGoal={onOpenUpdateGoal}
-              onRemoveBook={onRemoveBook}
-            />
+            <div>
+              <CurrentBookCard
+                currentBook={currentBook}
+                isHost={isHost}
+                club={club}
+                goalDeadline={goalDeadline}
+                onUpdateGoal={onOpenUpdateGoal}
+                onRemoveBook={onRemoveBook}
+              />
+
+              {/* FINISH BOOK BUTTON */}
+              {isHost && (
+                <button
+                  onClick={async () => {
+                    if (window.confirm("Mark this book as finished?")) {
+                      await onFinishBook();
+                    }
+                  }}
+                  className="mt-3 w-full text-center px-4 py-2 rounded border border-green-300 bg-green-50 hover:bg-green-100 transition-colors text-sm text-gray-800"
+                  style={{ fontFamily: "Times New Roman, serif" }}
+                >
+                  Finish Book
+                </button>
+              )}
+            </div>
           ) : (
-            <div className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded" style={{ fontFamily: "Times New Roman, serif" }}>
+            <div
+              className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
               <p className="text-sm text-gray-600">
                 {isHost ? "Click + to assign a book" : "No book assigned yet"}
               </p>
@@ -69,11 +99,11 @@ export default function ClubLeftSidebar({
         </div>
       </div>
 
-      {/* Discussions moved to center column below Live Chat */}
+      {/* PAST READS (DYNAMIC) */}
+      <PastReads clubId={club.id} />
 
-      <PastReads />
+      {/* MEMBERS */}
       <MembersRoles members={members} />
     </aside>
   );
 }
-

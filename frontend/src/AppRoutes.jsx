@@ -11,6 +11,7 @@ import AddFriend from "./AddFriend";
 import Notifications from "./Notifications";
 import FriendProfile from "./FriendProfile";
 import DMs from "./components/chat/DMs";
+import UserProfile from "./UserProfile";
 
 
 export default function AppRoutes() {
@@ -24,6 +25,7 @@ export default function AppRoutes() {
       <Route path="/clubs/:id" element={<ClubHome />} />
       <Route path="/clubs" element={<ClubDiscover />} />
       <Route path="/friends" element={<Friends />} />
+      <Route path="/profile/:id" element={<UserProfile />} />
       <Route path="/friends/:friendId" element={<FriendProfile />} />
       <Route path="/add-friend" element={<AddFriend />} />
       <Route path="/notifications" element={<Notifications />} />

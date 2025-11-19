@@ -1,0 +1,129 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
+export default function UserBookshelf({ userId }) {
+  const [currentReads, setCurrentReads] = useState([]);
+  const [pastReads, setPastReads] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const navigate = useNavigate();
+
+  const loadBookshelf = async () => {
+    try {
+      const [curRes, pastRes] = await Promise.all([
+        fetch(`${API_BASE}/api/users/${userId}/bookshelf/current`),
+        fetch(`${API_BASE}/api/users/${userId}/bookshelf/past`)
+      ]);
+
+      const curData = await curRes.json();
+      const pastData = await pastRes.json();
+
+      if (curRes.ok) setCurrentReads(curData);
+      if (pastRes.ok) setPastReads(pastData);
+    } catch (err) {
+      console.error("Error loading user bookshelf:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBookshelf();
+  }, [userId]);
+
+  if (loading) {
+    return (
+      <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+        Loading bookshelf...
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+
+      {/* CURRENT READS */}
+      <section>
+        <h3
+          className="text-base font-semibold text-gray-800 mb-3"
+          style={{ fontFamily: "Times New Roman, serif" }}
+        >
+          Current Reads
+        </h3>
+
+        {currentReads.length === 0 ? (
+          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+            You don’t have any current reads.
+          </p>
+        ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+            {currentReads.map((entry) => (
+              <div
+                key={entry.bookId}
+                className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
+                style={{ fontFamily: "Times New Roman, serif" }}
+                onClick={() => navigate(`/book/${entry.bookId}`)}
+              >
+                <img
+                  src={entry.bookData?.cover || ""}
+                  className="w-12 h-16 object-cover rounded"
+                />
+                <div>
+                  <p className="text-sm text-gray-700 font-semibold">
+                    {entry.bookData?.title}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Assigned {new Date(entry.assignedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* PAST READS */}
+      <section>
+        <h3
+          className="text-base font-semibold text-gray-800 mb-3"
+          style={{ fontFamily: "Times New Roman, serif" }}
+        >
+          Past Reads
+        </h3>
+
+        {pastReads.length === 0 ? (
+          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+            No past reads yet.
+          </p>
+        ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+            {pastReads.map((entry) => (
+              <div
+                key={entry.bookId}
+                className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
+                style={{ fontFamily: "Times New Roman, serif" }}
+                onClick={() => navigate(`/book/${entry.bookId}`)}
+              >
+                <img
+                  src={entry.bookData?.cover || ""}
+                  className="w-12 h-16 object-cover rounded"
+                />
+                <div>
+                  <p className="text-sm text-gray-700 font-semibold">
+                    {entry.bookData?.title}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Finished {new Date(entry.finishedAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+    </div>
+  );
+}

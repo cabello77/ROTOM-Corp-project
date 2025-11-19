@@ -230,6 +230,36 @@ export default function ClubHome() {
     }
   };
 
+  // Handle finishing current assigned book
+  const handleFinishBook = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/clubs/${id}/book/finish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("Failed to finish book:", data.error);
+        alert(data.error || "Could not finish book.");
+        return;
+      }
+
+      // Remove current book
+      setCurrentBook(null);
+
+      // Refresh club data
+      const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
+      setClub(clubRes.data);
+
+      console.log("Book finished!");
+    } catch (err) {
+      console.error("Error finishing book:", err);
+    }
+  };
+
   if (isLoading || !club) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F7F1E2" }}>
@@ -283,6 +313,7 @@ export default function ClubHome() {
                   console.error("Error removing book:", err);
                 }
               }}
+              onFinishBook={handleFinishBook}
             />
             {/* CENTER COLUMN */}
             <section className="lg:col-span-6 space-y-4">

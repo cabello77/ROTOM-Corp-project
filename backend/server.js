@@ -625,11 +625,17 @@ app.get("/api/clubs/:id/bookshelf", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const books = await prisma.clubBookHistory.findMany({
-      where: { clubId: Number(id) },
-      orderBy: { finishedAt: "desc" },
-    });
-
+          const books = await prisma.clubBookHistory.findMany({
+          where: { clubId: Number(id) },
+          orderBy: { finishedAt: "desc" },
+          select: {
+                    id: true,
+                    bookId: true,
+                    finishedAt: true,
+                    assignedAt: true,
+                    bookData: true,   // <-- IMPORTANT
+          }
+});
     res.json(books);
   } catch (error) {
     console.error("Error fetching bookshelf:", error);
@@ -1029,6 +1035,7 @@ app.get("/api/users/:userId/bookshelf/current", async (req, res) => {
       .map(c => ({
         clubId: c.id,
         type: "current",
+        clubName: c.name,
         assignedAt: c.createdAt,
         bookId: c.currentBookId,
         bookData: c.currentBookData
@@ -1059,12 +1066,14 @@ app.get("/api/users/:userId/bookshelf/past", async (req, res) => {
 
     const pastReads = await prisma.clubBookHistory.findMany({
       where: { clubId: { in: clubIds } },
-      orderBy: { finishedAt: "desc" }
+      orderBy: { finishedAt: "desc" },
+      include: { club: true }  
     });
 
     const pastBooks = pastReads.map(book => ({
       clubId: book.clubId,
       type: "past",
+      clubName: book.club.name,
       assignedAt: book.assignedAt,
       finishedAt: book.finishedAt,
       bookId: book.bookId,

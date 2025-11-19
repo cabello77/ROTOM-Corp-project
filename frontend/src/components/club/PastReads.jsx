@@ -64,18 +64,18 @@ export default function PastReads({ clubId }) {
               style={{ fontFamily: "Times New Roman, serif" }}
             >
               <img
-                src={book.cover || ""}
-                alt={book.title}
+                src={book.bookData?.cover || ""}
+                alt={book.bookData?.title}
                 className="w-12 h-16 object-cover rounded"
               />
 
               <div>
                 <p className="font-semibold text-gray-800 text-sm">
-                  {book.title}
+                  {book.bookData?.title}
                 </p>
 
                 <p className="text-xs text-gray-600">
-                  {book.authors || "Unknown author"}
+                  {book.bookData?.authors || "Unknown author"}
                 </p>
 
                 <p className="text-xs text-gray-500 mt-1">

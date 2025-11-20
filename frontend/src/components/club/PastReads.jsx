@@ -11,9 +11,7 @@ export default function PastReads({ clubId }) {
       const res = await fetch(`${API_BASE}/api/clubs/${clubId}/bookshelf`);
       const data = await res.json();
 
-      if (res.ok) {
-        setPastReads(data || []);
-      }
+      if (res.ok) setPastReads(data || []);
     } catch (err) {
       console.error("Error loading club past reads:", err);
     } finally {
@@ -21,9 +19,21 @@ export default function PastReads({ clubId }) {
     }
   };
 
+  // Load on first mount or club change
   useEffect(() => {
     loadPastReads();
   }, [clubId]);
+
+  // 🔥 Listen for "club-updated" and refresh automatically
+  useEffect(() => {
+    const handler = () => {
+      setLoading(true);
+      loadPastReads();
+    };
+
+    window.addEventListener("club-updated", handler);
+    return () => window.removeEventListener("club-updated", handler);
+  }, []);
 
   if (loading) {
     return (
@@ -47,7 +57,6 @@ export default function PastReads({ clubId }) {
         Past Reads
       </h2>
 
-      {/* Empty state */}
       {pastReads.length === 0 ? (
         <p
           className="text-sm text-gray-600"

@@ -71,14 +71,18 @@ export default function ClubLeftSidebar({
                 onRemoveBook={onRemoveBook}
               />
 
-              {/* FINISH BOOK BUTTON */}
-              {isHost && (
+                 {/* FINISH BOOK BUTTON */}
+                 {isHost && (
                 <button
                   onClick={async () => {
                     if (window.confirm("Mark this book as finished?")) {
                       await onFinishBook();
+
+                      // 🔥 Tell ANY component that the club changed
+                      window.dispatchEvent(new Event("club-updated"));
                     }
                   }}
+
                   className="mt-3 w-full text-center px-4 py-2 rounded border border-green-300 bg-green-50 hover:bg-green-100 transition-colors text-sm text-gray-800"
                   style={{ fontFamily: "Times New Roman, serif" }}
                 >

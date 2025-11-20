@@ -230,35 +230,40 @@ export default function ClubHome() {
     }
   };
 
-  // Handle finishing current assigned book
-  const handleFinishBook = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/clubs/${id}/book/finish`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id }),
-      });
+    const handleFinishBook = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/clubs/${id}/book/finish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: user.id }),
+        });
 
-      const data = await res.json();
+        const data = await res.json();
 
-      if (!res.ok) {
-        console.error("Failed to finish book:", data.error);
-        alert(data.error || "Could not finish book.");
-        return;
+        if (!res.ok) {
+          console.error("Failed to finish book:", data.error);
+          alert(data.error || "Could not finish book.");
+          return;
+        }
+
+        // Re-fetch full updated club data
+        const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
+        const updated = clubRes.data;
+
+        // Sync all states
+        setClub(updated);
+        setCurrentBook(updated.currentBookData || null);
+        setReadingGoal(updated.readingGoal || "");
+        setGoalDeadline(updated.goalDeadline || "");
+        setMembers(updated.members || []);
+        setUserProgress(0);
+
+        console.log("Book finished + UI refreshed instantly!");
+      } catch (err) {
+        console.error("Error finishing book:", err);
       }
+    };
 
-      // Remove current book
-      setCurrentBook(null);
-
-      // Refresh club data
-      const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
-      setClub(clubRes.data);
-
-      console.log("Book finished!");
-    } catch (err) {
-      console.error("Error finishing book:", err);
-    }
-  };
 
   if (isLoading || !club) {
     return (

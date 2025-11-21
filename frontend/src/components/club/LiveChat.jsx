@@ -66,57 +66,51 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
       }
   };
 
-  // Socket.IO setup
+  // Socket.IO setup (FIXED)
   useEffect(() => {
     if (!canChat) return;
 
-    loadHistory();
+    // ✅ Prevent duplicate sockets
+    if (socketRef.current) {
+      console.warn("⚠️ Socket already exists, skipping setup");
+      return;
+    }
 
-    setConnecting(true);
+    console.log("🚀 Creating socket connection...");
+
     const socket = io(apiBase, {
       query: { userId: user.id },
+      transports: ["websocket"],
+      forceNew: true,
     });
+
     socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("✅ Socket connected:", socket.id);
+    });
 
     socket.emit("joinClub", { clubId });
 
-    socket.on("connect", () => {
-      setConnecting(false);
+    socket.off("newMessage");
+
+    socket.on("newMessage", (msg) => {
+      setMessages((prev) => {
+        // ✅ Prevent duplicate messages by id
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
     });
 
-    socket.on("connect_error", (err) => {
-      console.error("Socket connect error:", err);
-      setConnecting(false);
-      setError("Live chat connection failed.");
-    });
-
-  socket.on("newMessage", (msg) => {
-    setMessages((prev) => {
-      const list = listRef.current;
-      const isNearBottom =
-        list &&
-        list.scrollHeight - list.scrollTop - list.clientHeight < 100;
-
-      const updated = [...prev, msg];
-
-      if (isNearBottom && list) {
-        setTimeout(() => {
-          const l = listRef.current;
-          if (l) {
-            l.scrollTop = l.scrollHeight;
-          }
-        }, 50);
-      }
-
-      return updated;
-    });
-  });
-
-  return () => {
-    socket.disconnect();
+    return () => {
+      console.log("🧹 tearing down socket", socket.id);
+      socket.disconnect();
+      socketRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clubId, user?.id, apiBase, isMember]);
+
+
+
 
   const handleSend = () => {
     if (!canChat || !socketRef.current) return;

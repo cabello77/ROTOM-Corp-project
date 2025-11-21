@@ -723,7 +723,7 @@ app.put("/api/clubs/:id/book", async (req, res) => {
       return res.status(403).json({ error: "You are not authorized to assign books to this club." });
     }
 
-     // If there's a current book, archive it
+    // If there's a current book, archive it
     if (club.currentBookId && club.currentBookData) {
       await prisma.clubBookHistory.create({
         data: {
@@ -731,16 +731,26 @@ app.put("/api/clubs/:id/book", async (req, res) => {
           bookId: club.currentBookId,
           bookData: club.currentBookData,
           assignedAt: club.assignedAt ?? new Date(),
-          finishedAt: new Date(), // or null if you want
+          finishedAt: new Date(),
         },
       });
     }
+
+    // ✅ Normalize + clean the book data
+    const normalizedBookData = {
+      title: bookData.title,
+      authors: bookData.authors || bookData.author || "Unknown Author",
+      cover: bookData.cover || "",
+      description: bookData.description || "No description available.",
+      year: bookData.year || null,
+      genre: bookData.genre || null
+    };
 
     const updatedClub = await prisma.club.update({
       where: { id: Number(id) },
       data: {
         currentBookId: bookData.title || "",
-        currentBookData: bookData,
+        currentBookData: normalizedBookData,
         assignedAt: new Date(),
         readingGoal: readingGoal || null,
         goalDeadline: goalDeadline ? new Date(goalDeadline) : null,
@@ -753,6 +763,7 @@ app.put("/api/clubs/:id/book", async (req, res) => {
     res.status(500).json({ error: "Server error while assigning book." });
   }
 });
+
 
 //get all past reads
 app.get("/api/clubs/:id/bookshelf", async (req, res) => {

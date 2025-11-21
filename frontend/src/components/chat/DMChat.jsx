@@ -12,6 +12,18 @@ export default function DMChat({user, apiBase, friend }) {
   const listRef = useRef(null);
   const socketRef = useRef(null);
 
+  // Auto-scroll to bottom when messages update
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+
+    list.scrollTo({
+      top: list.scrollHeight,
+      behavior: "smooth"
+    });
+  }, [messages]);
+
+
   const canChat = Boolean(user && user.id && conversationId);
 
   const loadConversation = async () => {

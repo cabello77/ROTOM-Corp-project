@@ -13,116 +13,113 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
 
   const canChat = Boolean(isMember && user && user.id && clubId);
 
-  function resolveAvatar(apiBase, user) {
-  const path = user?.profilePicture;
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
 
-  // 1. If user does NOT have a picture → use generated "initial" avatar
-  if (!path) {
+    list.scrollTop = list.scrollHeight;
+  }, [messages]);
+
+  function resolveAvatar(apiBase, user) {
+    const path = user?.profilePicture;
+
+    if (!path) {
       const firstLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
-      // Return the same placeholder style you use on UserHome
       return `https://ui-avatars.com/api/?name=${firstLetter}&background=EEE&color=555&size=64&rounded=true`;
     }
 
-    // 2. If full URL → return as is
     if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
 
-    // 3. If relative path → prefix backend URL
     return `${apiBase}${path}`;
   }
 
-
-  // Load initial history
+  // ✅ FIX: Proper loadHistory restored
   const loadHistory = async () => {
     if (!canChat) return;
+
     try {
       setLoading(true);
-      setError(null);
-
       const res = await fetch(
         `${apiBase}/api/clubs/${clubId}/messages?userId=${user.id}`
       );
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Failed to load messages");
-      }
+      if (!res.ok) throw new Error("Failed to load chat history");
 
       const data = await res.json();
       setMessages(data || []);
+
+      // Scroll to bottom after history loads
+      setTimeout(() => {
+        const list = listRef.current;
+        if (list) list.scrollTop = list.scrollHeight;
+      }, 0);
     } catch (e) {
-      console.error("Error loading chat history:", e);
-      setError(e.message || "Failed to load chat");
+      console.error("History load error:", e);
+      setError(e.message);
     } finally {
-        setLoading(false);
-        // scroll to bottom of the chat container only
-        setTimeout(() => {
-          const list = listRef.current;
-          if (list) {
-            list.scrollTop = list.scrollHeight;
-          }
-        }, 0);
-      }
+      setLoading(false);
+    }
   };
 
-  // Socket.IO setup (FIXED)
+  // ✅ Socket setup
   useEffect(() => {
     if (!canChat) return;
 
-    // ✅ Prevent duplicate sockets
+    loadHistory(); // 🔥 This fixes your reconnect issue
+
     if (socketRef.current) {
-      console.warn("⚠️ Socket already exists, skipping setup");
+      console.log("⚠️ Socket already exists, skipping new connection");
       return;
     }
 
-    console.log("🚀 Creating socket connection...");
+    setConnecting(true);
 
     const socket = io(apiBase, {
       query: { userId: user.id },
       transports: ["websocket"],
-      forceNew: true,
+      forceNew: true
     });
 
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("✅ Socket connected:", socket.id);
+      setConnecting(false);
+      console.log("✅ LiveChat socket connected:", socket.id);
     });
 
     socket.emit("joinClub", { clubId });
 
-    socket.off("newMessage");
-
     socket.on("newMessage", (msg) => {
       setMessages((prev) => {
-        // ✅ Prevent duplicate messages by id
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
+
+      // ✅ Auto-scroll on new message
+      setTimeout(() => {
+        const list = listRef.current;
+        if (list) list.scrollTop = list.scrollHeight;
+      }, 0);
     });
 
     return () => {
-      console.log("🧹 tearing down socket", socket.id);
+      console.log("🧹 Cleaning socket for club:", clubId);
       socket.disconnect();
       socketRef.current = null;
     };
   }, [clubId, user?.id, apiBase, isMember]);
 
-
-
-
   const handleSend = () => {
     if (!canChat || !socketRef.current) return;
+
     const content = text.trim();
     if (!content) return;
 
-    const socket = socketRef.current;
-
-    socket.emit("sendMessage", { clubId, content }, (ack) => {
+    socketRef.current.emit("sendMessage", { clubId, content }, (ack) => {
       if (ack && !ack.ok) {
         console.error("Send failed:", ack.error);
-        setError(ack.error || "Failed to send message");
       }
     });
 
@@ -134,10 +131,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 flex flex-col h-[26rem]">
       <div className="flex justify-between items-center mb-3">
-        <h2
-          className="text-lg font-semibold"
-          style={{ fontFamily: "Times New Roman, serif" }}
-        >
+        <h2 className="text-lg font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
           Live Chat
         </h2>
         {(loading || connecting) && (
@@ -149,10 +143,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
 
       {!canChat ? (
         <div className="flex-1 flex items-center justify-center bg-[#faf6ed] border rounded-md p-4">
-          <p
-            className="text-sm text-gray-600 text-center"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
+          <p className="text-sm text-gray-600 text-center">
             Join this club to participate in the live chat.
           </p>
         </div>
@@ -164,69 +155,47 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
           >
             {messages.length === 0 && !loading && (
               <p className="text-xs text-gray-500 text-center">
-                No messages yet. Start the conversation!
+                No messages yet.
               </p>
             )}
 
-              {messages.map((msg) => (
-                <div key={msg.id} className="flex items-start gap-2 mb-3">
-                  {/* Avatar */}
-                  <img
-                    src={resolveAvatar(apiBase, msg.user)}
-                    alt={msg.user?.name || "User"}
-                    className="w-8 h-8 rounded-full object-cover flex-shrink-0 border"
-                  />
+            {messages.map((msg) => (
+              <div key={msg.id} className="flex items-start gap-2 mb-3">
+                <img
+                  src={resolveAvatar(apiBase, msg.user)}
+                  className="w-8 h-8 rounded-full border"
+                />
 
+                <div>
+                  <p className="text-xs text-gray-600 mb-1">
+                    {msg.user?.name ?? "Member"}
+                  </p>
 
-                  {/* Message content */}
-                  <div>
-                    <p
-                      className="text-xs text-gray-600 mb-1"
-                      style={{ fontFamily: "Times New Roman, serif" }}
-                    >
-                      {msg.user?.name ?? "Member"}
-                    </p>
-                    <div
-                      className="bg-white border rounded-md px-3 py-2 text-sm max-w-[32rem]"
-                      style={{
-                        whiteSpace: "normal",            // Collapse any accidental newlines
-                        wordBreak: "normal",             // Don't break inside words
-                        overflowWrap: "break-word",      // Only break *very* long words/URLs
-                      }}
-                    >
-                      {msg.content}
-                    </div>
-
+                  <div className="bg-white border rounded px-3 py-2 text-sm max-w-[32rem]">
+                    {msg.content}
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
-
-          {error && (
-            <p className="mt-2 text-xs text-red-600">
-              {error}
-            </p>
-          )}
 
           <div className="mt-3 flex gap-2">
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Type a message…"
-              className="flex-1 border rounded-md px-3 py-2 bg-white text-sm"
+              placeholder="Type a message..."
+              className="flex-1 border rounded px-3 py-2 text-sm"
             />
             <button
               onClick={handleSend}
-              className="px-4 py-2 rounded-md text-white hover:opacity-90 text-sm"
-              style={{
-                backgroundColor: "#774C30",
-                fontFamily: "Times New Roman, serif",
-              }}
+              className="px-4 py-2 rounded bg-[#774C30] text-white text-sm"
             >
               Send
             </button>
           </div>
+
+          {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
         </>
       )}
     </div>

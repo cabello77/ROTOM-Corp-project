@@ -178,6 +178,140 @@ app.get('/api/users/:id', async (req, res) => {
   }
 });
 
+// Get full profile for a user (clubs, past reads, friends)
+app.get("/api/users/:id/full-profile", async (req, res) => {
+  try {
+    let userId;
+    try {
+      userId = parseUserId(req.params.id);
+    } catch {
+      return res.status(400).json({ error: "Invalid user id" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: true,
+        memberships: {
+          select: {
+            id: true,
+            progress: true,
+            clubId: true,
+            club: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                currentBookId: true,
+                currentBookData: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Map memberships into clubs with progress
+    const clubs = user.memberships
+      ? user.memberships
+          .map((m) => ({
+            ...(m.club || {}),
+            progress: m.progress || 0,
+          }))
+          .filter((c) => c && c.id)
+      : [];
+
+    // Past reads across all clubs the user has joined
+    const clubIds = clubs.map((c) => c.id);
+    let pastReads = [];
+    if (clubIds.length > 0) {
+      const pastReadsRaw = await prisma.clubBookHistory.findMany({
+        where: { clubId: { in: clubIds } },
+        orderBy: { finishedAt: "desc" },
+        include: { club: true },
+      });
+
+      pastReads = pastReadsRaw.map((book) => ({
+        clubId: book.clubId,
+        type: "past",
+        clubName: book.club.name,
+        assignedAt: book.assignedAt,
+        finishedAt: book.finishedAt,
+        bookId: book.bookId,
+        bookData: book.bookData,
+      }));
+    }
+
+    // Friends list (both directions)
+    const friendsAsUser = await prisma.friend.findMany({
+      where: {
+        userID: userId,
+        status: "ACCEPTED",
+      },
+      include: {
+        friend: {
+          select: {
+            id: true,
+            name: true,
+            profile: {
+              select: {
+                username: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const friendsAsFriend = await prisma.friend.findMany({
+      where: {
+        friendID: userId,
+        status: "ACCEPTED",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profile: {
+              select: {
+                username: true,
+                profilePicture: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const allFriends = [
+      ...(friendsAsUser || []).map((f) => f.friend).filter(Boolean),
+      ...(friendsAsFriend || []).map((f) => f.user).filter(Boolean),
+    ];
+    const uniqueFriends = Array.from(
+      new Map(allFriends.filter((f) => f && f.id).map((f) => [f.id, f])).values()
+    );
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      profile: user.profile || null,
+      clubs: clubs || [],
+      pastReads,
+      friends: uniqueFriends || [],
+      friendsCount: (uniqueFriends || []).length,
+    });
+  } catch (err) {
+    console.error("Error fetching full profile:", err);
+    res.status(500).json({ error: "Failed to fetch full profile" });
+  }
+});
+
 // Update user profile
 app.put('/api/users/:id', async (req, res) => {
   try {

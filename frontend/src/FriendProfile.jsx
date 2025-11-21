@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import UserDropdown from "./components/UserDropdown";
 import ProfileEdit from "./ProfileEdit";
@@ -13,6 +13,8 @@ function FriendProfile() {
   const [friendProfile, setFriendProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [friendPastReads, setFriendPastReads] = useState([]);
+  const [pastReadsLoading, setPastReadsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [returnPath, setReturnPath] = useState(null);
 
@@ -100,6 +102,30 @@ function FriendProfile() {
     fetchFriendProfile();
   }, [user?.id, friendId, isLoading, isAuthenticated, navigate]);
 
+  // Fetch friend's past reads (books across all their clubs)
+  useEffect(() => {
+    if (!friendId) {
+      setPastReadsLoading(false);
+      return;
+    }
+
+    const fetchPastReads = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/users/${friendId}/bookshelf/past`);
+        const data = await res.json();
+        if (res.ok) {
+          setFriendPastReads(data || []);
+        }
+      } catch (err) {
+        console.error("Error fetching friend's past reads:", err);
+      } finally {
+        setPastReadsLoading(false);
+      }
+    };
+
+    fetchPastReads();
+  }, [friendId]);
+
   // Loading state
   if (isLoading || loading) {
     return (
@@ -167,7 +193,6 @@ function FriendProfile() {
 
   const avatarSrc = getAvatarSrc(friendProfile.profile?.profilePicture);
   const currentClubs = friendProfile.clubs.filter(c => c.currentBookId);
-  const pastClubs = friendProfile.clubs.filter(c => !c.currentBookId);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
@@ -278,29 +303,61 @@ function FriendProfile() {
               </div>
             )}
 
-            {/* Past Reads */}
-            {pastClubs.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
-                  Past Reads
-                </h3>
-                <div className="space-y-2">
-                  {pastClubs.map((club) => (
-                    <div key={club.id} className="border border-[#e3d8c8] rounded-lg p-3">
-                      <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
-                        {club.name}
-                      </p>
+            {/* Past Reads (books) */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+                Past Reads
+              </h3>
+
+              {pastReadsLoading ? (
+                <p className="text-gray-600 text-sm" style={{ fontFamily: "Times New Roman, serif" }}>
+                  Loading past reads...
+                </p>
+              ) : friendPastReads.length === 0 ? (
+                <p className="text-gray-600 text-sm" style={{ fontFamily: "Times New Roman, serif" }}>
+                  No past reads yet.
+                </p>
+              ) : (
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                  {friendPastReads.map((entry) => (
+                    <div
+                      key={entry.bookId}
+                      className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] 
+                                 rounded hover:bg-[#f1e7d8] transition cursor-pointer"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                      onClick={() => navigate(`/book/${entry.bookId}`)}
+                    >
+                      <img
+                        src={entry.bookData?.cover || ""}
+                        alt={entry.bookData?.title || "Book cover"}
+                        className="w-12 h-16 object-cover rounded"
+                      />
+                      <div>
+                        <p className="text-sm text-gray-700 font-semibold">
+                          {entry.bookData?.title}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Assigned by:{" "}
+                          <Link
+                            to={`/clubs/${entry.clubId}`}
+                            className="text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {entry.clubName}
+                          </Link>
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Finished{" "}
+                          {entry.finishedAt
+                            ? new Date(entry.finishedAt).toLocaleDateString()
+                            : "Unknown date"}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {friendProfile.clubs.length === 0 && (
-              <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                No books in bookshelf yet.
-              </p>
-            )}
+              )}
+            </div>
           </div>
 
           {/* Book Clubs Section */}
@@ -393,4 +450,3 @@ function FriendProfile() {
 }
 
 export default FriendProfile;
-

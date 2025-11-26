@@ -13,9 +13,11 @@ export default function ClubLeftSidebar({
   onRemoveBook,
   onFinishBook,
 }) {
+  const hasCurrentRead = !!club?.currentRead; // TRUE only if a book is assigned
+
   return (
     <aside className="lg:col-span-3 space-y-4">
-      
+
       {/* CURRENT READ SECTION */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
@@ -60,7 +62,9 @@ export default function ClubLeftSidebar({
         </div>
 
         <div className="space-y-3">
-          {currentBook ? (
+
+          {/* If a book is assigned */}
+          {currentBook && (
             <div>
               <CurrentBookCard
                 currentBook={currentBook}
@@ -71,18 +75,28 @@ export default function ClubLeftSidebar({
                 onRemoveBook={onRemoveBook}
               />
 
-                 {/* FINISH BOOK BUTTON */}
-                 {isHost && (
+              {/* PROGRESS DESCRIPTION — ONLY IF BOOK EXISTS */}
+              {hasCurrentRead && (
+                <p
+                  className="text-sm font-medium text-gray-700 mt-3"
+                  style={{ fontFamily: "Times New Roman, serif" }}
+                >
+                  Reading: {club.currentBookData?.title || "Untitled Book"}
+                  {club.readingGoal && ` · Goal: ${club.readingGoal}`}
+                  {club.goalDeadline &&
+                    ` · ${club.goalDeadline}`}
+                </p>
+              )}
+
+              {/* FINISH BOOK BUTTON */}
+              {isHost && (
                 <button
                   onClick={async () => {
                     if (window.confirm("Mark this book as finished?")) {
                       await onFinishBook();
-
-                      // 🔥 Tell ANY component that the club changed
                       window.dispatchEvent(new Event("club-updated"));
                     }
                   }}
-
                   className="mt-3 w-full text-center px-4 py-2 rounded border border-green-300 bg-green-50 hover:bg-green-100 transition-colors text-sm text-gray-800"
                   style={{ fontFamily: "Times New Roman, serif" }}
                 >
@@ -90,7 +104,10 @@ export default function ClubLeftSidebar({
                 </button>
               )}
             </div>
-          ) : (
+          )}
+
+          {/* If NO book is assigned */}
+          {!currentBook && (
             <div
               className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded"
               style={{ fontFamily: "Times New Roman, serif" }}
@@ -100,13 +117,14 @@ export default function ClubLeftSidebar({
               </p>
             </div>
           )}
+
         </div>
       </div>
 
-      {/* PAST READS (DYNAMIC) */}
+      {/* PAST READS */}
       <PastReads clubId={club.id} />
 
-      {/* MEMBERS */}
+      {/* MEMBERS + ROLES */}
       <MembersRoles members={members} />
     </aside>
   );

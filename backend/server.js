@@ -599,16 +599,24 @@ app.post("/api/clubs", async (req, res) => {
   }
 });
 
-// Get a club by ID
+// Get a club by ID (fixed + includes currentRead)
 app.get("/api/clubs/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
     const club = await prisma.club.findUnique({
       where: { id: Number(id) },
       include: {
         creator: {
           select: { id: true, name: true, email: true },
         },
+        members: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true },
+            }
+          }
+        }
       },
     });
 
@@ -616,12 +624,31 @@ app.get("/api/clubs/:id", async (req, res) => {
       return res.status(404).json({ error: "Club not found" });
     }
 
-    res.json(club);
+    // ⭐ Build the currentRead object for the frontend
+    const currentRead =
+      club.currentBookId && club.currentBookData
+        ? {
+            bookId: club.currentBookId,
+            bookData: club.currentBookData,
+            assignedAt: club.assignedAt,
+            readingGoal: club.readingGoal,
+            goalDeadline: club.goalDeadline,
+          }
+        : null;
+
+    // ⭐ Return the full club + the computed currentRead object
+    return res.json({
+      ...club,
+      currentRead,
+      currentBook: currentRead,  // alias, your UI uses both
+    });
+
   } catch (error) {
     console.error("❌ Error fetching club:", error);
-    res.status(500).json({ error: "Server error fetching club." });
+    return res.status(500).json({ error: "Server error fetching club." });
   }
 });
+
 
 // Get clubs created by a user
 app.get("/api/users/:id/clubs", async (req, res) => {

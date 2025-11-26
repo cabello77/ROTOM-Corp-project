@@ -85,32 +85,40 @@ export default function HomeRightSidebar({
             <div className="space-y-3">
               {clubsJoined.length > 0 ? (
                 clubsJoined.map((club) => {
-                  const title =
-                    club.currentBookData?.title || "No book assigned";
+                  const currentRead = club.currentRead;
+
+                  // Only show progress if a book is assigned
+                  if (!currentRead) return null;
+
+                  const title = club.currentBookData?.title || "Untitled Book";
                   const progress = club.membershipProgress || 0;
                   const goal = club.readingGoal || null;
-                  const daysRemaining = getDaysRemainingDays(club.goalDeadline);
+                  const daysRemaining =
+                    club.goalDeadline !== null
+                      ? getDaysRemainingDays(club.goalDeadline)
+                      : null;
+
+                  const progressDescription = `${Math.round(progress)}% complete`;
 
                   return (
                     <div key={club.id} className="space-y-1">
-                      <div className="flex justify-between text-xs text-gray-600">
-                        <span
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                          className="truncate max-w-[75%]"
-                        >
-                          {title}
-                          {goal && ` · ${goal}`}
-                          {daysRemaining !== null &&
-                            daysRemaining >= 0 &&
-                            ` · ${daysRemaining} ${
-                              daysRemaining === 1 ? "day" : "days"
-                            }`}
-                        </span>
-                        <span
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >{`${Math.round(progress)}%`}</span>
-                      </div>
 
+                      {/* Description Line */}
+                      <p
+                        className="text-xs font-medium text-gray-700 truncate"
+                        style={{ fontFamily: "Times New Roman, serif" }}
+                      >
+                        Reading: {title}
+                        {goal && ` · Goal: ${goal}`}
+                        {daysRemaining !== null &&
+                          daysRemaining >= 0 &&
+                          ` · ${daysRemaining} ${
+                            daysRemaining === 1 ? "day" : "days"
+                          } left`}
+                        {` · ${progressDescription}`}
+                      </p>
+
+                      {/* Progress Bar */}
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-[#774C30] h-2 rounded-full transition-all"
@@ -133,10 +141,9 @@ export default function HomeRightSidebar({
         </div>
       </div>
 
-      {/* My Bookshelf (Card) */}
+      {/* MY BOOKSHELF */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
-        
-        <h2 
+        <h2
           className="text-lg font-semibold text-gray-800"
           style={{ fontFamily: "Times New Roman, serif" }}
         >
@@ -157,6 +164,7 @@ export default function HomeRightSidebar({
           Logout
         </button>
       </div>
+
     </aside>
   );
 }

@@ -321,6 +321,22 @@ export default function ClubHome() {
     }
   };
 
+  // 🔥🔥🔥 NEW: Promote Moderator handler
+  const promoteMember = async (memberId) => {
+    try {
+      await axios.post(
+        `${API_BASE}/api/clubs/${id}/members/${memberId}/promote`
+      );
+
+      const membersRes = await axios.get(
+        `${API_BASE}/api/clubs/${id}/members`
+      );
+      setMembers(membersRes.data);
+    } catch (err) {
+      console.error("Error promoting member:", err);
+    }
+  };
+
   if (isLoading || !club) {
     return (
       <div
@@ -405,6 +421,7 @@ export default function ClubHome() {
               />
             </section>
 
+            {/* 🔥 ClubRightSidebar updated with promote handler */}
             <ClubRightSidebar
               user={user}
               club={club}
@@ -417,6 +434,7 @@ export default function ClubHome() {
               onDeleteClub={handleDelete}
               onLeaveClub={handleLeaveClub}
               onInviteMembers={() => setIsInviteModalOpen(true)}
+              onPromoteMember={promoteMember}   // <-- ADDED
             />
           </div>
         </div>

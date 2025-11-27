@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { getDaysRemainingLabel } from "../../utils/date";
-import MyProgressCard from "./MyProgressCard";
 import JoinClubCard from "./JoinClubCard";
+import AssignModeratorModal from "./AssignModeratorModal";
 
 export default function ClubRightSidebar({
   user,
@@ -14,22 +15,24 @@ export default function ClubRightSidebar({
   onDeleteClub,
   onLeaveClub,
   onInviteMembers,
+  onPromoteMember,
 }) {
   const isHost = user && club && user.id === club.creatorId;
 
-  // Only show user's progress card if they're a member/host AND a book is assigned
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+
   const showMyProgress = (isMember || isHost) && club?.currentRead;
+
+  const promotableMembers =
+    members?.filter((m) => !m.isHost && !m.isModerator) || [];
 
   return (
     <aside className="lg:col-span-3 space-y-4">
 
-      {/* USER PROGRESS CARD */}
       {user && (
         <>
           {showMyProgress ? (
             <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-
-              {/* PROGRESS DESCRIPTION LINE */}
               <p
                 className="text-sm font-medium text-gray-700"
                 style={{ fontFamily: "Times New Roman, serif" }}
@@ -45,7 +48,6 @@ export default function ClubRightSidebar({
                 {` · ${Math.round(userProgress || 0)}% complete`}
               </p>
 
-              {/* PROGRESS BAR */}
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
                   className="bg-[#774C30] h-2 rounded-full transition-all"
@@ -53,7 +55,6 @@ export default function ClubRightSidebar({
                 ></div>
               </div>
 
-              {/* OPEN PROGRESS MODAL */}
               <button
                 type="button"
                 onClick={onOpenProgress}
@@ -69,7 +70,6 @@ export default function ClubRightSidebar({
         </>
       )}
 
-      {/* MEMBER PROGRESS LIST */}
       {members.length > 0 && club?.readingGoal && club?.currentRead && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
           <h3
@@ -85,25 +85,25 @@ export default function ClubRightSidebar({
 
                 <div className="flex justify-between items-center text-xs text-gray-600 mb-1">
                   <span
-                    style={{ fontFamily: "Times New Roman, serif" }}
                     className="flex items-center gap-1"
+                    style={{ fontFamily: "Times New Roman, serif" }}
                   >
                     {member.user.name}
 
-                    {/* HOST BADGE */}
                     {member.isHost && (
-                      <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-800"
-                        title="Club Host"
-                      >
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-yellow-100 text-yellow-800">
                         ★ Host
+                      </span>
+                    )}
+
+                    {member.isModerator && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800">
+                        ● Moderator
                       </span>
                     )}
                   </span>
 
-                  <span
-                    style={{ fontFamily: "Times New Roman, serif" }}
-                  >
+                  <span style={{ fontFamily: "Times New Roman, serif" }}>
                     {member.progress}%
                   </span>
                 </div>
@@ -121,7 +121,6 @@ export default function ClubRightSidebar({
         </div>
       )}
 
-      {/* ACTION BUTTONS */}
       {(isMember || isHost) && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
           <h3
@@ -140,6 +139,17 @@ export default function ClubRightSidebar({
             >
               Invite Members
             </button>
+
+            {isHost && (
+              <button
+                type="button"
+                onClick={() => setIsPromoteModalOpen(true)}
+                className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                Assign Moderator
+              </button>
+            )}
 
             {isHost && (
               <button
@@ -165,6 +175,13 @@ export default function ClubRightSidebar({
           </div>
         </div>
       )}
+
+      <AssignModeratorModal
+        isOpen={isPromoteModalOpen}
+        onClose={() => setIsPromoteModalOpen(false)}
+        members={promotableMembers}
+        onPromote={onPromoteMember}
+      />
     </aside>
   );
 }

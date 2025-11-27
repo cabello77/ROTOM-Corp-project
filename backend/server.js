@@ -582,6 +582,7 @@ app.post("/api/clubs", async (req, res) => {
       data: {
         clubId: newClub.id,
         userId: Number(creatorId),
+        role: "HOST",
         progress: 0,
       }
     });
@@ -734,19 +735,31 @@ app.post('/api/users', async (req, res) => {
   }
 });
 
-// Assign book to club
+// Assign book to club (host or moderator only)
 app.put("/api/clubs/:id/book", async (req, res) => {
   try {
     const { id } = req.params;
     const { userId, bookData, readingGoal, goalDeadline } = req.body;
 
-    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    const clubId = Number(id);
+    const uid = Number(userId);
+
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
     if (!club) {
       return res.status(404).json({ error: "Club not found" });
     }
 
-    // Only the creator can assign books
-    if (club.creatorId !== Number(userId)) {
+    const actingUserMembership = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: uid } },
+      select: { role: true },
+    });
+
+    if (!actingUserMembership) {
+      return res.status(403).json({ error: "You are not a member of this club." });
+    }
+
+    if (!["HOST", "MODERATOR"].includes(actingUserMembership.role)) {
+      console.warn("Unauthorized: user is not HOST or MODERATOR");
       return res.status(403).json({ error: "You are not authorized to assign books to this club." });
     }
 
@@ -754,7 +767,7 @@ app.put("/api/clubs/:id/book", async (req, res) => {
     if (club.currentBookId && club.currentBookData) {
       await prisma.clubBookHistory.create({
         data: {
-          clubId: club.id,
+          clubId,
           bookId: club.currentBookId,
           bookData: club.currentBookData,
           assignedAt: club.assignedAt ?? new Date(),
@@ -772,6 +785,8 @@ app.put("/api/clubs/:id/book", async (req, res) => {
       year: bookData.year || null,
       genre: bookData.genre || null
     };
+
+    console.log("Normalized book data:", normalizedBookData);
 
     const updatedClub = await prisma.club.update({
       where: { id: Number(id) },
@@ -820,12 +835,24 @@ app.post("/api/clubs/:id/book/finish", async (req, res) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
+    
+    const clubId = Number(id);
+    const uid = Number(userId);
 
-    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
     if (!club) return res.status(404).json({ error: "Club not found" });
 
-    if (club.creatorId !== Number(userId)) {
-      return res.status(403).json({ error: "Not authorized." });
+    const membership = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: uid } },
+      select: { role: true },
+    });
+
+    if (!membership) {
+      return res.status(403).json({ error: "You are not a member of this club." });
+    }
+
+    if (!["HOST", "MODERATOR"].includes(membership.role)) {
+      return res.status(403).json({ error: "Only hosts or moderators can finish books." });
     }
 
     if (!club.currentBookId) {
@@ -843,7 +870,7 @@ app.post("/api/clubs/:id/book/finish", async (req, res) => {
     });
 
     const updated = await prisma.club.update({
-      where: { id: Number(id) },
+      where: { id: clubId },
       data: {
         currentBookId: null,
         currentBookData: null,
@@ -865,19 +892,32 @@ app.delete("/api/clubs/:id/book", async (req, res) => {
   try {
     const { id } = req.params;
     const { userId } = req.body;
+    
+    const clubId = Number(id);
+    const uid = Number(userId);
 
-    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
     if (!club) {
       return res.status(404).json({ error: "Club not found" });
     }
 
-    // Only the creator can remove books
-    if (club.creatorId !== Number(userId)) {
-      return res.status(403).json({ error: "You are not authorized to remove books from this club." });
+     const membership = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: uid } },
+      select: { role: true },
+    });
+
+    if (!membership) {
+      return res.status(403).json({ error: "You are not a member of this club." });
+    }
+
+    if (!["HOST", "MODERATOR"].includes(membership.role)) {
+      return res.status(403).json({
+        error: "Only hosts or moderators can remove books.",
+      });
     }
 
     const updatedClub = await prisma.club.update({
-      where: { id: Number(id) },
+      where: { id: clubId },
       data: {
         currentBookId: null,
         currentBookData: null,
@@ -900,18 +940,31 @@ app.put("/api/clubs/:id/goal", async (req, res) => {
     const { id } = req.params;
     const { userId, readingGoal, goalDeadline } = req.body;
 
-    const club = await prisma.club.findUnique({ where: { id: Number(id) } });
+    const clubId = Number(id);
+    const uid = Number(userId);
+
+    const club = await prisma.club.findUnique({ where: { id: clubId } });
     if (!club) {
       return res.status(404).json({ error: "Club not found" });
     }
 
-    // Only the creator can update the goal
-    if (club.creatorId !== Number(userId)) {
-      return res.status(403).json({ error: "You are not authorized to update the reading goal." });
+   const membership = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: uid } },
+      select: { role: true },
+    });
+
+    if (!membership) {
+      return res.status(403).json({ error: "You are not a member of this club." });
+    }
+
+    if (!["HOST", "MODERATOR"].includes(membership.role)) {
+      return res.status(403).json({
+        error: "Only hosts or moderators can update reading goals.",
+      });
     }
 
     const updatedClub = await prisma.club.update({
-      where: { id: Number(id) },
+      where: { id: clubId },
       data: {
         readingGoal: readingGoal || null,
         goalDeadline: goalDeadline ? new Date(goalDeadline) : null,
@@ -949,6 +1002,7 @@ app.post("/api/clubs/:id/join", async (req, res) => {
       data: {
         clubId: Number(id),
         userId: Number(userId),
+        role: "MEMBER",
         progress: 0,
       },
       include: {
@@ -1169,6 +1223,7 @@ app.post("/api/clubs/:id/invitations/:invitationId/respond", async (req, res) =>
           data: {
             clubId,
             userId: user,
+            role: "MEMBER",
             progress: 0,
           },
         });
@@ -1256,6 +1311,77 @@ app.get("/api/users/:userId/bookshelf/past", async (req, res) => {
   } catch (error) {
     console.error("Error fetching past reads:", error);
     res.status(500).json({ error: "Server error fetching past reads." });
+  }
+});
+
+// Promote a club member to MODERATOR (host-only)
+app.post("/api/clubs/:id/members/:memberId/promote", async (req, res) => {
+  try {
+    const clubId = Number(req.params.id);
+    const memberId = Number(req.params.memberId);
+    let { actingUserId } = req.body;         
+    actingUserId = Number(actingUserId);
+
+
+    if (isNaN(clubId) || isNaN(memberId) || isNaN(actingUserId)) {
+      return res.status(400).json({ error: "Invalid numeric identifiers." });
+    }
+
+    const actingUserMembership = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: actingUserId } },
+    });
+
+    if (!actingUserMembership) {
+      return res.status(403).json({ error: "You are not a member of this club." });
+    }
+
+    if (actingUserMembership.role !== "HOST") {
+      return res.status(403).json({
+        error: "Only the host can assign moderators.",
+      });
+    }
+
+    const targetMember = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId: memberId } },
+    });
+
+    if (!targetMember) {
+      return res.status(404).json({
+        error: "The specified member is not part of this club.",
+      });
+    }
+
+
+    if (targetMember.role === "HOST") {
+      return res.status(400).json({
+        error: "The host cannot be promoted.",
+      });
+    }
+
+    if (targetMember.role === "MODERATOR") {
+      return res.status(400).json({
+        error: "This user is already a moderator.",
+      });
+    }
+
+    const updatedMember = await prisma.clubMember.update({
+      where: { id: targetMember.id },
+      data: { role: "MODERATOR" },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    });
+
+    return res.json({
+      message: "Member promoted to moderator successfully.",
+      member: updatedMember,
+    });
+
+  } catch (error) {
+    console.error("❌ Error promoting member:", error);
+    return res.status(500).json({
+      error: "Server error while promoting club member.",
+    });
   }
 });
 
@@ -1634,26 +1760,20 @@ app.post('/api/discussion', async (req, res) => {
       return res.status(404).json({ error: 'Club not found.' });
     }
 
-    let membership = await prisma.clubMember.findUnique({
+      const membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId } },
-      select: { id: true },
+      select: { id: true, role: true },
     });
 
-    // If not a member yet, auto-join so they can post
     if (!membership) {
-      try {
-        const created = await prisma.clubMember.create({
-          data: { clubId, userId, progress: 0 },
-          select: { id: true },
-        });
-        membership = created;
-      } catch (_) {
-        // If creation fails for any reason, keep membership as null and block
-      }
+      return res.status(403).json({ error: 'You must be a club member to post in discussions.' });
     }
 
-    if (!membership) {
-      return res.status(403).json({ error: 'You must be a club member to create a discussion.' });
+    // 🔥 Only HOST or MODERATOR may create discussion posts
+    if (!["HOST", "MODERATOR"].includes(membership.role)) {
+      return res.status(403).json({ 
+        error: 'Only hosts or moderators can create discussion posts.' 
+      });
     }
 
     const newDiscussion = await prisma.discussionPost.create({

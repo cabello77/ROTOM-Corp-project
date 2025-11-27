@@ -93,12 +93,19 @@ model ClubMember {
   id       Int      @id @default(autoincrement())
   clubId   Int
   userId   Int
+  role     Role
   progress Int      @default(0)
   joinedAt DateTime @default(now())
   club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([clubId, userId])
+}
+
+enum Role {
+  HOST
+  MODERATOR
+  MEMBER
 }
 
 model ClubInvitation {

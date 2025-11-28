@@ -325,7 +325,8 @@ export default function ClubHome() {
   const promoteMember = async (memberId) => {
     try {
       await axios.post(
-        `${API_BASE}/api/clubs/${id}/members/${memberId}/promote`
+        `${API_BASE}/api/clubs/${id}/members/${memberId}/promote`,
+        { userId: user.id }
       );
 
       const membersRes = await axios.get(
@@ -434,7 +435,7 @@ export default function ClubHome() {
               onDeleteClub={handleDelete}
               onLeaveClub={handleLeaveClub}
               onInviteMembers={() => setIsInviteModalOpen(true)}
-              onPromoteMember={promoteMember}   // <-- ADDED
+              onPromote={promoteMember}   // <-- ADDED
             />
           </div>
         </div>

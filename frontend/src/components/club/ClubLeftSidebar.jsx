@@ -17,8 +17,6 @@ export default function ClubLeftSidebar({
 
   return (
     <aside className="lg:col-span-3 space-y-4">
-
-      {/* CURRENT READ SECTION */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
         <div className="flex items-center justify-between mb-4">
           <h2
@@ -28,7 +26,6 @@ export default function ClubLeftSidebar({
             Current Read
           </h2>
 
-          {/* ASSIGN BOOK BUTTON */}
           {isHost && !currentBook && (
             <button
               onClick={onOpenAssign}
@@ -42,7 +39,6 @@ export default function ClubLeftSidebar({
             </button>
           )}
 
-          {/* REMOVE BOOK BUTTON */}
           {isHost && currentBook && (
             <button
               onClick={async () => {
@@ -62,8 +58,6 @@ export default function ClubLeftSidebar({
         </div>
 
         <div className="space-y-3">
-
-          {/* If a book is assigned */}
           {currentBook && (
             <div>
               <CurrentBookCard
@@ -75,7 +69,6 @@ export default function ClubLeftSidebar({
                 onRemoveBook={onRemoveBook}
               />
 
-              {/* PROGRESS DESCRIPTION — ONLY IF BOOK EXISTS */}
               {hasCurrentRead && (
                 <p
                   className="text-sm font-medium text-gray-700 mt-3"
@@ -83,12 +76,10 @@ export default function ClubLeftSidebar({
                 >
                   Reading: {club.currentBookData?.title || "Untitled Book"}
                   {club.readingGoal && ` · Goal: ${club.readingGoal}`}
-                  {club.goalDeadline &&
-                    ` · ${club.goalDeadline}`}
+                  {club.goalDeadline && ` · ${club.goalDeadline}`}
                 </p>
               )}
 
-              {/* FINISH BOOK BUTTON */}
               {isHost && (
                 <button
                   onClick={async () => {
@@ -106,7 +97,6 @@ export default function ClubLeftSidebar({
             </div>
           )}
 
-          {/* If NO book is assigned */}
           {!currentBook && (
             <div
               className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded"
@@ -117,14 +107,11 @@ export default function ClubLeftSidebar({
               </p>
             </div>
           )}
-
         </div>
       </div>
 
-      {/* PAST READS */}
       <PastReads clubId={club.id} />
 
-      {/* MEMBERS + ROLES */}
       <MembersRoles members={members} />
     </aside>
   );

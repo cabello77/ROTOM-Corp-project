@@ -1,7 +1,10 @@
 export default function MembersRoles({ members = [] }) {
   return (
     <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-      <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>
+      <h2
+        className="text-lg font-semibold text-gray-800"
+        style={{ fontFamily: "Times New Roman, serif" }}
+      >
         Members & Roles
       </h2>
 
@@ -10,9 +13,10 @@ export default function MembersRoles({ members = [] }) {
           members.map((m) => {
             const displayName = m?.user?.name || `User ${m.userId}`;
 
-            let role = "Member";
-            if (m.isHost) role = "Host";
-            else if (m.isModerator) role = "Moderator";
+            // 🔥 Correctly interpret role from database
+            let roleLabel = "Member";
+            if (m.role === "HOST") roleLabel = "Host";
+            else if (m.role === "MODERATOR") roleLabel = "Moderator";
 
             return (
               <div
@@ -22,20 +26,20 @@ export default function MembersRoles({ members = [] }) {
                 <div>
                   <p
                     className="text-sm text-gray-800"
-                    style={{ fontFamily: 'Times New Roman, serif' }}
+                    style={{ fontFamily: "Times New Roman, serif" }}
                   >
                     {displayName}
                   </p>
                   <p
                     className="text-xs text-gray-600"
-                    style={{ fontFamily: 'Times New Roman, serif' }}
+                    style={{ fontFamily: "Times New Roman, serif" }}
                   >
                     Joined: {new Date(m.joinedAt).toLocaleDateString()}
                   </p>
                 </div>
 
                 <span className="text-xs px-2 py-1 rounded-full border border-[#ddcdb7] bg-white text-gray-700">
-                  {role}
+                  {roleLabel}
                 </span>
               </div>
             );
@@ -43,7 +47,7 @@ export default function MembersRoles({ members = [] }) {
         ) : (
           <div
             className="text-center py-2 border border-[#e6dac8] bg-[#efe6d7] rounded"
-            style={{ fontFamily: 'Times New Roman, serif' }}
+            style={{ fontFamily: "Times New Roman, serif" }}
           >
             <p className="text-sm text-gray-600">No members yet.</p>
           </div>
@@ -52,4 +56,3 @@ export default function MembersRoles({ members = [] }) {
     </div>
   );
 }
-

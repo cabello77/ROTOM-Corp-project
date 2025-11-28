@@ -1317,6 +1317,10 @@ app.get("/api/users/:userId/bookshelf/past", async (req, res) => {
 // Promote a club member to MODERATOR (host-only)
 app.post("/api/clubs/:id/members/:memberId/promote", async (req, res) => {
   try {
+    console.log("PROMOTE ROUTE HIT");
+    console.log("Request body:", req.body);
+    console.log("Params:", req.params);
+
     const clubId = Number(req.params.id);
     const memberId = Number(req.params.memberId);
     let { actingUserId } = req.body;         

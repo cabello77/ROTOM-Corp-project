@@ -326,7 +326,7 @@ export default function ClubHome() {
     try {
       await axios.post(
         `${API_BASE}/api/clubs/${id}/members/${memberId}/promote`,
-        { userId: user.id }
+        { actingUserId: user.id }
       );
 
       const membersRes = await axios.get(

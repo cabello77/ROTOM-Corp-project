@@ -14,6 +14,8 @@ export default function ClubRightSidebar({
   onDeleteClub,
   onInviteMembers,
   onPromote,
+  onOpenGoalModal,
+  onOpenChaptersModal,
 }) {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
@@ -39,7 +41,7 @@ export default function ClubRightSidebar({
           <button
             onClick={onJoinClub}
             className="w-full px-4 py-2 rounded bg-[#d9c5a3] hover:bg-[#cbb894] text-sm"
-            style={{ fontFamily: 'Times New Roman, serif' }}
+            style={{ fontFamily: "Times New Roman, serif" }}
           >
             Join Club
           </button>
@@ -77,6 +79,27 @@ export default function ClubRightSidebar({
                 style={{ fontFamily: "Times New Roman, serif" }}
               >
                 Assign Moderator
+              </button>
+
+              <button
+                onClick={onOpenGoalModal}
+                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7]
+                           hover:bg-[#e3d5c2] transition-colors text-sm"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                {club?.readingGoal ? "Edit Reading Goal" : "Set Reading Goal"}
+              </button>
+
+              {/* NEW SET TOTAL CHAPTERS BUTTON */}
+              <button
+                onClick={onOpenChaptersModal}
+                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7]
+                           hover:bg-[#e3d5c2] transition-colors text-sm"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                {club?.totalChapters
+                  ? `Edit Total Chapters (${club.totalChapters})`
+                  : "Set Total Chapters"}
               </button>
 
               <button

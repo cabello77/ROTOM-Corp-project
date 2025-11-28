@@ -1,5 +1,5 @@
 ﻿import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";
 import LiveChat from "./components/club/LiveChat";
@@ -10,6 +10,7 @@ import ClubHeader from "./components/club/ClubHeader";
 import ClubTitleBar from "./components/club/ClubTitleBar";
 import ClubModals from "./components/club/ClubModals";
 import InviteFriendsModal from "./components/club/InviteFriendsModal";
+import SetTotalChaptersModal from "./components/club/SetTotalChaptersModal";
 import { searchBooks } from "./services/books";
 import {
   deleteClub,
@@ -66,6 +67,29 @@ export default function ClubHome() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [returnPath, setReturnPath] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isChaptersModalOpen, setIsChaptersModalOpen] = useState(false);
+
+
+  const fetchClub = async () => {
+
+    try {
+      const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
+      const updatedClub = clubRes.data;
+
+      setClub(updatedClub);
+      setCurrentBook(prev =>
+        updatedClub.currentRead ||
+        updatedClub.currentBook ||
+        prev || 
+        null
+      );
+      setReadingGoal(updatedClub.readingGoal || "");
+      setGoalDeadline(updatedClub.goalDeadline || "");
+      setMembers(updatedClub.members || []);
+    } catch (err) {
+      console.error("Failed to fetch updated club:", err);
+    }
+  };
 
   const handleDelete = async () => {
     if (
@@ -169,6 +193,27 @@ export default function ClubHome() {
       console.error("Error joining club:", err);
     }
   };
+
+const handleUpdateChapters = async (chapters) => {
+  try {
+    await axios.put(
+      `${API_BASE}/api/clubs/${club.id}/total-chapters`,
+      {
+        userId: user.id,
+        totalChapters: Number(chapters),
+      }
+    );
+
+    window.location.reload();   // ✅ full refresh
+
+  } catch (err) {
+    console.error("CHAPTER UPDATE ERROR:", err?.response?.data || err);
+    alert("Failed to update total chapters.");
+  }
+};
+
+
+
 
   const handleLeaveClub = async () => {
     if (!window.confirm("Are you sure you want to leave this book club?"))
@@ -321,7 +366,7 @@ export default function ClubHome() {
     }
   };
 
-  // 🔥🔥🔥 NEW: Promote Moderator handler
+  // NEW: Promote Moderator handler
   const promoteMember = async (memberId) => {
     try {
       await axios.post(
@@ -377,6 +422,7 @@ export default function ClubHome() {
               currentBook={currentBook}
               goalDeadline={goalDeadline}
               members={members}
+              currentUser={user}
               onOpenAssign={() => setIsModalOpen(true)}
               onOpenUpdateGoal={() => {
                 setEditReadingGoal(club.readingGoal || "");
@@ -422,7 +468,7 @@ export default function ClubHome() {
               />
             </section>
 
-            {/* 🔥 ClubRightSidebar updated with promote handler */}
+            {/* ClubRightSidebar updated with promote handler */}
             <ClubRightSidebar
               user={user}
               club={club}
@@ -435,7 +481,14 @@ export default function ClubHome() {
               onDeleteClub={handleDelete}
               onLeaveClub={handleLeaveClub}
               onInviteMembers={() => setIsInviteModalOpen(true)}
-              onPromote={promoteMember}   // <-- ADDED
+              onPromote={promoteMember}
+              onOpenGoalModal={() => {
+                setEditReadingGoal(club.readingGoal || "");
+                setEditGoalDeadline(goalDeadline);
+                setIsGoalModalOpen(true);
+              }}
+
+              onOpenChaptersModal={() => setIsChaptersModalOpen(true)}
             />
           </div>
         </div>
@@ -480,6 +533,15 @@ export default function ClubHome() {
         handleCloseEditModal={handleCloseEditModal}
         user={user}
         handleSaveProfile={handleSaveProfile}
+      />
+
+      <SetTotalChaptersModal
+        isOpen={isChaptersModalOpen}
+        onClose={() => setIsChaptersModalOpen(false)}
+        clubId={club.id}
+        initialValue={club.totalChapters}
+        userId={user.id}
+        onUpdated={handleUpdateChapters}
       />
     </div>
   );

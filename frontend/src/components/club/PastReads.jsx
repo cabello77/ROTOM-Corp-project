@@ -7,11 +7,21 @@ export default function PastReads({ clubId }) {
   const [loading, setLoading] = useState(true);
 
   const loadPastReads = async () => {
+    if (!clubId || isNaN(Number(clubId))) {
+      console.warn("PastReads skipped — invalid clubId:", clubId);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/clubs/${clubId}/bookshelf`);
-      const data = await res.json();
 
-      if (res.ok) setPastReads(data || []);
+      if (!res.ok) {
+        console.error("Failed to fetch past reads:", res.status);
+        return;
+      }
+
+      const data = await res.json();
+      setPastReads(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Error loading club past reads:", err);
     } finally {
@@ -19,10 +29,14 @@ export default function PastReads({ clubId }) {
     }
   };
 
+
   // Load on first mount or club change
   useEffect(() => {
+    if (!clubId) return;
+    setLoading(true);
     loadPastReads();
   }, [clubId]);
+
 
   // 🔥 Listen for "club-updated" and refresh automatically
   useEffect(() => {

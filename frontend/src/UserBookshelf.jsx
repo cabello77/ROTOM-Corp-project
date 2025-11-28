@@ -63,7 +63,7 @@ export default function UserBookshelf({ userId }) {
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {currentReads.map((entry) => (
                 <div
-                  key={entry.bookId}
+                  key={`${entry.clubId}-${entry.bookId}`}
                   className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] 
                                rounded hover:bg-[#f1e7d8] transition cursor-pointer"
                   onClick={() => {

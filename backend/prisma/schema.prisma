@@ -72,6 +72,7 @@ model Club {
   assignedAt      DateTime?
   readingGoal     String?
   goalDeadline    DateTime?
+  totalChapters   Int?
   members         ClubMember[]
   discussionPosts DiscussionPost[]
   invitations     ClubInvitation[]
@@ -94,7 +95,7 @@ model ClubMember {
   clubId   Int
   userId   Int
   role     Role
-  progress Int      @default(0)
+  currentChapter  Int      @default(0)
   joinedAt DateTime @default(now())
   club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)

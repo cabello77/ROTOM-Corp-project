@@ -99,11 +99,6 @@ app.use(express.static(path.join(__dirname, "public")));
 const dmRoutes = require("./routes/dm");
 app.use("/api/dm", dmRoutes);
 
-// Fallback for index.html (so root URL loads your site)
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
-});
-
 // Build/version diagnostics
 app.get('/api/version', (req, res) => {
   res.json({
@@ -638,7 +633,7 @@ app.get("/api/clubs/:id", async (req, res) => {
         : null;
 
     // ⭐ Return the full club + the computed currentRead object
-    return res.json({
+    res.json({
       ...club,
       currentRead,
       currentBook: currentRead,  // alias, your UI uses both
@@ -791,7 +786,8 @@ app.put("/api/clubs/:id/book", async (req, res) => {
     const updatedClub = await prisma.club.update({
       where: { id: Number(id) },
       data: {
-        currentBookId: bookData.title || "",
+        currentBookId: bookData.id || bookData.title || null,
+
         currentBookData: normalizedBookData,
         assignedAt: new Date(),
         readingGoal: readingGoal || null,
@@ -799,7 +795,23 @@ app.put("/api/clubs/:id/book", async (req, res) => {
       },
     });
 
-    res.json(updatedClub);
+    const currentRead =
+    updatedClub.currentBookId && updatedClub.currentBookData
+      ? {
+          bookId: updatedClub.currentBookId,
+          bookData: updatedClub.currentBookData,
+          assignedAt: updatedClub.assignedAt,
+          readingGoal: updatedClub.readingGoal,
+          goalDeadline: updatedClub.goalDeadline,
+        }
+      : null;
+
+  res.json({
+    ...updatedClub,
+    currentRead,
+    currentBook: currentRead
+  });
+
   } catch (error) {
     console.error("❌ Error assigning book:", error);
     res.status(500).json({ error: "Server error while assigning book." });
@@ -811,18 +823,18 @@ app.put("/api/clubs/:id/book", async (req, res) => {
 app.get("/api/clubs/:id/bookshelf", async (req, res) => {
   try {
     const { id } = req.params;
+      const books = await prisma.clubBookHistory.findMany({
+        where: { clubId: Number(id) },  // force cast
+        orderBy: { finishedAt: "desc" },
+        select: {
+          id: true,
+          bookId: true,
+          finishedAt: true,
+          assignedAt: true,
+          bookData: true,
+        },
+    });
 
-          const books = await prisma.clubBookHistory.findMany({
-          where: { clubId: Number(id) },
-          orderBy: { finishedAt: "desc" },
-          select: {
-                    id: true,
-                    bookId: true,
-                    finishedAt: true,
-                    assignedAt: true,
-                    bookData: true,   // <-- IMPORTANT
-          }
-});
     res.json(books);
   } catch (error) {
     console.error("Error fetching bookshelf:", error);
@@ -971,7 +983,22 @@ app.put("/api/clubs/:id/goal", async (req, res) => {
       },
     });
 
-    res.json(updatedClub);
+    const currentRead =
+    updatedClub.currentBookId && updatedClub.currentBookData
+      ? {
+          bookId: updatedClub.currentBookId,
+          bookData: updatedClub.currentBookData,
+          assignedAt: updatedClub.assignedAt,
+          readingGoal: updatedClub.readingGoal,
+          goalDeadline: updatedClub.goalDeadline,
+        }
+      : null;
+
+  res.json({
+    ...updatedClub,
+    currentRead,
+    currentBook: currentRead
+  });
   } catch (error) {
     console.error("❌ Error updating reading goal:", error);
     res.status(500).json({ error: "Server error while updating reading goal." });
@@ -1486,65 +1513,160 @@ app.get("/api/clubs/:id/members", async (req, res) => {
   }
 });
 
-// Update member progress
-app.put("/api/clubs/:id/members/:userId/progress", async (req, res) => {
+// Update total chapters for a club
+app.put("/api/clubs/:id/total-chapters", async (req, res) => {
   try {
-    const { id, userId } = req.params;
-    const { progress } = req.body;
+    const { id } = req.params;
+    const { userId, totalChapters } = req.body;
 
-    // Check if club exists and get creator info
+    const clubId = Number(id);
+    const uid = Number(userId);
+    const total = Number(totalChapters);
+
+    if (isNaN(clubId) || isNaN(uid)) {
+      return res.status(400).json({ error: "Invalid club or user ID" });
+    }
+
+    if (isNaN(total) || total <= 0) {
+      return res
+        .status(400)
+        .json({ error: "Total chapters must be a positive number" });
+    }
+
+    const membership = await prisma.clubMember.findUnique({
+      where: {
+        clubId_userId: { clubId, userId: uid },
+      },
+      select: { role: true },
+    });
+
+    if (!membership) {
+      return res
+        .status(403)
+        .json({ error: "You are not a member of this club." });
+    }
+
+    if (!["HOST", "MODERATOR"].includes(membership.role)) {
+      return res.status(403).json({
+        error: "Only hosts or moderators can update total chapters.",
+      });
+    }
+
+    const beforeUpdate = await prisma.club.findUnique({
+      where: { id: clubId },
+    });
+
+    // ✅ Update total chapters
+    await prisma.club.update({
+      where: { id: clubId },
+      data: {
+        totalChapters: total,
+      },
+    });
+
+
     const club = await prisma.club.findUnique({
-      where: { id: Number(id) },
-      select: { creatorId: true }
-    });
-
-    if (!club) {
-      return res.status(404).json({ error: "Club not found" });
-    }
-
-    let member = await prisma.clubMember.findUnique({
-      where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
-    });
-
-    // If member doesn't exist, create membership automatically
-    // This allows users who joined to update progress even if membership creation had issues
-    if (!member) {
-      try {
-        member = await prisma.clubMember.create({
-          data: {
-            clubId: Number(id),
-            userId: Number(userId),
-            progress: 0,
-          }
-        });
-      } catch (createError) {
-        // If creation fails (e.g., duplicate), try to find it again
-        member = await prisma.clubMember.findUnique({
-          where: { clubId_userId: { clubId: Number(id), userId: Number(userId) } }
-        });
-        if (!member) {
-          console.error("Error creating/finding membership:", createError);
-          return res.status(500).json({ error: "Failed to create or find membership" });
-        }
-      }
-    }
-
-    const updatedMember = await prisma.clubMember.update({
-      where: { id: member.id },
-      data: { progress: Math.min(100, Math.max(0, progress)) },
+      where: { id: clubId },
       include: {
-        user: {
-          select: { id: true, name: true, email: true }
-        }
-      }
+        members: {
+          include: {
+            user: true,
+          },
+        },
+      },
     });
 
-    res.json(updatedMember);
+    // Rebuild currentRead SAME as GET /clubs/:id
+    const currentRead =
+      club.currentBookId && club.currentBookData
+        ? {
+            bookId: club.currentBookId,
+            bookData: club.currentBookData,
+            assignedAt: club.assignedAt,
+            readingGoal: club.readingGoal,
+            goalDeadline: club.goalDeadline,
+          }
+        : null;
+
+    res.json({
+      ...club,
+      currentRead,
+      currentBook: currentRead,
+    });
+
   } catch (error) {
-    console.error("❌ Error updating progress:", error);
-    res.status(500).json({ error: "Server error while updating progress." });
+    console.error("❌ Error updating total chapters:", error);
+    res.status(500).json({ error: "Failed to update total chapters." });
   }
 });
+
+
+// Update member chapter progress
+app.put("/api/clubs/:id/members/:userId/progress", async (req, res) => {
+  console.log("HIT: Chapter progress route");
+
+  try {
+    const { id, userId } = req.params;
+    const { chapter } = req.body;
+
+    const clubId = Number(id);
+    const uid = Number(userId);
+    const chapterNumber = Number(chapter);
+
+    if (isNaN(chapterNumber) || chapterNumber < 0) {
+      return res.status(400).json({ error: "Invalid chapter value" });
+    }
+
+    const club = await prisma.club.findUnique({
+      where: { id: clubId },
+      select: { totalChapters: true }
+    });
+
+    if (!club || !club.totalChapters) {
+      return res.status(400).json({ 
+        error: "Total chapters not set for this club" 
+      });
+    }
+
+    const member = await prisma.clubMember.findUnique({
+      where: {
+        clubId_userId: {
+          clubId,
+          userId: uid,
+        },
+      },
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: "User is not a member of this club." });
+    }
+
+    const finalChapter = Math.min(chapterNumber, club.totalChapters);
+
+    const updated = await prisma.clubMember.update({
+      where: {
+        clubId_userId: {
+          clubId,
+          userId: uid,
+        },
+      },
+      data: {
+        currentChapter: finalChapter
+      },
+    });
+
+    res.json({
+      success: true,
+      currentChapter: updated.currentChapter
+    });
+
+  } catch (error) {
+    console.error("❌ Progress update error:", error);
+    res.status(500).json({ error: "Server error while updating progress" });
+  }
+});
+
+
 
 // Get user's club memberships
 app.get("/api/users/:id/clubs-joined", async (req, res) => {

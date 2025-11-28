@@ -93,6 +93,7 @@ model ClubMember {
   id       Int      @id @default(autoincrement())
   clubId   Int
   userId   Int
+  role     Role
   progress Int      @default(0)
   joinedAt DateTime @default(now())
   club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)

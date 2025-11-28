@@ -39,20 +39,20 @@ export default function AssignModeratorModal({
           )}
 
           {members.map((member) => (
-            <label
-              key={member.id}
-              className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 cursor-pointer"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              <input
-                type="radio"
-                name="promote"
-                value={member.id}
-                onChange={() => setSelectedId(member.id)}
-              />
-              <span>{member.user.name}</span>
-            </label>
-          ))}
+          <label
+            key={member.userId}
+            className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 cursor-pointer"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            <input
+              type="radio"
+              name="promote"
+              value={member.userId}
+              onChange={() => setSelectedId(member.userId)}
+            />
+            <span>{member.user.name}</span>
+          </label>
+        ))}
         </div>
 
         <div className="flex justify-end gap-3">
@@ -77,3 +77,4 @@ export default function AssignModeratorModal({
     </div>
   );
 }
+

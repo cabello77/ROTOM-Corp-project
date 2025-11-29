@@ -1365,7 +1365,9 @@ app.get("/api/books/:bookId/friends-activity/:userId", async (req, res) => {
   try {
     const { bookId, userId } = req.params;
 
-    // 1️⃣ Get user's accepted friends
+    console.log("Looking up friends for book:", bookId);
+
+    // 1️⃣ Get accepted friends
     const friends = await prisma.friend.findMany({
       where: {
         OR: [
@@ -1373,24 +1375,22 @@ app.get("/api/books/:bookId/friends-activity/:userId", async (req, res) => {
           { friendID: Number(userId), status: "ACCEPTED" }
         ]
       },
-      include: {
-        user: true,
-        friend: true
-      }
+      include: { user: true, friend: true }
     });
 
-    // Flatten to list of friend userIds
     const friendIds = friends.map(f =>
       f.userID === Number(userId) ? f.friendID : f.userID
     );
 
     if (friendIds.length === 0) {
-      return res.json([]); // no friends
+      return res.json([]);
     }
 
-    // 2️⃣ Check which friends have read this book
+    let results = [];
+
+    // 2️⃣ Past reads (clubBookHistory)
     const history = await prisma.clubBookHistory.findMany({
-      where: { bookId, },
+      where: { bookId },
       include: {
         club: {
           include: {
@@ -1402,12 +1402,10 @@ app.get("/api/books/:bookId/friends-activity/:userId", async (req, res) => {
       }
     });
 
-    const activity = [];
-
-    for (const book of history) {
-      for (const member of book.club.members) {
+    history.forEach(book => {
+      book.club.members.forEach(member => {
         if (friendIds.includes(member.userId)) {
-          activity.push({
+          results.push({
             friendId: member.userId,
             friendName: member.user.name,
             clubName: book.club.name,
@@ -1416,16 +1414,43 @@ app.get("/api/books/:bookId/friends-activity/:userId", async (req, res) => {
             totalChapters: book.club.totalChapters
           });
         }
-      }
-    }
+      });
+    });
 
-    res.json(activity);
+    // 3️⃣ Current reads (clubs currently reading the book)
+    const activeClubs = await prisma.club.findMany({
+      where: { currentBookId: bookId },
+      include: {
+        members: {
+          include: { user: true }
+        }
+      }
+    });
+
+    activeClubs.forEach(club => {
+      club.members.forEach(member => {
+        if (friendIds.includes(member.userId)) {
+          results.push({
+            friendId: member.userId,
+            friendName: member.user.name,
+            clubName: club.name,
+            finishedAt: null,
+            currentChapter: member.currentChapter,
+            totalChapters: club.totalChapters
+          });
+        }
+      });
+    });
+
+    res.json(results);
 
   } catch (err) {
     console.error("Error fetching friends' activity:", err);
     res.status(500).json({ error: "Failed to fetch friends activity" });
   }
 });
+
+
 
 
 // Promote a club member to MODERATOR (host-only)

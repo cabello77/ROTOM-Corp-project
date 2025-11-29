@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";  // Add this import statement
 import { useNavigate, Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -110,8 +110,10 @@ export default function UserBookshelf({ userId }) {
             CURRENT READS
         ==================================== */}
         <section>
-          <h3 className="text-base font-semibold text-gray-800 mb-3"
-              style={{ fontFamily: "Times New Roman, serif" }}>
+          <h3
+            className="text-base font-semibold text-gray-800 mb-3"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
             Current Reads
           </h3>
 
@@ -170,8 +172,10 @@ export default function UserBookshelf({ userId }) {
             PAST READS
         ==================================== */}
         <section>
-          <h3 className="text-base font-semibold text-gray-800 mb-3"
-              style={{ fontFamily: "Times New Roman, serif" }}>
+          <h3
+            className="text-base font-semibold text-gray-800 mb-3"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
             Past Reads
           </h3>
 
@@ -203,6 +207,7 @@ export default function UserBookshelf({ userId }) {
                     <p className="text-sm text-gray-600 mt-1">
                       Finished {new Date(entry.finishedAt).toLocaleDateString()}
                     </p>
+                    {/* Remove progress bar for past reads */}
                   </div>
                 </div>
               ))}
@@ -248,7 +253,7 @@ export default function UserBookshelf({ userId }) {
             </p>
 
             {/* Progress Bar (Only for current reads) */}
-            {selectedBook.currentChapter !== undefined && (
+            {selectedBook.currentChapter !== undefined && !selectedBook.finishedAt && (
               <div className="mt-4">
                 <ProgressBar
                   current={selectedBook.currentChapter}

@@ -17,18 +17,26 @@ export default function ClubRightSidebar({
   onOpenGoalModal,
   onOpenChaptersModal,
 }) {
+  
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  const isHost = members.some(
-    (m) => m.userId === user?.id && m.role === "HOST"
-  );
+  // ------------------------------
+  // Identify user's membership + role
+  // ------------------------------
+  const currentMember = members.find((m) => m.userId === user?.id);
+
+  const isHost = currentMember?.role === "HOST";
+  const isMod = currentMember?.role === "MODERATOR";
+
+  // Host or Moderator
+  const canManage = isHost || isMod;
 
   return (
     <aside className="lg:col-span-3 space-y-4">
 
-      {/* =======================
-          NON-MEMBER VIEW
-      ======================== */}
+      {/* ======================================================
+            NON-MEMBER VIEW → Only show "Join Club"
+      ====================================================== */}
       {!isMember && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
           <h2
@@ -48,11 +56,13 @@ export default function ClubRightSidebar({
         </div>
       )}
 
-      {/* =======================
-          MEMBER VIEW (HOST + NORMAL)
-      ======================== */}
-      {isMember && (
+      {/* ======================================================
+            MEMBER VIEW → Only Host/Mod See Actions
+            (Members with role MEMBER see *nothing*)
+      ====================================================== */}
+      {isMember && canManage && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+
           <h2
             className="text-lg font-semibold text-gray-800 mb-4"
             style={{ fontFamily: "Times New Roman, serif" }}
@@ -60,46 +70,51 @@ export default function ClubRightSidebar({
             Actions
           </h2>
 
-          {/* HOST-ONLY ACTIONS */}
+          {/* -------- Host + Mod Shared Actions -------- */}
+          <>
+            {/* Invite Members */}
+            <button
+              onClick={onInviteMembers}
+              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
+                         bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
+              Invite Members
+            </button>
+
+            {/* Set/Edit Reading Goal */}
+            <button
+              onClick={onOpenGoalModal}
+              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
+                         bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
+              {club?.readingGoal ? "Edit Reading Goal" : "Set Reading Goal"}
+            </button>
+
+            {/* Set/Edit Total Chapters */}
+            <button
+              onClick={onOpenChaptersModal}
+              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
+                         bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
+              {club?.totalChapters
+                ? `Edit Total Chapters (${club.totalChapters})`
+                : "Set Total Chapters"}
+            </button>
+          </>
+
+          {/* -------- HOST ONLY Actions -------- */}
           {isHost && (
             <>
               <button
-                onClick={onInviteMembers}
-                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7]
-                           hover:bg-[#e3d5c2] transition-colors text-sm"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                Invite Members
-              </button>
-
-              <button
                 onClick={() => setIsAssignModalOpen(true)}
-                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7]
-                           hover:bg-[#e3d5c2] transition-colors text-sm"
+                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
+                           bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
                 style={{ fontFamily: "Times New Roman, serif" }}
               >
                 Assign Moderator
-              </button>
-
-              <button
-                onClick={onOpenGoalModal}
-                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7]
-                           hover:bg-[#e3d5c2] transition-colors text-sm"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                {club?.readingGoal ? "Edit Reading Goal" : "Set Reading Goal"}
-              </button>
-
-              {/* NEW SET TOTAL CHAPTERS BUTTON */}
-              <button
-                onClick={onOpenChaptersModal}
-                className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7]
-                           hover:bg-[#e3d5c2] transition-colors text-sm"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                {club?.totalChapters
-                  ? `Edit Total Chapters (${club.totalChapters})`
-                  : "Set Total Chapters"}
               </button>
 
               <button
@@ -112,10 +127,13 @@ export default function ClubRightSidebar({
               </button>
             </>
           )}
+
         </div>
       )}
 
-      {/* Assign Moderator Modal */}
+      {/* ======================================================
+            Assign Moderator Modal
+      ====================================================== */}
       <AssignModeratorModal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}

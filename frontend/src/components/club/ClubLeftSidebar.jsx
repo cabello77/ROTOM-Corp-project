@@ -6,13 +6,22 @@ import { useState } from "react";
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 function formatDeadline(deadline) {
-  if (!deadline) return null;
-  return new Date(deadline).toLocaleDateString("en-US", {
+  if (!deadline || typeof deadline !== "string") return null;
+
+  const parts = deadline.split("-");
+  if (parts.length !== 3) return null;
+
+  const [year, month, day] = parts.map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
 }
+
 
 export default function ClubLeftSidebar({
   isHost,
@@ -29,72 +38,75 @@ export default function ClubLeftSidebar({
   const [chapterInput, setChapterInput] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const hasCurrentRead = !!currentBook;
-
   const currentMember = members.find(m => m.userId === currentUser?.id);
+  const isMod = currentMember?.role === "MODERATOR";
+  const canManage = isHost || isMod;
+
+  const hasCurrentRead = !!currentBook;
   const currentChapter = currentMember?.currentChapter ?? 0;
   const total = club?.totalChapters ?? 0;
 
   const progressPercent =
     total > 0 ? Math.min(100, (currentChapter / total) * 100) : 0;
 
+  // ===============================
+  // UPDATE CHAPTER PROGRESS
+  // ===============================
+  const handleUpdateChapter = async () => {
+    const newChapter = Number(chapterInput);
 
-const handleUpdateChapter = async () => {
-  const newChapter = Number(chapterInput);
-
-  if (isNaN(newChapter) || newChapter < 0) {
-    alert("Enter a valid chapter number.");
-    return;
-  }
-
-  if (!currentUser) {
-    alert("Not logged in.");
-    return;
-  }
-
-  setIsUpdating(true);
-
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/clubs/${club.id}/members/${currentUser.id}/progress`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chapter: newChapter }),
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      console.error("API ERROR:", data);
-      alert(data.error || "Failed to update progress.");
+    if (isNaN(newChapter) || newChapter < 0) {
+      alert("Enter a valid chapter number.");
       return;
     }
 
-    console.log("✅ Chapter updated:", data);
+    if (!currentUser) {
+      alert("Not logged in.");
+      return;
+    }
 
-    window.location.reload();
+    setIsUpdating(true);
 
-  } catch (err) {
-    console.error("FETCH ERROR:", err);
-    alert("Backend not reachable.");
-  } finally {
-    setIsUpdating(false);
-  }
-};
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/clubs/${club.id}/members/${currentUser.id}/progress`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chapter: newChapter }),
+        }
+      );
 
+      const data = await res.json();
+
+      if (!res.ok) {
+        console.error("API ERROR:", data);
+        alert(data.error || "Failed to update progress.");
+        return;
+      }
+
+      console.log("Chapter updated:", data);
+
+      window.location.reload();
+
+    } catch (err) {
+      console.error("FETCH ERROR:", err);
+      alert("Backend not reachable.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   return (
     <aside className="lg:col-span-3 space-y-4">
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Current Read
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-800">Current Read</h2>
 
-          {isHost && !currentBook && (
+          {/* Host + Mod: Assign Book */}
+          {canManage && !currentBook && (
             <button
               onClick={onOpenAssign}
               className="w-8 h-8 rounded-full border bg-[#efe6d7] hover:bg-[#e3d5c2]"
@@ -118,18 +130,16 @@ const handleUpdateChapter = async () => {
               />
 
               {/* =====================
-                 📊 Chapter Progress
+                 Chapter Progress
               ====================== */}
               {typeof club?.totalChapters === "number" && (
                 <div className="mt-4 space-y-3">
 
-                  {/* Progress Header */}
                   <div className="flex justify-between text-sm text-gray-700 font-medium">
                     <span>Your Progress</span>
                     <span>{currentChapter} / {total}</span>
                   </div>
 
-                  {/* Bar */}
                   <div className="w-full bg-[#ede3d2] rounded-full h-3 overflow-hidden">
                     <div
                       className="bg-[#8b5a2b] h-3 transition-all duration-300"
@@ -141,7 +151,6 @@ const handleUpdateChapter = async () => {
                     {currentChapter} chapters read
                   </p>
 
-                  {/* Update Chapter Input */}
                   <div className="flex gap-2 mt-2">
                     <input
                       type="number"
@@ -165,7 +174,7 @@ const handleUpdateChapter = async () => {
               )}
 
               {/* =====================
-                 🎯 Current Goal
+                 Current Goal
               ====================== */}
               {hasCurrentRead && (club.readingGoal || club.goalDeadline) && (
                 <div className="mt-4 bg-[#f8f3ea] border border-[#ddcdb7] rounded-lg p-3 text-sm space-y-1">
@@ -177,8 +186,10 @@ const handleUpdateChapter = async () => {
                 </div>
               )}
 
-              {/* Host Button */}
-              {isHost && (
+              {/* =====================
+                 Finish Book (Host + Mod)
+              ====================== */}
+              {canManage && (
                 <button
                   onClick={async () => {
                     if (window.confirm("Mark this book as finished?")) {
@@ -197,7 +208,7 @@ const handleUpdateChapter = async () => {
           {!currentBook && (
             <div className="text-center py-4 border border-[#e6dac8] bg-[#faf6ed] rounded">
               <p className="text-sm text-gray-600">
-                {isHost ? "Click + to assign a book" : "No book assigned yet"}
+                {canManage ? "Click + to assign a book" : "No book assigned yet"}
               </p>
             </div>
           )}

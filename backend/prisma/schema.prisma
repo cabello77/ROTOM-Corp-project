@@ -71,7 +71,7 @@ model Club {
   currentBookData Json?
   assignedAt      DateTime?
   readingGoal     String?
-  goalDeadline    DateTime?
+  goalDeadline    String?
   totalChapters   Int?
   members         ClubMember[]
   discussionPosts DiscussionPost[]

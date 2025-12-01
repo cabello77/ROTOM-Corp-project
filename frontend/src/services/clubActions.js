@@ -64,4 +64,3 @@ export async function assignBookToClub(apiBase, clubId, userId, bookDetails, rea
   if (!res.ok) throw new Error(data.error || "Failed to assign book.");
   return data;
 }
-

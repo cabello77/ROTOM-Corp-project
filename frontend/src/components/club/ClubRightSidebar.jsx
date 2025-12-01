@@ -1,12 +1,13 @@
 import { useState } from "react";
 import AssignModeratorModal from "./AssignModeratorModal";
+import MyProgressCard from "./MyProgressCard"; // ← import it
 
 export default function ClubRightSidebar({
   user,
   club,
   isMember,
   currentBook,
-  userProgress,
+  currentPage,           // ← need currentPage for progress
   members = [],
   onOpenProgress,
   onJoinClub,
@@ -14,25 +15,32 @@ export default function ClubRightSidebar({
   onDeleteClub,
   onInviteMembers,
   onPromote,
-  onOpenGoalModal,
-  onOpenChaptersModal,
 }) {
-  
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
   // ------------------------------
   // Identify user's membership + role
   // ------------------------------
   const currentMember = members.find((m) => m.userId === user?.id);
-
   const isHost = currentMember?.role === "HOST";
   const isMod = currentMember?.role === "MODERATOR";
 
-  // Host or Moderator
   const canManage = isHost || isMod;
 
   return (
     <aside className="lg:col-span-3 space-y-4">
+
+      {/* ======================================================
+            Show MyProgressCard if member
+      ====================================================== */}
+      {isMember && currentBook && (
+        <MyProgressCard
+          club={club}
+          currentBook={currentBook}
+          currentPage={currentPage}   // pass current page
+          onOpenProgress={onOpenProgress}
+        />
+      )}
 
       {/* ======================================================
             NON-MEMBER VIEW → Only show "Join Club"
@@ -57,8 +65,7 @@ export default function ClubRightSidebar({
       )}
 
       {/* ======================================================
-            MEMBER VIEW → Only Host/Mod See Actions
-            (Members with role MEMBER see *nothing*)
+            MEMBER VIEW → Host/Mod Only
       ====================================================== */}
       {isMember && canManage && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
@@ -70,42 +77,17 @@ export default function ClubRightSidebar({
             Actions
           </h2>
 
-          {/* -------- Host + Mod Shared Actions -------- */}
-          <>
-            {/* Invite Members */}
-            <button
-              onClick={onInviteMembers}
-              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
-                         bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              Invite Members
-            </button>
+          {/* Invite Members */}
+          <button
+            onClick={onInviteMembers}
+            className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
+                       bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Invite Members
+          </button>
 
-            {/* Set/Edit Reading Goal */}
-            <button
-              onClick={onOpenGoalModal}
-              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
-                         bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              {club?.readingGoal ? "Edit Reading Goal" : "Set Reading Goal"}
-            </button>
-
-            {/* Set/Edit Total Chapters */}
-            <button
-              onClick={onOpenChaptersModal}
-              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
-                         bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              {club?.totalChapters
-                ? `Edit Total Chapters (${club.totalChapters})`
-                : "Set Total Chapters"}
-            </button>
-          </>
-
-          {/* -------- HOST ONLY Actions -------- */}
+          {/* HOST ONLY Actions */}
           {isHost && (
             <>
               <button
@@ -127,7 +109,6 @@ export default function ClubRightSidebar({
               </button>
             </>
           )}
-
         </div>
       )}
 
@@ -146,3 +127,4 @@ export default function ClubRightSidebar({
     </aside>
   );
 }
+

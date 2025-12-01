@@ -71,8 +71,9 @@ model Club {
   currentBookData Json?
   assignedAt      DateTime?
   readingGoal     String?
+  readingGoalPageStart Int?
+  readingGoalPageEnd   Int?
   goalDeadline    String?
-  totalChapters   Int?
   members         ClubMember[]
   discussionPosts DiscussionPost[]
   invitations     ClubInvitation[]
@@ -95,7 +96,7 @@ model ClubMember {
   clubId   Int
   userId   Int
   role     Role
-  currentChapter  Int      @default(0)
+  pageNumber  Int?
   joinedAt DateTime @default(now())
   club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -83,59 +83,78 @@ export default function HomeRightSidebar({
             </h3>
 
             <div className="space-y-3">
-              {clubsJoined.length > 0 ? (
-                clubsJoined.map((club) => {
-                  const currentRead = club.currentRead;
+              {(() => {
+                // Clubs with reading goals set
+                const clubsWithGoals = clubsJoined.filter((club) => {
+                  return (
+                    club.readingGoalPageStart != null &&
+                    club.readingGoalPageEnd != null &&
+                    club.goalDeadline != null
+                  );
+                });
 
-                  // Only show progress if a book is assigned
-                  if (!currentRead) return null;
+                // If user has clubs but no goals exist at all
+                if (clubsJoined.length > 0 && clubsWithGoals.length === 0) {
+                  return (
+                    <p
+                      className="text-xs text-gray-500"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      No reading goals yet.
+                    </p>
+                  );
+                }
 
+                // If user is not in any clubs
+                if (clubsJoined.length === 0) {
+                  return (
+                    <p
+                      className="text-xs text-gray-500"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      No progress yet. Join a club to get started!
+                    </p>
+                  );
+                }
+
+                return clubsWithGoals.map((club) => {
                   const title = club.currentBookData?.title || "Untitled Book";
-                  const progress = club.membershipProgress || 0;
-                  const goal = club.readingGoal || null;
-                  const daysRemaining =
-                    club.goalDeadline !== null
-                      ? getDaysRemainingDays(club.goalDeadline)
-                      : null;
+                  const clubName = club.name || "Book Club";
 
-                  const progressDescription = `${Math.round(progress)}% complete`;
+                  const start = club.readingGoalPageStart;
+                  const end = club.readingGoalPageEnd;
+                  const currentPage = club.membershipPageNumber ?? start;
+
+                  const totalPages = end - start;
+                  const pagesRead = Math.max(0, currentPage - start);
+                  const percent = Math.min(100, Math.round((pagesRead / totalPages) * 100));
+
+                  const daysRemaining = getDaysRemainingDays(club.goalDeadline);
 
                   return (
                     <div key={club.id} className="space-y-1">
 
-                      {/* Description Line */}
+                      {/* Title */}
                       <p
                         className="text-xs font-medium text-gray-700 truncate"
                         style={{ fontFamily: "Times New Roman, serif" }}
                       >
-                        Reading: {title}
-                        {goal && ` · Goal: ${goal}`}
-                        {daysRemaining !== null &&
-                          daysRemaining >= 0 &&
-                          ` · ${daysRemaining} ${
-                            daysRemaining === 1 ? "day" : "days"
-                          } left`}
-                        {` · ${progressDescription}`}
+                        {clubName}: <span className="italic">{title}</span> ·{" "}
+                        {daysRemaining} {daysRemaining === 1 ? "day" : "days"} left ·{" "}
+                        {percent}% complete
                       </p>
 
                       {/* Progress Bar */}
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-[#774C30] h-2 rounded-full transition-all"
-                          style={{ width: `${Math.round(progress)}%` }}
+                          style={{ width: `${percent}%` }}
                         ></div>
                       </div>
                     </div>
                   );
-                })
-              ) : (
-                <p
-                  className="text-xs text-gray-500"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  No progress yet. Join a club to get started!
-                </p>
-              )}
+                });
+              })()}
             </div>
           </div>
         </div>

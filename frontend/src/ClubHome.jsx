@@ -10,7 +10,6 @@ import ClubHeader from "./components/club/ClubHeader";
 import ClubTitleBar from "./components/club/ClubTitleBar";
 import ClubModals from "./components/club/ClubModals";
 import InviteFriendsModal from "./components/club/InviteFriendsModal";
-import SetTotalChaptersModal from "./components/club/SetTotalChaptersModal";
 import { searchBooks } from "./services/books";
 import {
   deleteClub,
@@ -67,7 +66,6 @@ export default function ClubHome() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [returnPath, setReturnPath] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
-  const [isChaptersModalOpen, setIsChaptersModalOpen] = useState(false);
 
 
   const fetchClub = async () => {
@@ -193,26 +191,6 @@ export default function ClubHome() {
       console.error("Error joining club:", err);
     }
   };
-
-const handleUpdateChapters = async (chapters) => {
-  try {
-    await axios.put(
-      `${API_BASE}/api/clubs/${club.id}/total-chapters`,
-      {
-        userId: user.id,
-        totalChapters: Number(chapters),
-      }
-    );
-
-    window.location.reload();   // ✅ full refresh
-
-  } catch (err) {
-    console.error("CHAPTER UPDATE ERROR:", err?.response?.data || err);
-    alert("Failed to update total chapters.");
-  }
-};
-
-
 
 
   const handleLeaveClub = async () => {
@@ -487,8 +465,6 @@ const handleUpdateChapters = async (chapters) => {
                 setEditGoalDeadline(goalDeadline);
                 setIsGoalModalOpen(true);
               }}
-
-              onOpenChaptersModal={() => setIsChaptersModalOpen(true)}
             />
           </div>
         </div>
@@ -535,14 +511,6 @@ const handleUpdateChapters = async (chapters) => {
         handleSaveProfile={handleSaveProfile}
       />
 
-      <SetTotalChaptersModal
-        isOpen={isChaptersModalOpen}
-        onClose={() => setIsChaptersModalOpen(false)}
-        clubId={club.id}
-        initialValue={club.totalChapters}
-        userId={user.id}
-        onUpdated={handleUpdateChapters}
-      />
     </div>
   );
 }

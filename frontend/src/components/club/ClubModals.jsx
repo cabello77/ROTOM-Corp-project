@@ -19,6 +19,13 @@ export default function ClubModals({
   setReadingGoal,
   goalDeadline,
   setGoalDeadline,
+
+  // ⭐ ADD PAGE RANGE FROM PARENT ⭐
+  readingGoalPageStart,
+  setReadingGoalPageStart,
+  readingGoalPageEnd,
+  setReadingGoalPageEnd,
+
   handleAssignBook,
 
   // Progress update
@@ -48,9 +55,18 @@ export default function ClubModals({
     setSearchQuery("");
     setSearchResults([]);
     setSelectedBook(null);
-    setBookDetails({ title: "", authors: "", cover: "", description: "", year: "", genre: "" });
+    setBookDetails({
+      title: "",
+      authors: "",
+      cover: "",
+      description: "",
+      year: "",
+      genre: "",
+    });
     setReadingGoal("");
     setGoalDeadline("");
+    setReadingGoalPageStart("");
+    setReadingGoalPageEnd("");
   };
 
   return (
@@ -71,6 +87,10 @@ export default function ClubModals({
         setReadingGoal={setReadingGoal}
         goalDeadline={goalDeadline}
         setGoalDeadline={setGoalDeadline}
+        readingGoalPageStart={readingGoalPageStart}
+        setReadingGoalPageStart={setReadingGoalPageStart}
+        readingGoalPageEnd={readingGoalPageEnd}
+        setReadingGoalPageEnd={setReadingGoalPageEnd}
         handleAssignBook={handleAssignBook}
       />
 
@@ -86,6 +106,7 @@ export default function ClubModals({
       />
 
       {/* Update Goal Modal */}
+      {/* ⭐ PASS PAGE RANGES TO GOAL MODAL ⭐ */}
       <ReadingGoalModal
         open={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
@@ -93,6 +114,10 @@ export default function ClubModals({
         editGoalDeadline={editGoalDeadline}
         setEditReadingGoal={setEditReadingGoal}
         setEditGoalDeadline={setEditGoalDeadline}
+        readingGoalPageStart={readingGoalPageStart}
+        readingGoalPageEnd={readingGoalPageEnd}
+        setReadingGoalPageStart={setReadingGoalPageStart}
+        setReadingGoalPageEnd={setReadingGoalPageEnd}
         onUpdate={handleUpdateGoal}
       />
 

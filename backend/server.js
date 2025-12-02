@@ -743,9 +743,11 @@ app.post('/api/users', async (req, res) => {
 app.put("/api/clubs/:id/book", async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // FRONTEND ACTUALLY SENDS THESE KEYS 
     const { 
       userId, 
-      bookData, 
+      bookDetails, 
       readingGoal, 
       goalDeadline, 
       readingGoalPageStart,
@@ -755,25 +757,24 @@ app.put("/api/clubs/:id/book", async (req, res) => {
     const clubId = Number(id);
     const uid = Number(userId);
 
+    // Validate club
     const club = await prisma.club.findUnique({ where: { id: clubId } });
-    if (!club) {
+    if (!club)
       return res.status(404).json({ error: "Club not found" });
-    }
 
-    const actingUserMembership = await prisma.clubMember.findUnique({
+    // Validate permissions
+    const membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId: uid } },
       select: { role: true },
     });
 
-    if (!actingUserMembership) {
+    if (!membership)
       return res.status(403).json({ error: "You are not a member of this club." });
-    }
 
-    if (!["HOST", "MODERATOR"].includes(actingUserMembership.role)) {
-      return res.status(403).json({ error: "You are not authorized to assign books to this club." });
-    }
+    if (!["HOST", "MODERATOR"].includes(membership.role))
+      return res.status(403).json({ error: "Only hosts or moderators can assign books." });
 
-    // If there's a current book, archive it
+    // Archive previous book if exists
     if (club.currentBookId && club.currentBookData) {
       await prisma.clubBookHistory.create({
         data: {
@@ -786,46 +787,65 @@ app.put("/api/clubs/:id/book", async (req, res) => {
       });
     }
 
-    // Normalize book data
-    const normalizedBookData = {
-      title: bookData.title,
-      authors: bookData.authors || bookData.author || "Unknown Author",
-      cover: bookData.cover || "",
-      description: bookData.description || "No description available.",
-      year: bookData.year || null,
-      genre: bookData.genre || null
+    const rawBook = req.body.bookData || req.body.bookDetails;
+
+    if (!rawBook) {
+      return res.status(400).json({ error: "Missing book data" });
+    }
+
+    const normalizedBook = {
+      title: rawBook.title,
+      authors: rawBook.authors || rawBook.author || "Unknown Author",
+      cover: rawBook.cover || "",
+      description: rawBook.description || "No description available.",
+      year: rawBook.year || null,
+      genre: rawBook.genre || null,
     };
 
+    // Save to DB
     const updatedClub = await prisma.club.update({
-      where: { id: Number(id) },
+      where: { id: clubId },
       data: {
-        currentBookId: bookData.id || bookData.title || null,
-        currentBookData: normalizedBookData,
+        currentBookId: rawBook.id || rawBook.title || null,
+        currentBookData: normalizedBook,
         assignedAt: new Date(),
+
+        // reading goal (text)
         readingGoal: readingGoal || null,
-        readingGoalPageStart: readingGoalPageStart !== undefined ? Number(readingGoalPageStart) : null,
-        readingGoalPageEnd: readingGoalPageEnd !== undefined ? Number(readingGoalPageEnd) : null,
+
+        // NEW PAGE RANGE
+        readingGoalPageStart:
+          readingGoalPageStart !== undefined && readingGoalPageStart !== null
+            ? Number(readingGoalPageStart)
+            : null,
+
+        readingGoalPageEnd:
+          readingGoalPageEnd !== undefined && readingGoalPageEnd !== null
+            ? Number(readingGoalPageEnd)
+            : null,
+
+        // deadline
         goalDeadline: goalDeadline || null,
       },
+      include: { members: true }
     });
 
-    const currentRead =
-      updatedClub.currentBookId && updatedClub.currentBookData
-        ? {
-            bookId: updatedClub.currentBookId,
-            bookData: updatedClub.currentBookData,
-            assignedAt: updatedClub.assignedAt,
-            readingGoal: updatedClub.readingGoal,
-            readingGoalPageStart: updatedClub.readingGoalPageStart,
-            readingGoalPageEnd: updatedClub.readingGoalPageEnd,
-            goalDeadline: updatedClub.goalDeadline,
-          }
-        : null;
+
+    // Construct readable "currentRead" object
+    const currentRead = {
+      bookId: updatedClub.currentBookId,
+      bookData: updatedClub.currentBookData,
+      assignedAt: updatedClub.assignedAt,
+      readingGoal: updatedClub.readingGoal,
+      readingGoalPageStart: updatedClub.readingGoalPageStart,
+      readingGoalPageEnd: updatedClub.readingGoalPageEnd,
+      goalDeadline: updatedClub.goalDeadline,
+    };
 
     res.json({
       ...updatedClub,
       currentRead,
-      currentBook: currentRead
+      currentBook: currentRead,
     });
 
   } catch (error) {
@@ -833,8 +853,6 @@ app.put("/api/clubs/:id/book", async (req, res) => {
     res.status(500).json({ error: "Server error while assigning book." });
   }
 });
-
-
 
 //get all past reads
 app.get("/api/clubs/:id/bookshelf", async (req, res) => {
@@ -963,76 +981,63 @@ app.delete("/api/clubs/:id/book", async (req, res) => {
   }
 });
 
-// Update reading goal for a club
+// Update reading goal + page range + deadline
 app.put("/api/clubs/:id/goal", async (req, res) => {
   try {
     const { id } = req.params;
-   const {
+    const {
       userId,
       readingGoal,
+      goalDeadline,
       readingGoalPageStart,
-      readingGoalPageEnd,
-      goalDeadline
+      readingGoalPageEnd
     } = req.body;
 
     const clubId = Number(id);
     const uid = Number(userId);
 
+    // Validate club exists
     const club = await prisma.club.findUnique({ where: { id: clubId } });
-    if (!club) {
-      return res.status(404).json({ error: "Club not found" });
-    }
+    if (!club) return res.status(404).json({ error: "Club not found" });
 
-   const membership = await prisma.clubMember.findUnique({
+    // Check membership + role
+    const membership = await prisma.clubMember.findUnique({
       where: { clubId_userId: { clubId, userId: uid } },
       select: { role: true },
     });
 
-    if (!membership) {
-      return res.status(403).json({ error: "You are not a member of this club." });
-    }
+    if (!membership)
+      return res.status(403).json({ error: "You are not in this club." });
 
-    if (!["HOST", "MODERATOR"].includes(membership.role)) {
+    if (!["HOST", "MODERATOR"].includes(membership.role))
       return res.status(403).json({
-        error: "Only hosts or moderators can update reading goals.",
+        error: "Only hosts or moderators can update the reading goal.",
       });
-    }
 
-    const updatedClub = await prisma.club.update({
+    // Update fields
+    const updated = await prisma.club.update({
       where: { id: clubId },
       data: {
-        readingGoal: readingGoal ?? null,
+        readingGoal: readingGoal || null,
+        goalDeadline: goalDeadline || null,
         readingGoalPageStart:
-          readingGoalPageStart !== undefined ? Number(readingGoalPageStart) : null,
+          readingGoalPageStart !== undefined && readingGoalPageStart !== null
+            ? Number(readingGoalPageStart)
+            : null,
         readingGoalPageEnd:
-          readingGoalPageEnd !== undefined ? Number(readingGoalPageEnd) : null,
-        goalDeadline: goalDeadline ?? null,
+          readingGoalPageEnd !== undefined && readingGoalPageEnd !== null
+            ? Number(readingGoalPageEnd)
+            : null,
       },
     });
 
-    const currentRead =
-      updatedClub.currentBookId && updatedClub.currentBookData
-        ? {
-            bookId: updatedClub.currentBookId,
-            bookData: updatedClub.currentBookData,
-            assignedAt: updatedClub.assignedAt,
-            readingGoal: updatedClub.readingGoal,
-            readingGoalPageStart: updatedClub.readingGoalPageStart,
-            readingGoalPageEnd: updatedClub.readingGoalPageEnd,
-            goalDeadline: updatedClub.goalDeadline,
-          }
-        : null;
-
-  res.json({
-    ...updatedClub,
-    currentRead,
-    currentBook: currentRead
-  });
+    res.json(updated);
   } catch (error) {
     console.error("❌ Error updating reading goal:", error);
-    res.status(500).json({ error: "Server error while updating reading goal." });
+    res.status(500).json({ error: "Server error updating reading goal." });
   }
 });
+
 
 // Join a club
 app.post("/api/clubs/:id/join", async (req, res) => {
@@ -1740,49 +1745,87 @@ app.put("/api/clubs/:id/members/:userId/progress", async (req, res) => {
   }
 });
 
-
-// Get user's club memberships
+// Get user's club memberships with full current book + progress data
 app.get("/api/users/:id/clubs-joined", async (req, res) => {
   try {
     const userId = Number(req.params.id);
-    
+
+    // Fetch memberships + club attached
     const memberships = await prisma.clubMember.findMany({
       where: { userId },
       include: {
         club: {
           include: {
-            creator: {
-              select: { id: true, name: true, email: true }
-            }
+            creator: { select: { id: true, name: true, email: true } }
           }
         }
       }
     });
 
-    // Return clubs with progress data
-    const membershipsWithProgress = memberships.map(m => {
-      const pageNumber = m.pageNumber ?? null;
-      const start = m.club.readingGoalPageStart;
-      const end = m.club.readingGoalPageEnd;
+    // No memberships? Return empty
+    if (memberships.length === 0) {
+      return res.json([]);
+    }
 
+    const today = new Date();
+
+    const clubs = memberships.map((m) => {
+      const c = m.club;
+
+      const start = c.readingGoalPageStart;
+      const end = c.readingGoalPageEnd;
+
+      const currentPage = m.pageNumber ?? start ?? null;
+
+      // Calculate progress %
       let progressPercent = null;
-      if (start != null && end != null && pageNumber != null) {
-        const totalPages = end - start + 1;
-        const pagesRead = Math.max(0, pageNumber - start);
-        progressPercent = Math.min(100, Math.max(0, (pagesRead / totalPages) * 100));
+      if (
+        start != null &&
+        end != null &&
+        currentPage != null &&
+        end > start
+      ) {
+        const total = end - start;
+        const read = Math.max(0, currentPage - start);
+        progressPercent = Math.min(100, Math.round((read / total) * 100));
+      }
+
+      // Days remaining
+      let daysRemaining = null;
+      if (c.goalDeadline) {
+        const d = new Date(c.goalDeadline);
+        const diffMs = d - today;
+        daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
       }
 
       return {
-        ...m.club,
-        membershipId: m.id,
-        pageNumber,
+        id: c.id,
+        name: c.name,
+        description: c.description,
+
+        // Current book
+        currentBookId: c.currentBookId,
+        currentBookData: c.currentBookData || null,
+        assignedAt: c.assignedAt || null,
+
+        // Reading goal
+        readingGoal: c.readingGoal || null,
         readingGoalPageStart: start,
         readingGoalPageEnd: end,
-        progressPercent
+        goalDeadline: c.goalDeadline || null,
+        daysRemaining,
+
+        // User-specific membership data
+        pageNumber: currentPage,
+        progressPercent,
+        membershipId: m.id,
+
+        // Creator information for UI
+        creator: c.creator,
       };
     });
 
-    res.json(membershipsWithProgress);
+    res.json(clubs);
 
   } catch (error) {
     console.error("❌ Error fetching user club memberships:", error);
@@ -2618,7 +2661,7 @@ server.listen(port, host, () => {
   console.log(`✅ Server with Socket.IO running on port ${port}`);
 });
 
-// 1️⃣ Get all DM conversations for a user
+// Get all DM conversations for a user
 app.get("/api/dm/conversations/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -2727,7 +2770,7 @@ app.get("/api/dm/messages/:convoId", async (req, res) => {
 });
 
 
-// 5️⃣ Delete DM conversation
+// Delete DM conversation
 app.delete("/api/dm/conversation/:convoId", async (req, res) => {
   const { convoId } = req.params;
   try {

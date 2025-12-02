@@ -15,20 +15,47 @@ export default function ReadingGoalModal({
 }) {
   if (!open) return null;
 
+  const handleSubmit = () => {
+    onUpdate({
+      readingGoal: editReadingGoal,
+      goalDeadline: editGoalDeadline,
+      readingGoalPageStart:
+        readingGoalPageStart !== "" ? Number(readingGoalPageStart) : null,
+      readingGoalPageEnd:
+        readingGoalPageEnd !== "" ? Number(readingGoalPageEnd) : null,
+    });
+  };
+
+  const handleCancel = () => {
+    setEditReadingGoal("");
+    setEditGoalDeadline("");
+    setReadingGoalPageStart("");
+    setReadingGoalPageEnd("");
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg max-w-md w-full" style={{ backgroundColor: "#FDFBF6" }}>
+      <div
+        className="bg-white rounded-xl shadow-lg max-w-md w-full"
+        style={{ backgroundColor: "#FDFBF6" }}
+      >
         <div className="p-6">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h2
+            className="text-2xl font-semibold text-gray-800 mb-4"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
             Update Reading Goal
           </h2>
 
           <div className="space-y-4">
-
-            {/* Goal text input */}
+            {/* Goal text */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
-                Goal (e.g., "Read chapters 1-3")
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                Goal (optional)
               </label>
               <input
                 type="text"
@@ -36,13 +63,19 @@ export default function ReadingGoalModal({
                 onChange={(e) => setEditReadingGoal(e.target.value)}
                 placeholder="Enter reading goal"
                 className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                style={{
+                  fontFamily: "Times New Roman, serif",
+                  backgroundColor: "#FDFBF6",
+                }}
               />
             </div>
 
             {/* Page Range */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-2"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
                 Pages
               </label>
 
@@ -53,7 +86,10 @@ export default function ReadingGoalModal({
                   onChange={(e) => setReadingGoalPageStart(e.target.value)}
                   placeholder="Start"
                   className="w-1/2 border border-[#ddcdb7] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                  style={{
+                    fontFamily: "Times New Roman, serif",
+                    backgroundColor: "#FDFBF6",
+                  }}
                 />
 
                 <span style={{ fontFamily: "Times New Roman, serif" }}>to</span>
@@ -64,14 +100,20 @@ export default function ReadingGoalModal({
                   onChange={(e) => setReadingGoalPageEnd(e.target.value)}
                   placeholder="End"
                   className="w-1/2 border border-[#ddcdb7] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                  style={{
+                    fontFamily: "Times New Roman, serif",
+                    backgroundColor: "#FDFBF6",
+                  }}
                 />
               </div>
             </div>
 
             {/* Deadline */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+              <label
+                className="block text-sm font-medium text-gray-700 mb-1"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
                 Deadline
               </label>
               <input
@@ -79,21 +121,17 @@ export default function ReadingGoalModal({
                 value={editGoalDeadline}
                 onChange={(e) => setEditGoalDeadline(e.target.value)}
                 className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+                style={{
+                  fontFamily: "Times New Roman, serif",
+                  backgroundColor: "#FDFBF6",
+                }}
               />
             </div>
           </div>
 
-          {/* Buttons */}
           <div className="mt-6 flex justify-end gap-3">
             <button
-              onClick={() => {
-                onClose();
-                setEditReadingGoal("");
-                setEditGoalDeadline("");
-                setReadingGoalPageStart("");
-                setReadingGoalPageEnd("");
-              }}
+              onClick={handleCancel}
               className="px-6 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-gray-50 transition-colors"
               style={{ fontFamily: "Times New Roman, serif" }}
             >
@@ -101,7 +139,7 @@ export default function ReadingGoalModal({
             </button>
 
             <button
-              onClick={onUpdate}
+              onClick={handleSubmit}
               className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
               style={{ fontFamily: "Times New Roman, serif" }}
             >

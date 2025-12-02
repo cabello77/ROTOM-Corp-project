@@ -277,10 +277,10 @@ export default function AssignBookModal({
                   </h4>
 
                   <div className="space-y-4">
-                    {/* Goal Text */}
+                    {/* Goal text */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Goal (e.g., “Read chapters 1–3”)
+                        Goal (optional)
                       </label>
                       <input
                         type="text"
@@ -295,13 +295,12 @@ export default function AssignBookModal({
                       />
                     </div>
 
-                    {/* Pages Range */}
+                    {/* Page range */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Pages
                       </label>
                       <div className="flex items-center gap-2">
-                        {/* Start */}
                         <input
                           type="number"
                           value={readingGoalPageStart}
@@ -320,7 +319,6 @@ export default function AssignBookModal({
                           to
                         </span>
 
-                        {/* End */}
                         <input
                           type="number"
                           value={readingGoalPageEnd}
@@ -367,7 +365,15 @@ export default function AssignBookModal({
                 </button>
 
                 <button
-                  onClick={handleAssignBook}
+                  onClick={() =>
+                    handleAssignBook({
+                      bookDetails,
+                      readingGoal,
+                      goalDeadline,
+                      readingGoalPageStart: Number(readingGoalPageStart),
+                      readingGoalPageEnd: Number(readingGoalPageEnd),
+                    })
+                  }
                   className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
                 >
                   Submit

@@ -1,5 +1,5 @@
 ﻿import { useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";
 import LiveChat from "./components/club/LiveChat";
@@ -28,6 +28,7 @@ export default function ClubHome() {
   const { user, isAuthenticated, isLoading, updateProfile, uploadAvatar } =
     useUser();
   const navigate = useNavigate();
+
   const {
     club,
     setClub,
@@ -51,6 +52,7 @@ export default function ClubHome() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
+
   const [bookDetails, setBookDetails] = useState({
     title: "",
     authors: "",
@@ -59,43 +61,21 @@ export default function ClubHome() {
     year: "",
     genre: "",
   });
+
   const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
   const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [editReadingGoal, setEditReadingGoal] = useState("");
   const [editGoalDeadline, setEditGoalDeadline] = useState("");
+
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [returnPath, setReturnPath] = useState(null);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 
-
-  const fetchClub = async () => {
-
-    try {
-      const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
-      const updatedClub = clubRes.data;
-
-      setClub(updatedClub);
-      setCurrentBook(prev =>
-        updatedClub.currentRead ||
-        updatedClub.currentBook ||
-        prev || 
-        null
-      );
-      setReadingGoal(updatedClub.readingGoal || "");
-      setGoalDeadline(updatedClub.goalDeadline || "");
-      setMembers(updatedClub.members || []);
-    } catch (err) {
-      console.error("Failed to fetch updated club:", err);
-    }
-  };
+  const [readingGoalPageStart, setReadingGoalPageStart] = useState("");
+  const [readingGoalPageEnd, setReadingGoalPageEnd] = useState("");
 
   const handleDelete = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to delete this club? This cannot be undone."
-      )
-    )
-      return;
+    if (!window.confirm("Are you sure you want to delete this club?")) return;
     try {
       await deleteClub(API_BASE, club.id, user.id);
       navigate("/user-home");
@@ -154,34 +134,23 @@ export default function ClubHome() {
         body: JSON.stringify({ userId: user.id }),
       });
 
-      const status = res.status;
-      let data = {};
-
-      try {
-        data = await res.json();
-      } catch {}
+      const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
         setIsMember(true);
         setCurrentUserMemberData(data);
         setUserProgress(0);
 
-        const membersRes = await axios.get(
-          `${API_BASE}/api/clubs/${id}/members`
-        );
+        const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
         setMembers(membersRes.data);
-      } else if (status === 400) {
+
+      } else if (res.status === 400) {
         setIsMember(true);
 
-        const membersRes = await axios.get(
-          `${API_BASE}/api/clubs/${id}/members`
-        );
+        const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
         setMembers(membersRes.data);
 
-        const userMember = membersRes.data.find(
-          (m) => m.userId === user.id
-        );
-
+        const userMember = membersRes.data.find((m) => m.userId === user.id);
         if (userMember) {
           setCurrentUserMemberData(userMember);
           setUserProgress(userMember.progress);
@@ -192,15 +161,13 @@ export default function ClubHome() {
     }
   };
 
-
   const handleLeaveClub = async () => {
-    if (!window.confirm("Are you sure you want to leave this book club?"))
-      return;
+    if (!window.confirm("Are you sure you want to leave this club?")) return;
+
     try {
       await leaveClub(API_BASE, id, user.id);
       setIsMember(false);
       setCurrentUserMemberData(null);
-      setUserProgress(0);
       setMembers(members.filter((m) => m.userId !== user.id));
       navigate("/user-home");
     } catch (err) {
@@ -210,18 +177,11 @@ export default function ClubHome() {
 
   const handleUpdateProgress = async (progress) => {
     try {
-      const data = await updateMemberProgress(
-        API_BASE,
-        id,
-        user.id,
-        progress
-      );
+      const data = await updateMemberProgress(API_BASE, id, user.id, progress);
       setUserProgress(progress);
       setCurrentUserMemberData(data);
 
-      const membersRes = await axios.get(
-        `${API_BASE}/api/clubs/${id}/members`
-      );
+      const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
       setMembers(membersRes.data);
 
       setIsProgressModalOpen(false);
@@ -230,31 +190,34 @@ export default function ClubHome() {
     }
   };
 
-  const handleUpdateGoal = async () => {
+  // ⭐ CLEAN + FINAL ⭐
+  const handleUpdateGoal = async ({
+    readingGoal,
+    goalDeadline,
+    readingGoalPageStart,
+    readingGoalPageEnd,
+  }) => {
     try {
       await updateClubGoal(
         API_BASE,
         id,
         user.id,
-        editReadingGoal,
-        editGoalDeadline
+        readingGoal,
+        goalDeadline,
+        readingGoalPageStart,
+        readingGoalPageEnd
       );
 
-      setReadingGoal(editReadingGoal);
+      setReadingGoal(readingGoal);
 
-      if (editGoalDeadline) {
-        const deadline = new Date(editGoalDeadline)
-          .toISOString()
-          .split("T")[0];
-        setGoalDeadline(deadline);
+      if (goalDeadline) {
+        setGoalDeadline(new Date(goalDeadline).toISOString().split("T")[0]);
       }
-
-      setIsGoalModalOpen(false);
-      setEditReadingGoal("");
-      setEditGoalDeadline("");
 
       const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
       setClub(clubRes.data);
+
+      setIsGoalModalOpen(false);
     } catch (err) {
       console.error("Error updating goal:", err);
     }
@@ -266,7 +229,7 @@ export default function ClubHome() {
       const books = await searchBooks(searchQuery);
       setSearchResults(books);
     } catch (err) {
-      console.error("Error searching books:", err);
+      console.error("Error searching:", err);
     }
   };
 
@@ -282,8 +245,14 @@ export default function ClubHome() {
     });
   };
 
-  const handleAssignBook = async () => {
-    if (!selectedBook) return;
+  // ⭐ CLEAN + FINAL — ASSIGN BOOK WITH PAGE RANGE ⭐
+  const handleAssignBook = async ({
+    bookDetails,
+    readingGoal,
+    goalDeadline,
+    readingGoalPageStart,
+    readingGoalPageEnd,
+  }) => {
     try {
       await assignBookToClub(
         API_BASE,
@@ -291,7 +260,9 @@ export default function ClubHome() {
         user.id,
         bookDetails,
         readingGoal,
-        goalDeadline
+        goalDeadline,
+        readingGoalPageStart,
+        readingGoalPageEnd
       );
 
       setCurrentBook(bookDetails);
@@ -300,6 +271,7 @@ export default function ClubHome() {
       setSearchQuery("");
       setSearchResults([]);
       setSelectedBook(null);
+
       setBookDetails({
         title: "",
         authors: "",
@@ -308,8 +280,11 @@ export default function ClubHome() {
         year: "",
         genre: "",
       });
+
       setReadingGoal("");
       setGoalDeadline("");
+      setReadingGoalPageStart("");
+      setReadingGoalPageEnd("");
     } catch (err) {
       console.error("Error assigning book:", err);
     }
@@ -324,7 +299,6 @@ export default function ClubHome() {
       });
 
       const data = await res.json();
-
       if (!res.ok) {
         alert(data.error || "Could not finish book.");
         return;
@@ -339,12 +313,12 @@ export default function ClubHome() {
       setGoalDeadline(updated.goalDeadline || "");
       setMembers(updated.members || []);
       setUserProgress(0);
+
     } catch (err) {
       console.error("Error finishing book:", err);
     }
   };
 
-  // NEW: Promote Moderator handler
   const promoteMember = async (memberId) => {
     try {
       await axios.post(
@@ -352,12 +326,11 @@ export default function ClubHome() {
         { actingUserId: user.id }
       );
 
-      const membersRes = await axios.get(
-        `${API_BASE}/api/clubs/${id}/members`
-      );
+      const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
       setMembers(membersRes.data);
+
     } catch (err) {
-      console.error("Error promoting member:", err);
+      console.error("Error promoting:", err);
     }
   };
 
@@ -367,10 +340,7 @@ export default function ClubHome() {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: "#F7F1E2" }}
       >
-        <p
-          className="text-gray-700"
-          style={{ fontFamily: "Times New Roman, serif" }}
-        >
+        <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
           Loading...
         </p>
       </div>
@@ -378,10 +348,7 @@ export default function ClubHome() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: "#F7F1E2" }}
-    >
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
       <ClubHeader
         onOpenEditProfile={(previousLocation) => {
           setIsEditModalOpen(true);
@@ -409,20 +376,15 @@ export default function ClubHome() {
               }}
               onRemoveBook={async () => {
                 try {
-                  const res = await fetch(
-                    `${API_BASE}/api/clubs/${club.id}/book`,
-                    {
-                      method: "DELETE",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ userId: user.id }),
-                    }
-                  );
+                  const res = await fetch(`${API_BASE}/api/clubs/${club.id}/book`, {
+                    method: "DELETE",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userId: user.id }),
+                  });
+
                   const data = await res.json();
-                  if (res.ok) {
-                    setCurrentBook(null);
-                  } else {
-                    console.error("Failed to remove book:", data.error);
-                  }
+                  if (res.ok) setCurrentBook(null);
+                  else console.error("Failed to remove book:", data.error);
                 } catch (err) {
                   console.error("Error removing book:", err);
                 }
@@ -432,26 +394,25 @@ export default function ClubHome() {
 
             <section className="lg:col-span-6 space-y-4">
               <LiveChat
-                clubId={club?.id}
+                clubId={club.id}
                 user={user}
                 isMember={isMember}
                 apiBase={API_BASE}
               />
-
               <DiscussionsPanel
-                clubId={club?.id}
+                clubId={club.id}
                 user={user}
                 isMember={isMember}
-                isHost={user && club && user.id === club.creatorId}
+                isHost={user.id === club.creatorId}
               />
             </section>
 
-            {/* ClubRightSidebar updated with promote handler */}
             <ClubRightSidebar
               user={user}
               club={club}
               isMember={isMember}
               currentBook={currentBook}
+              currentPage={userProgress}
               userProgress={userProgress}
               members={members}
               onOpenProgress={() => setIsProgressModalOpen(true)}
@@ -492,6 +453,10 @@ export default function ClubHome() {
         setReadingGoal={setReadingGoal}
         goalDeadline={goalDeadline}
         setGoalDeadline={setGoalDeadline}
+        readingGoalPageStart={readingGoalPageStart}
+        setReadingGoalPageStart={setReadingGoalPageStart}
+        readingGoalPageEnd={readingGoalPageEnd}
+        setReadingGoalPageEnd={setReadingGoalPageEnd}
         handleAssignBook={handleAssignBook}
         isProgressModalOpen={isProgressModalOpen}
         setIsProgressModalOpen={setIsProgressModalOpen}
@@ -510,7 +475,6 @@ export default function ClubHome() {
         user={user}
         handleSaveProfile={handleSaveProfile}
       />
-
     </div>
   );
 }

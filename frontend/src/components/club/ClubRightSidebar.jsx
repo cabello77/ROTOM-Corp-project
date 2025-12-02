@@ -1,15 +1,16 @@
 import { useState } from "react";
 import AssignModeratorModal from "./AssignModeratorModal";
-import MyProgressCard from "./MyProgressCard"; // ← import it
+import MyProgressCard from "./MyProgressCard";
 
 export default function ClubRightSidebar({
   user,
   club,
   isMember,
   currentBook,
-  currentPage,           // ← need currentPage for progress
+  currentPage,
   members = [],
   onOpenProgress,
+  onOpenGoalModal,   // ⭐ ADD THIS
   onJoinClub,
   onLeaveClub,
   onDeleteClub,
@@ -18,33 +19,30 @@ export default function ClubRightSidebar({
 }) {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
-  // ------------------------------
-  // Identify user's membership + role
-  // ------------------------------
+  // Identify user role
   const currentMember = members.find((m) => m.userId === user?.id);
   const isHost = currentMember?.role === "HOST";
   const isMod = currentMember?.role === "MODERATOR";
-
   const canManage = isHost || isMod;
 
   return (
     <aside className="lg:col-span-3 space-y-4">
 
-      {/* ======================================================
-            Show MyProgressCard if member
-      ====================================================== */}
+      {/* =======================================
+           My Progress Card (members only)
+      ======================================= */}
       {isMember && currentBook && (
         <MyProgressCard
           club={club}
           currentBook={currentBook}
-          currentPage={currentPage}   // pass current page
+          currentPage={currentPage}
           onOpenProgress={onOpenProgress}
         />
       )}
 
-      {/* ======================================================
-            NON-MEMBER VIEW → Only show "Join Club"
-      ====================================================== */}
+      {/* =======================================
+           Non-member → Join
+      ======================================= */}
       {!isMember && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
           <h2
@@ -64,12 +62,11 @@ export default function ClubRightSidebar({
         </div>
       )}
 
-      {/* ======================================================
-            MEMBER VIEW → Host/Mod Only
-      ====================================================== */}
+      {/* =======================================
+           Member tools
+      ======================================= */}
       {isMember && canManage && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-
           <h2
             className="text-lg font-semibold text-gray-800 mb-4"
             style={{ fontFamily: "Times New Roman, serif" }}
@@ -77,7 +74,16 @@ export default function ClubRightSidebar({
             Actions
           </h2>
 
-          {/* Invite Members */}
+          {/* ⭐ UPDATE READING GOAL BUTTON HERE */}
+          <button
+            onClick={onOpenGoalModal}
+            className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
+                       bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+            style={{ fontFamily: 'Times New Roman, serif' }}
+          >
+            Update Reading Goal
+          </button>
+
           <button
             onClick={onInviteMembers}
             className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7]
@@ -87,7 +93,7 @@ export default function ClubRightSidebar({
             Invite Members
           </button>
 
-          {/* HOST ONLY Actions */}
+          {/* Host-only */}
           {isHost && (
             <>
               <button
@@ -112,9 +118,7 @@ export default function ClubRightSidebar({
         </div>
       )}
 
-      {/* ======================================================
-            Assign Moderator Modal
-      ====================================================== */}
+      {/* Modal */}
       <AssignModeratorModal
         isOpen={isAssignModalOpen}
         onClose={() => setIsAssignModalOpen(false)}
@@ -127,4 +131,3 @@ export default function ClubRightSidebar({
     </aside>
   );
 }
-

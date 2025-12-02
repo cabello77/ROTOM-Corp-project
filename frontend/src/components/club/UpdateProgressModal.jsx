@@ -3,25 +3,38 @@ import { useState, useEffect } from "react";
 export default function UpdateProgressModal({
   open,
   onClose,
+  club,
   userProgress,
   onUpdate,
 }) {
-  // local slider state
-  const [value, setValue] = useState(userProgress ?? 0);
-
-  // when modal opens or parent progress changes, sync the slider
-  useEffect(() => {
-    if (open) {
-      setValue(userProgress ?? 0);
-    }
-  }, [open, userProgress]);
-
   if (!open) return null;
 
-  const handleSliderChange = (v) => {
-    setValue(v);
-    // live preview to parent (updates MyProgressCard bar)
-    onUpdate(v, { preview: true });
+  // Allowed range
+  const start = club?.readingGoalPageStart ?? 0;
+  const end = club?.readingGoalPageEnd ?? 0;
+
+  // Local editable field
+  const [pageInput, setPageInput] = useState(userProgress ?? start);
+
+  // Reset when opened
+  useEffect(() => {
+    setPageInput(userProgress ?? start);
+  }, [userProgress, start, open]);
+
+  const handleSubmit = () => {
+    const num = Number(pageInput);
+
+    if (isNaN(num)) {
+      alert("Please enter a valid number.");
+      return;
+    }
+
+    if (num < start || num > end) {
+      alert(`Page must be between ${start} and ${end}.`);
+      return;
+    }
+
+    onUpdate(num); // send actual page number to API
   };
 
   return (
@@ -30,41 +43,38 @@ export default function UpdateProgressModal({
         className="bg-white rounded-xl shadow-lg max-w-md w-full"
         style={{ backgroundColor: "#FDFBF6" }}
       >
-        <div className="p-6">
+        <div className="p-6 space-y-4">
           <h2
-            className="text-2xl font-semibold text-gray-800 mb-4"
+            className="text-2xl font-semibold text-gray-800"
             style={{ fontFamily: "Times New Roman, serif" }}
           >
-            Update Progress
+            Update Reading Progress
           </h2>
 
-          <div className="space-y-4">
-            <div>
-              <label
-                className="block text-sm font-medium text-gray-700 mb-2"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                Progress (0–100%)
-              </label>
+          <p
+            className="text-sm text-gray-600"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            Assigned reading: pages {start} → {end}
+          </p>
 
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={value}
-                onChange={(e) =>
-                  handleSliderChange(Number(e.target.value))
-                }
-                className="w-full"
-              />
+          <div>
+            <label
+              className="block text-sm font-medium text-gray-700 mb-2"
+              style={{ fontFamily: "Times New Roman, serif" }}
+            >
+              What page are you currently on?
+            </label>
 
-              <div
-                className="text-center text-sm text-gray-600 mt-2"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                {value}%
-              </div>
-            </div>
+            <input
+              type="number"
+              className="w-full border rounded p-2"
+              value={pageInput}
+              min={start}
+              max={end}
+              onChange={(e) => setPageInput(e.target.value)}
+              style={{ fontFamily: "Times New Roman, serif" }}
+            />
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
@@ -75,8 +85,9 @@ export default function UpdateProgressModal({
             >
               Cancel
             </button>
+
             <button
-              onClick={() => onUpdate(value)}
+              onClick={handleSubmit}
               className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
               style={{ fontFamily: "Times New Roman, serif" }}
             >
@@ -88,4 +99,3 @@ export default function UpdateProgressModal({
     </div>
   );
 }
-

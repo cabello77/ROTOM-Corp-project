@@ -604,7 +604,7 @@ app.post("/api/clubs", async (req, res) => {
   }
 });
 
-// Get a club by ID (fixed + includes currentRead)
+// Get a club by ID (includes currentRead and page ranges)
 app.get("/api/clubs/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -625,11 +625,17 @@ app.get("/api/clubs/:id", async (req, res) => {
       },
     });
 
+    console.log(
+      "CLUB PAGE RANGE:",
+      club.readingGoalPageStart,
+      club.readingGoalPageEnd
+    );
+
     if (!club) {
       return res.status(404).json({ error: "Club not found" });
     }
 
-    // ⭐ Build the currentRead object for the frontend
+    // Build the currentRead object including page ranges
     const currentRead =
       club.currentBookId && club.currentBookData
         ? {
@@ -638,21 +644,26 @@ app.get("/api/clubs/:id", async (req, res) => {
             assignedAt: club.assignedAt,
             readingGoal: club.readingGoal,
             goalDeadline: club.goalDeadline,
+            readingGoalPageStart: club.readingGoalPageStart,
+            readingGoalPageEnd: club.readingGoalPageEnd,
           }
         : null;
 
-    // ⭐ Return the full club + the computed currentRead object
+    // Return full club with page range fields included
     res.json({
       ...club,
+      readingGoalPageStart: club.readingGoalPageStart,
+      readingGoalPageEnd: club.readingGoalPageEnd,
       currentRead,
-      currentBook: currentRead,  // alias, your UI uses both
+      currentBook: currentRead,
     });
 
   } catch (error) {
-    console.error("❌ Error fetching club:", error);
+    console.error("Error fetching club:", error);
     return res.status(500).json({ error: "Server error fetching club." });
   }
 });
+
 
 
 // Get clubs created by a user
@@ -815,14 +826,14 @@ app.put("/api/clubs/:id/book", async (req, res) => {
 
         // NEW PAGE RANGE
         readingGoalPageStart:
-          readingGoalPageStart !== undefined && readingGoalPageStart !== null
-            ? Number(readingGoalPageStart)
-            : null,
+          readingGoalPageStart === "" || readingGoalPageStart === null
+            ? null
+            : Number(readingGoalPageStart),
 
         readingGoalPageEnd:
-          readingGoalPageEnd !== undefined && readingGoalPageEnd !== null
-            ? Number(readingGoalPageEnd)
-            : null,
+          readingGoalPageEnd === "" || readingGoalPageEnd === null
+            ? null
+            : Number(readingGoalPageEnd),
 
         // deadline
         goalDeadline: goalDeadline || null,
@@ -992,6 +1003,13 @@ app.put("/api/clubs/:id/goal", async (req, res) => {
       readingGoalPageStart,
       readingGoalPageEnd
     } = req.body;
+
+    console.log(
+      "GOAL BODY:",
+      readingGoalPageStart,
+      readingGoalPageEnd,
+      "raw body:", req.body
+    );
 
     const clubId = Number(id);
     const uid = Number(userId);

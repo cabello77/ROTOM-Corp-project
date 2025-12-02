@@ -446,6 +446,7 @@ export default function ClubHome() {
         handleSearch={handleSearch}
         searchResults={searchResults}
         selectedBook={selectedBook}
+        club={club}
         handleSelectBook={handleSelectBook}
         bookDetails={bookDetails}
         setBookDetails={setBookDetails}

@@ -4,6 +4,8 @@ import ReadingGoalModal from "./ReadingGoalModal";
 import ProfileEdit from "../../ProfileEdit";
 
 export default function ClubModals({
+  club,   // required
+
   // Assign book
   isModalOpen,
   setIsModalOpen,
@@ -20,7 +22,7 @@ export default function ClubModals({
   goalDeadline,
   setGoalDeadline,
 
-  // ⭐ ADD PAGE RANGE FROM PARENT ⭐
+  // Page range
   readingGoalPageStart,
   setReadingGoalPageStart,
   readingGoalPageEnd,
@@ -53,7 +55,6 @@ export default function ClubModals({
   const resetAssignState = () => {
     setIsModalOpen(false);
     setSearchQuery("");
-    setSearchResults([]);
     setSelectedBook(null);
     setBookDetails({
       title: "",
@@ -91,22 +92,29 @@ export default function ClubModals({
         setReadingGoalPageStart={setReadingGoalPageStart}
         readingGoalPageEnd={readingGoalPageEnd}
         setReadingGoalPageEnd={setReadingGoalPageEnd}
-        handleAssignBook={handleAssignBook}
+        handleAssignBook={() =>
+          handleAssignBook({
+            bookDetails,
+            readingGoal,
+            goalDeadline,
+            readingGoalPageStart:
+              readingGoalPageStart === "" ? null : Number(readingGoalPageStart),
+            readingGoalPageEnd:
+              readingGoalPageEnd === "" ? null : Number(readingGoalPageEnd),
+          })
+        }
       />
 
-      {/* Progress Update Modal */}
+      {/* Update Progress Modal */}
       <UpdateProgressModal
         open={isProgressModalOpen}
         onClose={() => setIsProgressModalOpen(false)}
+        club={club}
         userProgress={userProgress}
-        onUpdate={(value, opts) => {
-          if (opts?.preview) setUserProgress(value);
-          else handleUpdateProgress(value);
-        }}
+        onUpdate={(page) => handleUpdateProgress(page)}
       />
 
       {/* Update Goal Modal */}
-      {/* ⭐ PASS PAGE RANGES TO GOAL MODAL ⭐ */}
       <ReadingGoalModal
         open={isGoalModalOpen}
         onClose={() => setIsGoalModalOpen(false)}
@@ -121,6 +129,7 @@ export default function ClubModals({
         onUpdate={handleUpdateGoal}
       />
 
+      {/* Profile Edit Modal */}
       <ProfileEdit
         isOpen={isEditModalOpen}
         onClose={handleCloseEditModal}

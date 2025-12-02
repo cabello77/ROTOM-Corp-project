@@ -48,7 +48,7 @@ export async function updateMemberProgress(apiBase, clubId, userId, progress) {
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ progress }),
+      body: JSON.stringify({ pageNumber: progress }),
     }
   );
 

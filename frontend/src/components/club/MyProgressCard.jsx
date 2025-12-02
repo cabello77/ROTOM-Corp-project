@@ -1,9 +1,13 @@
 import { getDaysRemainingDays } from "../../utils/date";
 
-export default function MyProgressCard({ club, currentBook, currentPage, onOpenProgress }) {
+export default function MyProgressCard({
+  club,
+  currentBook,
+  currentPage,
+  onOpenProgress,
+}) {
   if (!currentBook) return null;
 
-  // Ensure goal pages and deadline exist
   if (
     club.readingGoalPageStart == null ||
     club.readingGoalPageEnd == null ||
@@ -32,7 +36,9 @@ export default function MyProgressCard({ club, currentBook, currentPage, onOpenP
 
   const start = club.readingGoalPageStart;
   const end = club.readingGoalPageEnd;
-  const pagesRead = Math.max(0, (currentPage ?? start) - start);
+  const pageNow = currentPage ?? start;
+
+  const pagesRead = Math.max(0, pageNow - start);
   const totalPages = end - start;
   const percent = Math.min(100, Math.round((pagesRead / totalPages) * 100));
 
@@ -52,21 +58,26 @@ export default function MyProgressCard({ club, currentBook, currentPage, onOpenP
         style={{ fontFamily: "Times New Roman, serif" }}
       >
         {clubName}: <span className="italic">{title}</span> · {daysRemaining}{" "}
-        {daysRemaining === 1 ? "day" : "days"} left · {percent}% complete
+        {daysRemaining === 1 ? "day" : "days"} left · {percent}% complete · Page{" "}
+        {pageNow} of {end}
       </p>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-gray-200 rounded-full h-3">
+      {/* CLEAN PROGRESS BAR — no marker */}
+      <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
         <div
-          className="bg-[#774C30] h-3 rounded-full transition-all"
-          style={{ width: `${percent}%` }}
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{
+            width: `${percent}%`,
+            background:
+              "linear-gradient(to right, #6b4226, #8b5e3c, #b88a5a, #d6b375, #f1d9a3)",
+          }}
         ></div>
       </div>
 
-      {/* Update Progress Button */}
       <button
         onClick={onOpenProgress}
-        className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+        className="w-full px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] 
+                   hover:bg-[#e3d5c2] transition-colors text-sm"
         style={{ fontFamily: "Times New Roman, serif" }}
       >
         Update Progress
@@ -74,5 +85,3 @@ export default function MyProgressCard({ club, currentBook, currentPage, onOpenP
     </div>
   );
 }
-
-

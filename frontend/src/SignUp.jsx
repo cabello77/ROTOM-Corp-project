@@ -56,7 +56,7 @@ function SignUp() {
             <input
               type="text"
               name="name"
-              placeholder="Full Name"
+              placeholder="Username"
               value={formData.name}
               onChange={handleChange}
               className="w-full border border-gray-300 p-3 mb-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"

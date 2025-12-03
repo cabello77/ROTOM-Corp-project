@@ -29,14 +29,12 @@ export default function PastReads({ clubId }) {
     }
   };
 
-
   // Load on first mount or club change
   useEffect(() => {
     if (!clubId) return;
     setLoading(true);
     loadPastReads();
   }, [clubId]);
-
 
   // 🔥 Listen for "club-updated" and refresh automatically
   useEffect(() => {
@@ -80,34 +78,35 @@ export default function PastReads({ clubId }) {
         </p>
       ) : (
         <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-          {pastReads.map((book) => (
-            <div
-              key={book.id}
-              className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              <img
-                src={book.bookData?.cover || ""}
-                alt={book.bookData?.title}
-                className="w-12 h-16 object-cover rounded"
-              />
+          {pastReads.map((book) => {
+            // Fallback values for bookData to prevent breaking
+            const bookData = book.bookData || {};
+            const cover = bookData.cover || "/default-book.png"; // Fallback to default image if cover is missing
+            const title = bookData.title || "Unknown Title"; // Fallback if title is missing
+            const authors = bookData.authors || "Unknown Author"; // Fallback if authors are missing
 
-              <div>
-                <p className="font-semibold text-gray-800 text-sm">
-                  {book.bookData?.title}
-                </p>
+            return (
+              <div
+                key={book.id}
+                className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                <img
+                  src={cover}
+                  alt={title}
+                  className="w-12 h-16 object-cover rounded"
+                />
 
-                <p className="text-xs text-gray-600">
-                  {book.bookData?.authors || "Unknown author"}
-                </p>
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Finished on{" "}
-                  {new Date(book.finishedAt).toLocaleDateString()}
-                </p>
+                <div>
+                  <p className="font-semibold text-gray-800 text-sm">{title}</p>
+                  <p className="text-xs text-gray-600">{authors}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Finished on {new Date(book.finishedAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

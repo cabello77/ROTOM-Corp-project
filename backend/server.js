@@ -1502,6 +1502,44 @@ app.get("/api/books/:bookId/friends-activity/:userId", async (req, res) => {
   }
 });
 
+app.post('/api/progress', async (req, res) => {
+  const { userId, clubId, pageNumber } = req.body;
+
+  if (!userId || !clubId || !pageNumber) {
+    return res.status(400).json({ message: 'Invalid input' });
+  }
+
+  try {
+    console.log(`Updating progress for userId: ${userId}, clubId: ${clubId}, pageNumber: ${pageNumber}`);
+
+    // Use individual fields for the `where` clause, not a combined `clubId_userId`
+    const updatedProgress = await prisma.clubMember.upsert({
+      where: {
+        // Use the unique combination of clubId and userId
+        clubId_userId: {
+          clubId: parseInt(clubId),
+          userId: parseInt(userId),
+        },
+      },
+      update: {
+        pageNumber: pageNumber, // Update the page number
+      },
+      create: {
+        userId: parseInt(userId),
+        clubId: parseInt(clubId),
+        pageNumber: pageNumber, // Create new progress entry if not exists
+        role: 'MEMBER', // Default role (adjust if needed)
+      },
+    });
+
+    console.log('Progress successfully updated:', updatedProgress);
+
+    return res.json(updatedProgress);
+  } catch (error) {
+    console.error("Error updating progress:", error);
+    return res.status(500).json({ message: 'Error updating progress' });
+  }
+});
 
 
 
@@ -1677,91 +1715,33 @@ app.get("/api/clubs/:id/members", async (req, res) => {
   }
 });
 
-// Update member page progress
-app.put("/api/clubs/:id/members/:userId/progress", async (req, res) => {
-  console.log("HIT: Page progress route");
+// GET /api/progress/:userId/:clubId
+app.get('/api/progress/:userId/:clubId', async (req, res) => {
+  const { userId, clubId } = req.params;
 
   try {
-    const { id, userId } = req.params;
-    const { pageNumber } = req.body;
-
-    const clubId = Number(id);
-    const uid = Number(userId);
-    const page = Number(pageNumber);
-
-    if (isNaN(page) || page < 0) {
-      return res.status(400).json({ error: "Invalid pageNumber value" });
-    }
-
-    // Get club goal range
-    const club = await prisma.club.findUnique({
-      where: { id: clubId },
-      select: {
-        readingGoalPageStart: true,
-        readingGoalPageEnd: true
-      }
-    });
-
-    if (!club) {
-      return res.status(404).json({ error: "Club not found" });
-    }
-
-    if (
-      club.readingGoalPageStart == null ||
-      club.readingGoalPageEnd == null
-    ) {
-      return res.status(400).json({
-        error: "This club does not have a reading page range set."
-      });
-    }
-
-    // Validate page is within the assigned reading range
-    if (page < club.readingGoalPageStart) {
-      return res.status(400).json({
-        error: `Page cannot be less than the goal start (${club.readingGoalPageStart}).`
-      });
-    }
-
-    if (page > club.readingGoalPageEnd) {
-      return res.status(400).json({
-        error: `Page cannot exceed the goal end (${club.readingGoalPageEnd}).`
-      });
-    }
-
-    // Check membership
-    const member = await prisma.clubMember.findUnique({
+    // Correctly use the compound unique key in the `where` clause
+    const progress = await prisma.clubMember.findUnique({
       where: {
-        clubId_userId: { clubId, userId: uid }
-      }
-    });
-
-    if (!member) {
-      return res.status(404).json({ error: "User is not a member of this club." });
-    }
-
-    // Update progress
-    const updated = await prisma.clubMember.update({
-      where: {
-        clubId_userId: {
-          clubId,
-          userId: uid,
+        clubId_userId: {  // Correct reference to the compound unique constraint
+          clubId: parseInt(clubId),
+          userId: parseInt(userId),
         },
       },
-      data: {
-        pageNumber: page
-      },
     });
 
-    res.json({
-      success: true,
-      pageNumber: updated.pageNumber
-    });
-
+    if (progress) {
+      return res.json({ page_number: progress.pageNumber });
+    } else {
+      return res.status(404).json({ message: 'Progress not found' });
+    }
   } catch (error) {
-    console.error("Progress update error:", error);
-    res.status(500).json({ error: "Server error while updating progress" });
+    console.error(error);
+    return res.status(500).json({ message: 'Error fetching progress' });
   }
 });
+
+
 
 // Get user's club memberships with full current book + progress data
 app.get("/api/users/:id/clubs-joined", async (req, res) => {

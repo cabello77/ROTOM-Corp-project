@@ -101,7 +101,7 @@ export default function UserProfile() {
   const avatarSrc = fullProfile.profile?.profilePicture
     ? fullProfile.profile.profilePicture.startsWith("http")
       ? fullProfile.profile.profilePicture
-      : `${API_BASE}${fullProfile.profile.profilePicture}`
+      : `${API_BASE}${fullProfile.profile.profilePicture}` 
     : null;
 
   const currentClubs = fullProfile.clubs.filter(c => c.currentBookId);
@@ -109,7 +109,6 @@ export default function UserProfile() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      
       {/* Header */}
       <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -153,12 +152,6 @@ export default function UserProfile() {
                 >
                   {fullProfile.name}
                 </h1>
-                <p
-                  className="text-lg text-gray-500 mb-4"
-                  style={{ fontFamily: "Times New Roman, serif" }}
-                >
-                  @{fullProfile.profile?.username || `user_${fullProfile.id}`}
-                </p>
 
                 {fullProfile.profile?.bio && (
                   <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
@@ -169,7 +162,7 @@ export default function UserProfile() {
             </div>
           </div>
 
-          {/* Bookshelf */}
+          {/* Bookshelf Section */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
               Bookshelf
@@ -185,27 +178,24 @@ export default function UserProfile() {
                 <div className="space-y-4">
                   {currentClubs.map((club) => {
                     const bookData = club.currentBookData;
+                    const bookCover = bookData?.cover || "/default-book.png"; // Fallback for cover image
+                    const bookTitle = bookData?.title || "Unknown Book";
+
                     return (
-                      <div key={club.id} className="border border-[#e3d8c8] rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
+                      <div key={club.id} className="flex items-center border border-[#e3d8c8] rounded-lg p-4">
+                        <img
+                          src={bookCover}
+                          alt={bookTitle}
+                          className="w-12 h-16 object-cover rounded mr-4" // Adjusted the margin to position it correctly
+                        />
+                        <div className="flex-1">
                           <h4 className="font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                            {bookData?.title || "Unknown Book"}
+                            {bookTitle}
                           </h4>
-                          <span className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                            {club.progress || 0}%
-                          </span>
+                          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                            Reading with <strong>{club.name}</strong>
+                          </p>
                         </div>
-
-                        <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                          <div
-                            className="bg-[#774C30] h-2 rounded-full"
-                            style={{ width: `${club.progress || 0}%` }}
-                          />
-                        </div>
-
-                        <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                          Reading with <strong>{club.name}</strong>
-                        </p>
                       </div>
                     );
                   })}
@@ -213,65 +203,50 @@ export default function UserProfile() {
               </div>
             )}
 
-          
-           {/* Past Reads */}
-          <div className="mt-10">
-            <h3
-              className="text-lg font-semibold text-gray-700 mb-3"
-              style={{ fontFamily: "Times New Roman, serif" }}
-            >
-              Past Reads
-            </h3>
+            {/* Past Reads */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+                Past Reads
+              </h3>
 
-            {fullProfile.pastReads?.length === 0 ? (
-              <p
-                className="text-sm text-gray-600"
-                style={{ fontFamily: "Times New Roman, serif" }}
-              >
-                No past reads yet.
-              </p>
-            ) : (
-              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                {fullProfile.pastReads.map((entry) => (
-                  <div
-                    key={entry.bookId}
-                    className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed]
-                              rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-                    style={{ fontFamily: "Times New Roman, serif" }}
-                    onClick={() => navigate(`/book/${entry.bookId}`)}
-                  >
-                    <img
-                      src={entry.bookData?.cover || ""}
-                      className="w-12 h-16 object-cover rounded"
-                    />
-
-                    <div>
-                      <p className="text-sm text-gray-700 font-semibold">
-                        {entry.bookData?.title}
-                      </p>
-
-                      <p className="text-sm text-gray-600 mt-1">
-                        Assigned by:{" "}
-                        <a
-                          href={`/clubs/${entry.clubId}`}
-                          className="text-blue-600 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {entry.clubName}
-                        </a>
-                      </p>
-
-                      <p className="text-xs text-gray-600">
-                        Finished {new Date(entry.finishedAt).toLocaleDateString()}
-                      </p>
+              {fullProfile.pastReads?.length === 0 ? (
+                <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                  No past reads yet.
+                </p>
+              ) : (
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                  {fullProfile.pastReads.map((entry) => (
+                    <div
+                      key={entry.bookId}
+                      className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed]
+                                rounded"
+                      style={{ fontFamily: "Times New Roman, serif" }}
+                    >
+                      <img
+                        src={entry.bookData?.cover || ""}
+                        alt={entry.bookData?.title || "Book cover"}
+                        className="w-12 h-16 object-cover rounded"
+                      />
+                      <div>
+                        <p className="text-sm text-gray-700 font-semibold">
+                          {entry.bookData?.title}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          Assigned by: <strong>{entry.clubName}</strong>
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Finished{" "}
+                          {entry.finishedAt
+                            ? new Date(entry.finishedAt).toLocaleDateString()
+                            : "Unknown date"}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-          </div>
-
 
           {/* Book Clubs */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
@@ -282,23 +257,18 @@ export default function UserProfile() {
             {fullProfile.clubs.length > 0 ? (
               <div className="space-y-2">
                 {fullProfile.clubs.map((club) => (
-                  <a
+                  <div
                     key={club.id}
-                    href={`/clubs/${club.id}`}
-                    className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors"
+                    className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default"
                     style={{ fontFamily: "Times New Roman, serif" }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium text-gray-800">{club.name}</span>
-                      {club.currentBookId && (
-                        <span className="text-sm text-gray-600">({club.progress}% progress)</span>
-                      )}
+                      <span className="font-bold text-gray-800">{club.name}</span> {/* Make the club name bold */}
                     </div>
-
                     {club.description && (
                       <p className="text-sm text-gray-600 mt-1">{club.description}</p>
                     )}
-                  </a>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -307,61 +277,6 @@ export default function UserProfile() {
               </p>
             )}
           </div>
-
-          {/* Friends */}
-          <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-              Friends ({fullProfile.friendsCount || 0})
-            </h2>
-
-            {fullProfile.friends?.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {fullProfile.friends.map((friend) => {
-                  const friendPic = friend.profile?.profilePicture
-                    ? friend.profile.profilePicture.startsWith("http")
-                      ? friend.profile.profilePicture
-                      : `${API_BASE}${friend.profile.profilePicture}`
-                    : null;
-
-                  return (
-                    <div
-                      key={friend.id}
-                      className="flex flex-col items-center p-3 border border-[#e3d8c8] rounded-lg hover:bg-[#faf6ed] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/friends/${friend.id}`)}
-                    >
-                      <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg mb-2">
-                        {friendPic ? (
-                          <img src={friendPic} alt={friend.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                            <span
-                              className="text-lg text-gray-700 font-semibold"
-                              style={{ fontFamily: "Times New Roman, serif" }}
-                            >
-                              {friend.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <p className="text-sm font-medium text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                        {friend.name}
-                      </p>
-
-                      <p className="text-xs text-gray-500" style={{ fontFamily: "Times New Roman, serif" }}>
-                        @{friend.profile?.username || `user_${friend.id}`}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                You have no friends yet.
-              </p>
-            )}
-          </div>
-
         </div>
       </main>
 

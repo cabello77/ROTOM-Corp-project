@@ -189,12 +189,7 @@ function Friends() {
                     >
                       {friend.name}
                     </h3>
-                    <p
-                      className="text-sm text-gray-500 mb-2"
-                      style={{ fontFamily: "Times New Roman, serif" }}
-                    >
-                      @{friend.profile?.username || `user_${friend.id}`}
-                    </p>
+                    {/* Removed the @username part here */}
                     {friend.profile?.bio && (
                       <p
                         className="text-xs text-gray-600 text-center mb-4 line-clamp-2"
@@ -207,6 +202,7 @@ function Friends() {
                 );
               })}
             </div>
+
           )}
         </div>
       </main>

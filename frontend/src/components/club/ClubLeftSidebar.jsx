@@ -173,25 +173,6 @@ export default function ClubLeftSidebar({
                 </div>
               )}
 
-              {/* =====================
-                 Current Goal
-              ====================== */}
-              {hasCurrentRead && (club.readingGoal || club.goalDeadline) && (
-               <div className="mt-4 bg-[#f8f3ea] border border-[#ddcdb7] rounded-lg p-3 text-sm space-y-1">
-                    <p>📖 <strong>Reading:</strong> {club.currentBookData?.title}</p>
-
-                    {/* Pages line */}
-                    {club.readingGoalPageStart != null && club.readingGoalPageEnd != null && (
-                    <p>📄 <strong>Pages:</strong> {club.readingGoalPageStart}-{club.readingGoalPageEnd}</p>
-                    )}
-
-                    {club.readingGoal && <p>🎯 <strong>Goal:</strong> {club.readingGoal}</p>}
-                    {club.goalDeadline && (
-                    <p>📅 <strong>Deadline:</strong> {formatDeadline(club.goalDeadline)}</p>
-                    )}
-                    </div>
-
-              )}
 
               {/* =====================
                  Finish Book (Host + Mod)

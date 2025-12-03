@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import BookModal from "./BookModal"; // ← import shared modal
+import BookModal from "./BookModal"; // Import the BookModal component
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
 
@@ -12,14 +11,13 @@ export default function UserBookshelf({ userId }) {
   // Modal State
   const [selectedBook, setSelectedBook] = useState(null);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
-
-  const navigate = useNavigate();
+  const [friendsActivity, setFriendsActivity] = useState([]); // Assuming we fetch friends' activity data here
 
   const loadBookshelf = async () => {
     try {
       const [curRes, pastRes] = await Promise.all([
         fetch(`${API_BASE}/api/users/${userId}/bookshelf/current`),
-        fetch(`${API_BASE}/api/users/${userId}/bookshelf/past`)
+        fetch(`${API_BASE}/api/users/${userId}/bookshelf/past`),
       ]);
 
       const curData = await curRes.json();
@@ -38,6 +36,7 @@ export default function UserBookshelf({ userId }) {
     loadBookshelf();
   }, [userId]);
 
+  // Loading state
   if (loading) {
     return (
       <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
@@ -46,16 +45,30 @@ export default function UserBookshelf({ userId }) {
     );
   }
 
+  // Handle opening the modal
+  const openBookModal = (book) => {
+    setSelectedBook(book);
+    // Fetch friends' activity for this book (you can customize this based on your needs)
+    setFriendsActivity([
+      {
+        friendName: "John Doe",
+        pageNumber: 50,
+        readingGoalPageStart: 0,
+        readingGoalPageEnd: 100,
+        clubName: "Book Club A",
+        finishedAt: null,
+        readingGoal: "Read 100 pages",
+      },
+    ]); // Example activity data
+    setIsBookModalOpen(true);
+  };
+
   return (
     <>
       <div className="space-y-8">
-
         {/* CURRENT READS */}
         <section>
-          <h3
-            className="text-base font-semibold text-gray-800 mb-3"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
+          <h3 className="text-base font-semibold text-gray-800 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
             Current Reads
           </h3>
 
@@ -66,34 +79,18 @@ export default function UserBookshelf({ userId }) {
               {currentReads.map((entry) => (
                 <div
                   key={entry.bookId}
-                  className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] 
-                               rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-                  onClick={() => {
-                    setSelectedBook(entry);
-                    setIsBookModalOpen(true);
-                  }}
+                  className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
+                  style={{ fontFamily: "Times New Roman, serif" }}
+                  onClick={() => openBookModal(entry)}
                 >
                   <img
                     src={entry.bookData?.cover || "/default-book.png"}
                     className="w-12 h-16 object-cover rounded"
                   />
                   <div>
-                    <p className="text-sm text-gray-700 font-semibold">
-                      {entry.bookData?.title}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Assigned by:{" "}
-                      <Link
-                        to={`/clubs/${entry.clubId}`}
-                        className="text-blue-600 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {entry.clubName}
-                      </Link>
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Assigned {new Date(entry.assignedAt).toLocaleDateString()}
-                    </p>
+                    <p className="text-sm text-gray-700 font-semibold">{entry.bookData?.title}</p>
+                    <p className="text-sm text-gray-600 mt-1">Assigned by: {entry.clubName}</p>
+                    <p className="text-xs text-gray-600">Assigned {new Date(entry.assignedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
               ))}
@@ -103,10 +100,7 @@ export default function UserBookshelf({ userId }) {
 
         {/* PAST READS */}
         <section>
-          <h3
-            className="text-base font-semibold text-gray-800 mb-3"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
+          <h3 className="text-base font-semibold text-gray-800 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
             Past Reads
           </h3>
 
@@ -117,39 +111,28 @@ export default function UserBookshelf({ userId }) {
               {pastReads.map((entry) => (
                 <div
                   key={entry.bookId}
-                  className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] 
-                               rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-                  onClick={() => {
-                    setSelectedBook(entry.bookData);
-                    setIsBookModalOpen(true);
-                  }}
+                  className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
+                  style={{ fontFamily: "Times New Roman, serif" }}
+                  onClick={() => openBookModal(entry)}
                 >
                   <img
                     src={entry.bookData?.cover || "/default-book.png"}
                     className="w-12 h-16 object-cover rounded"
                   />
                   <div>
-                    <p className="text-sm text-gray-700 font-semibold">
-                      {entry.bookData?.title}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Finished {new Date(entry.finishedAt).toLocaleDateString()}
-                    </p>
+                    <p className="text-sm text-gray-700 font-semibold">{entry.bookData?.title}</p>
+                    <p className="text-sm text-gray-600 mt-1">Finished {new Date(entry.finishedAt).toLocaleDateString()}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </section>
-
       </div>
 
-      {/* SHARED BOOK MODAL */}
+      {/* Book Modal */}
       {isBookModalOpen && selectedBook && (
-        <BookModal
-          book={selectedBook}
-          onClose={() => setIsBookModalOpen(false)}
-        />
+        <BookModal book={selectedBook} friendsActivity={friendsActivity} onClose={() => setIsBookModalOpen(false)} />
       )}
     </>
   );

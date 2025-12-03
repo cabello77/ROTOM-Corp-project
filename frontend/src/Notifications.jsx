@@ -249,6 +249,7 @@ function Notifications() {
             </div>
           ) : (
             <>
+          {/* Friend Requests Received */}
           {receivedRequests.length > 0 && (
             <div className="mb-8">
               <h2
@@ -259,71 +260,57 @@ function Notifications() {
               </h2>
               <div className="space-y-4">
                 {receivedRequests.map((request) => {
-                const requester = request.user;
-                const avatarSrc = getAvatarSrc(requester?.profile?.profilePicture);
-                const isProcessing = processing.has(requester.id);
-                
-                return (
-                  <div
-                    key={request.id}
-                    className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6"
-                  >
-                    <div className="flex items-start space-x-4">
-                      <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg flex-shrink-0">
-                        {avatarSrc ? (
-                          <img src={avatarSrc} alt={requester.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                            <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
-                              {requester.name?.charAt(0).toUpperCase() || "?"}
-                            </span>
+                  const requester = request.user;
+                  const avatarSrc = getAvatarSrc(requester?.profile?.profilePicture);
+                  const isProcessing = processing.has(requester.id);
+                  
+                  return (
+                    <div key={request.id} className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg flex-shrink-0">
+                          {avatarSrc ? (
+                            <img src={avatarSrc} alt={requester.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
+                              <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                                {requester.name?.charAt(0).toUpperCase() || "?"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                            {requester.name}
+                          </h3>
+                          {/* Removed @username */}
+                          <p className="text-sm text-gray-700 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+                            wants to be your friend
+                          </p>
+                          <div className="flex space-x-3">
+                            <button
+                              type="button"
+                              onClick={() => handleAccept(requester.id)}
+                              disabled={isProcessing}
+                              className="px-6 py-2 rounded border border-green-600 bg-green-50 hover:bg-green-100 text-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              style={{ fontFamily: "Times New Roman, serif" }}
+                            >
+                              {isProcessing ? "Processing..." : "Accept"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleReject(requester.id)}
+                              disabled={isProcessing}
+                              className="px-6 py-2 rounded border border-red-600 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                              style={{ fontFamily: "Times New Roman, serif" }}
+                            >
+                              {isProcessing ? "Processing..." : "Reject"}
+                            </button>
                           </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          className="text-lg font-semibold text-gray-800 mb-1"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          {requester.name}
-                        </h3>
-                        <p
-                          className="text-sm text-gray-500 mb-2"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          @{requester.profile?.username || `user_${requester.id}`}
-                        </p>
-                        <p
-                          className="text-sm text-gray-700 mb-4"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          wants to be your friend
-                        </p>
-                        <div className="flex space-x-3">
-                          <button
-                            type="button"
-                            onClick={() => handleAccept(requester.id)}
-                            disabled={isProcessing}
-                            className="px-6 py-2 rounded border border-green-600 bg-green-50 hover:bg-green-100 text-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
-                            {isProcessing ? "Processing..." : "Accept"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleReject(requester.id)}
-                            disabled={isProcessing}
-                            className="px-6 py-2 rounded border border-red-600 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
-                            {isProcessing ? "Processing..." : "Reject"}
-                          </button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -343,10 +330,7 @@ function Notifications() {
                   const avatarSrc = getAvatarSrc(friendUser?.profile?.profilePicture);
                   
                   return (
-                    <div
-                      key={request.id}
-                      className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6"
-                    >
+                    <div key={request.id} className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6">
                       <div className="flex items-start space-x-4">
                         <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg flex-shrink-0">
                           {avatarSrc ? (
@@ -360,22 +344,11 @@ function Notifications() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3
-                            className="text-lg font-semibold text-gray-800 mb-1"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
                             {friendUser.name}
                           </h3>
-                          <p
-                            className="text-sm text-gray-500 mb-2"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
-                            @{friendUser.profile?.username || `user_${friendUser.id}`}
-                          </p>
-                          <p
-                            className="text-sm text-gray-700 mb-4"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
+                          {/* Removed @username */}
+                          <p className="text-sm text-gray-700 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
                             Waiting for response
                           </p>
                           <div className="flex items-center justify-center px-4 py-2 rounded border border-[#ddcdb7] bg-[#f7ecda] text-gray-600 w-fit">
@@ -412,10 +385,7 @@ function Notifications() {
                   const isProcessing = processing.has(invitation.id);
                   
                   return (
-                    <div
-                      key={invitation.id}
-                      className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6"
-                    >
+                    <div key={invitation.id} className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6">
                       <div className="flex items-start space-x-4">
                         <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg flex-shrink-0">
                           {avatarSrc ? (
@@ -429,22 +399,11 @@ function Notifications() {
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3
-                            className="text-lg font-semibold text-gray-800 mb-1"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
                             {inviter.name}
                           </h3>
-                          <p
-                            className="text-sm text-gray-500 mb-2"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
-                            @{inviter.profile?.username || `user_${inviter.id}`}
-                          </p>
-                          <p
-                            className="text-sm text-gray-700 mb-4"
-                            style={{ fontFamily: "Times New Roman, serif" }}
-                          >
+                          {/* Removed @username */}
+                          <p className="text-sm text-gray-700 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
                             invited you to join <span className="font-semibold">{club.name}</span>
                           </p>
                           <div className="flex space-x-3">
@@ -475,6 +434,7 @@ function Notifications() {
               </div>
             </div>
           )}
+
             </>
           )}
         </div>

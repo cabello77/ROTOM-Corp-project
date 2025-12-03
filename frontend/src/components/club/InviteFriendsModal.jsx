@@ -182,12 +182,6 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
                         >
                           {friendData.name}
                         </h3>
-                        <p
-                          className="text-sm text-gray-500 truncate"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          @{friendData.profile?.username || `user_${friendId}`}
-                        </p>
                       </div>
                       <div
                         className={`w-5 h-5 rounded border-2 flex items-center justify-center ${

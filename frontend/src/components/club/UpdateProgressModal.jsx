@@ -21,9 +21,10 @@ export default function UpdateProgressModal({
     setPageInput(userProgress ?? start);
   }, [userProgress, start, open]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const num = Number(pageInput);
 
+    // Validate the input is a number and within the page range
     if (isNaN(num)) {
       alert("Please enter a valid number.");
       return;
@@ -34,7 +35,11 @@ export default function UpdateProgressModal({
       return;
     }
 
-    onUpdate(num); // send actual page number to API
+    // Call onUpdate function to update the progress in the parent
+    await onUpdate(num); // This triggers the update and passes the new page number
+
+    // Close the modal after updating progress
+    onClose();
   };
 
   return (

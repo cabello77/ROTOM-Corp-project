@@ -77,19 +77,23 @@ export default function ClubRightSidebar({
     return 0;
   };
 
-
   const progress = calculateProgress();
 
   const handlePageChange = (event) => {
     const page = parseInt(event.target.value, 10);
-    if (!isNaN(page) && page >= club.readingGoalPageStart && page <= club.readingGoalPageEnd) {
-      setTempPage(page); // Update the temporary page number while typing
-    } else {
-      alert("Please enter a valid page number within the goal range.");
-    }
+    setTempPage(page); // Update the temporary page number while typing
   };
 
   const handleUpdateProgress = () => {
+    // Validation check when the button is clicked
+    if (
+      tempPage < club.readingGoalPageStart ||
+      tempPage > club.readingGoalPageEnd
+    ) {
+      alert("Please enter a valid page number within the goal range.");
+      return;
+    }
+
     setCurrentPage(tempPage); // Update current page when the button is clicked
 
     // Send the updated progress to the backend (POST request)

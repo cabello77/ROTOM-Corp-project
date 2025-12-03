@@ -38,21 +38,28 @@ export default function AssignModeratorModal({
             </p>
           )}
 
-          {members.map((member) => (
-          <label
-            key={member.userId}
-            className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 cursor-pointer"
-            style={{ fontFamily: "Times New Roman, serif" }}
-          >
-            <input
-              type="radio"
-              name="promote"
-              value={member.userId}
-              onChange={() => setSelectedId(member.userId)}
-            />
-            <span>{member.user.name}</span>
-          </label>
-        ))}
+          {members.map((member) => {
+            const fullName =
+              member.user?.profile?.fullName ||
+              member.user?.profile?.username ||
+              "Unknown User";
+
+            return (
+              <label
+                key={member.userId}
+                className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 cursor-pointer"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                <input
+                  type="radio"
+                  name="promote"
+                  value={member.userId}
+                  onChange={() => setSelectedId(member.userId)}
+                />
+                <span>{fullName}</span>
+              </label>
+            );
+          })}
         </div>
 
         <div className="flex justify-end gap-3">
@@ -77,4 +84,3 @@ export default function AssignModeratorModal({
     </div>
   );
 }
-

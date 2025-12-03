@@ -8,9 +8,11 @@ export default function UserDropdown({ onEditProfile }) {
   const location = useLocation();
   const [previousLocation, setPreviousLocation] = useState("/user-home");
 
-  // Track location changes to store the previous page
+  // Determine username safely
+  const username = user?.profile?.username || user?.name;
+
+  // Track location changes
   useEffect(() => {
-    // Store the current location as previous, but only if it's not the user-home edit page
     if (location.pathname !== "/user-home/edit") {
       setPreviousLocation(location.pathname);
     }
@@ -22,17 +24,15 @@ export default function UserDropdown({ onEditProfile }) {
   };
 
   const handleEditProfile = () => {
-    // Call the parent handler with the previous location
-    if (onEditProfile) {
-      onEditProfile(previousLocation);
-    }
+    if (onEditProfile) onEditProfile(previousLocation);
   };
 
   const avatarSrc = user?.profile?.profilePicture;
   const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
-  const avatarUrl = avatarSrc 
-    ? (avatarSrc.startsWith("http://") || avatarSrc.startsWith("https://") 
-        ? avatarSrc 
+
+  const avatarUrl = avatarSrc
+    ? (avatarSrc.startsWith("http://") || avatarSrc.startsWith("https://")
+        ? avatarSrc
         : `${API_BASE}${avatarSrc}`)
     : null;
 
@@ -46,26 +46,35 @@ export default function UserDropdown({ onEditProfile }) {
             <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-white/20 flex items-center justify-center">
-              <span className="text-white font-bold text-sm" style={{ fontFamily: "Times New Roman, serif" }}>
-                {user.name.charAt(0).toUpperCase()}
+              <span
+                className="text-white font-bold text-sm"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                {username.charAt(0).toUpperCase()}
               </span>
             </div>
           )}
         </div>
         <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
       </div>
+
       <div className="relative group">
         <button
           type="button"
           className="flex items-center space-x-1 text-white hover:text-gray-200 transition-colors"
         >
-          <span className="text-sm font-medium" style={{ fontFamily: "Times New Roman, serif" }}>
-            {user.name}
+          <span
+            className="text-sm font-medium"
+            style={{ fontFamily: "Times New Roman, serif" }}
+          >
+            {username} {/* username only, no @ */}
           </span>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
+
+        {/* DROPDOWN MENU */}
         <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
           <div className="py-2">
             <Link
@@ -78,6 +87,7 @@ export default function UserDropdown({ onEditProfile }) {
               </svg>
               <span>Home</span>
             </Link>
+
             <Link
               to="/notifications"
               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
@@ -88,6 +98,7 @@ export default function UserDropdown({ onEditProfile }) {
               </svg>
               <span>Notifications</span>
             </Link>
+
             <button
               type="button"
               onClick={handleEditProfile}
@@ -99,6 +110,7 @@ export default function UserDropdown({ onEditProfile }) {
               </svg>
               <span>Edit Profile</span>
             </button>
+
             <button
               type="button"
               onClick={handleLogout}
@@ -116,4 +128,3 @@ export default function UserDropdown({ onEditProfile }) {
     </div>
   );
 }
-

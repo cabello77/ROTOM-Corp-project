@@ -19,41 +19,39 @@ function FriendProfile() {
   const [returnPath, setReturnPath] = useState(null);
 
   // Handle save profile from edit modal
-  const handleSaveProfile = async (updatedData) => {
-    try {
-      const { name, email, bio, avatarFile, removeAvatar } = updatedData;
-      
+  const handleSaveProfile = async (payload) => {
+  try {
+    const { name, email, bio, avatarFile, removeAvatar, profile } = payload;
+    
+    await updateProfile(user.id, {
+      name,
+      email,
+      profile: {
+        bio,
+        username: profile.username,  // Use `profile.username` from payload
+      },
+    });
+
+    if (avatarFile) {
+      await uploadAvatar(user.id, avatarFile);
+    } else if (removeAvatar) {
       await updateProfile(user.id, {
-        name,
-        email,
         profile: {
           bio,
-          fullName: name,
-          username: user.profile?.username || `user_${user.id}`,
+          username: profile.username,   // Use `profile.username` from payload
+          profilePicture: null,
         },
       });
-
-      if (avatarFile) {
-        await uploadAvatar(user.id, avatarFile);
-      } else if (removeAvatar) {
-        await updateProfile(user.id, {
-          profile: {
-            bio,
-            fullName: name,
-            username: user.profile?.username || `user_${user.id}`,
-            profilePicture: null,
-          },
-        });
-      }
-      
-      setIsEditModalOpen(false);
-      if (returnPath) {
-        navigate(returnPath);
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
     }
-  };
+    
+    setIsEditModalOpen(false);
+    if (returnPath) {
+      navigate(returnPath);
+    }
+  } catch (error) {
+    console.error("Error updating profile:", error);
+  }
+};
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
@@ -238,18 +236,15 @@ function FriendProfile() {
                 ) : (
                   <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
                     <span className="text-4xl text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
-                      {friendProfile.name?.charAt(0).toUpperCase() || "?"}
+                      {friendProfile.profile?.username?.charAt(0).toUpperCase() || "?"}
                     </span>
                   </div>
                 )}
               </div>
               <div className="flex-1">
                 <h1 className="text-3xl font-semibold text-gray-800 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
-                  {friendProfile.name}
+                  {friendProfile.profile?.username || `user_${friendProfile.id}`}
                 </h1>
-                <p className="text-lg text-gray-500 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
-                  @{friendProfile.profile?.username || `user_${friendProfile.id}`}
-                </p>
                 {friendProfile.profile?.bio && (
                   <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
                     {friendProfile.profile.bio}
@@ -258,6 +253,7 @@ function FriendProfile() {
               </div>
             </div>
           </div>
+
 
           {/* Bookshelf Section */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">

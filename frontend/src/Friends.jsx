@@ -16,17 +16,16 @@ function Friends() {
   const [returnPath, setReturnPath] = useState(null);
 
   // Handle save profile from edit modal
-  const handleSaveProfile = async (updatedData) => {
+  const handleSaveProfile = async (payload) => {
     try {
-      const { name, email, bio, avatarFile, removeAvatar } = updatedData;
+      const { name, email, bio, avatarFile, removeAvatar, profile } = payload;
       
       await updateProfile(user.id, {
         name,
         email,
         profile: {
           bio,
-          fullName: name,
-          username: user.profile?.username || `user_${user.id}`,
+          username: profile.username,  // Use `profile.username` from payload
         },
       });
 
@@ -36,13 +35,13 @@ function Friends() {
         await updateProfile(user.id, {
           profile: {
             bio,
-            fullName: name,
-            username: user.profile?.username || `user_${user.id}`,
+            username: profile.username,   // Use `profile.username` from payload
             profilePicture: null,
           },
         });
       }
-      
+
+      // Close the modal and navigate to return path
       setIsEditModalOpen(false);
       if (returnPath) {
         navigate(returnPath);
@@ -52,8 +51,10 @@ function Friends() {
     }
   };
 
+  // Close the modal and navigate back to the previous path
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
+    // Navigate back to return path if it's set
     if (returnPath) {
       navigate(returnPath);
     }
@@ -119,7 +120,7 @@ function Friends() {
             <div className="flex items-center space-x-3">
               <UserDropdown onEditProfile={(previousLocation) => {
                 setIsEditModalOpen(true);
-                setReturnPath(previousLocation);
+                setReturnPath(previousLocation);  // Set return path when editing profile
               }} />
             </div>
           </div>
@@ -211,9 +212,10 @@ function Friends() {
         </div>
       </main>
 
+      {/* Profile Edit Modal */}
       <ProfileEdit
         isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
+        onClose={handleCloseEditModal}  // Pass handleCloseEditModal here
         user={user}
         onSave={handleSaveProfile}
         isSaving={false}
@@ -223,4 +225,3 @@ function Friends() {
 }
 
 export default Friends;
-

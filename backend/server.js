@@ -27,22 +27,25 @@ const randomUsername = () => {
 
 const serializeUser = (user) => {
   if (!user) return null;
+
   const profile = user.profile || null;
+
   return {
     id: user.id,
-    name: user.name,
+    username: user.username,    // <-- FIXED
     email: user.email,
     createdAt: user.createdAt,
     profile: profile
       ? {
           id: profile.id,
-          username: profile.username,
           fullName: profile.fullName,
           profilePicture: profile.profilePicture,
           bio: profile.bio,
           joinDate: profile.joinDate,
+          username: profile.username,
         }
-      : null,
+      : null
+
   };
 };
 
@@ -176,23 +179,33 @@ app.get('/api/users/:id', async (req, res) => {
 // Get full profile for a user (clubs, past reads, friends)
 app.get("/api/users/:id/full-profile", async (req, res) => {
   try {
-    let userId;
-    try {
-      userId = parseUserId(req.params.id);
-    } catch {
+    const userId = Number(req.params.id);
+    if (isNaN(userId)) {
       return res.status(400).json({ error: "Invalid user id" });
     }
 
+    // Fetch core user data
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: {
-        profile: true,
+      select: {
+        id: true,
+        email: true,
+        username: true,     // ⭐ Ensure username from User table comes in
+        name: true,
+        profile: {
+          select: {
+            username: true, // ⭐ User's chosen username (preferred)
+            fullName: true,
+            bio: true,
+            joinDate: true,
+            profilePicture: true,
+          }
+        },
         memberships: {
           select: {
             id: true,
-            pageNumber: true, // user's current page in club
+            pageNumber: true,
             joinedAt: true,
-            clubId: true,
             club: {
               select: {
                 id: true,
@@ -204,31 +217,26 @@ app.get("/api/users/:id/full-profile", async (req, res) => {
                 readingGoalPageStart: true,
                 readingGoalPageEnd: true,
                 goalDeadline: true
-              },
-            },
-          },
-        },
-      },
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Map memberships into clubs with reading progress
-    const clubs = (user.memberships || []).map((m) => {
+    // ⭐ Username priority system
+    const resolvedUsername =
+      user.profile?.username ||
+      user.username ||
+      `user_${user.id}`;
+
+    // Build clubs list
+    const clubs = user.memberships.map((m) => {
       const c = m.club;
-      const start = c.readingGoalPageStart;
-      const end = c.readingGoalPageEnd;
-      const currentPage = m.pageNumber ?? null;
-
-      let progressPercent = null;
-      if (start != null && end != null && currentPage != null) {
-        const totalPages = end - start + 1;
-        const pagesRead = Math.max(0, currentPage - start);
-        progressPercent = Math.min(100, Math.max(0, (pagesRead / totalPages) * 100));
-      }
-
       return {
         clubId: c.id,
         name: c.name,
@@ -236,48 +244,51 @@ app.get("/api/users/:id/full-profile", async (req, res) => {
         currentBookId: c.currentBookId,
         currentBookData: c.currentBookData,
         readingGoal: c.readingGoal,
-        readingGoalPageStart: start,
-        readingGoalPageEnd: end,
+        readingGoalPageStart: c.readingGoalPageStart,
+        readingGoalPageEnd: c.readingGoalPageEnd,
         goalDeadline: c.goalDeadline,
-        pageNumber: currentPage,
-        progressPercent,
-        joinedAt: m.joinedAt
+        joinedAt: m.joinedAt,
+        pageNumber: m.pageNumber ?? null
       };
     });
 
-    // Past reads across all clubs the user has joined
-    const clubIds = clubs.map((c) => c.clubId);
+    // Past Reads
+    const clubIds = clubs.map(c => c.clubId);
     let pastReads = [];
+
     if (clubIds.length > 0) {
-      const pastReadsRaw = await prisma.clubBookHistory.findMany({
+      const past = await prisma.clubBookHistory.findMany({
         where: { clubId: { in: clubIds } },
         orderBy: { finishedAt: "desc" },
-        include: { club: true },
       });
 
-      pastReads = pastReadsRaw.map((book) => ({
-        clubId: book.clubId,
-        type: "past",
-        clubName: book.club.name,
-        assignedAt: book.assignedAt,
-        finishedAt: book.finishedAt,
-        bookId: book.bookId,
-        bookData: book.bookData,
+      pastReads = past.map((entry) => ({
+        clubId: entry.clubId,
+        bookId: entry.bookId,
+        bookData: entry.bookData,
+        assignedAt: entry.assignedAt,
+        finishedAt: entry.finishedAt,
       }));
     }
 
-    // Friends list (both directions)
+    // Friends (consolidated)
     const friendsAsUser = await prisma.friend.findMany({
       where: { userID: userId, status: "ACCEPTED" },
       include: {
         friend: {
           select: {
             id: true,
-            name: true,
-            profile: { select: { username: true, profilePicture: true } },
-          },
-        },
-      },
+            username: true,
+            profile: {
+              select: {
+                username: true,
+                fullName: true,
+                profilePicture: true
+              }
+            }
+          }
+        }
+      }
     });
 
     const friendsAsFriend = await prisma.friend.findMany({
@@ -286,39 +297,69 @@ app.get("/api/users/:id/full-profile", async (req, res) => {
         user: {
           select: {
             id: true,
-            name: true,
-            profile: { select: { username: true, profilePicture: true } },
-          },
-        },
-      },
+            username: true,
+            profile: {
+              select: {
+                username: true,
+                fullName: true,
+                profilePicture: true
+              }
+            }
+          }
+        }
+      }
     });
 
-    const allFriends = [
-      ...(friendsAsUser || []).map((f) => f.friend).filter(Boolean),
-      ...(friendsAsFriend || []).map((f) => f.user).filter(Boolean),
+    const rawFriends = [
+      ...friendsAsUser.map(f => f.friend),
+      ...friendsAsFriend.map(f => f.user),
     ];
-    const uniqueFriends = Array.from(
-      new Map(allFriends.map((f) => [f.id, f])).values()
+
+    // Deduplicate & normalize friends
+    const friends = Array.from(
+      new Map(
+        rawFriends.map(f => [
+          f.id,
+          {
+            id: f.id,
+            username:
+              f.profile?.username ||
+              f.username ||
+              `user_${f.id}`,
+            fullName: f.profile?.fullName || "",
+            profilePicture: f.profile?.profilePicture || null
+          }
+        ])
+      ).values()
     );
 
+    // Send final payload
     res.json({
       id: user.id,
-      name: user.name,
-      profile: user.profile || null,
+      email: user.email,
+      username: resolvedUsername,   // ⭐ Final normalized username
+      profile: {
+        ...user.profile,
+        username: resolvedUsername   // ⭐ Keep profile in sync
+      },
       clubs,
       pastReads,
-      friends: uniqueFriends || [],
-      friendsCount: (uniqueFriends || []).length,
+      friends,
+      friendsCount: friends.length,
     });
+
   } catch (err) {
     console.error("Error fetching full profile:", err);
     res.status(500).json({ error: "Failed to fetch full profile" });
   }
 });
 
-// Update user profile
+
+
 app.put('/api/users/:id', async (req, res) => {
   try {
+    console.log("🔵 UPDATE REQUEST BODY:", JSON.stringify(req.body, null, 2));
+
     let userId;
     try {
       userId = parseUserId(req.params.id);
@@ -328,73 +369,113 @@ app.put('/api/users/:id', async (req, res) => {
 
     const { name, email, profile = {} } = req.body;
 
+    console.log("📌 Parsed profile object:", profile);
+
+    const newUsername = profile.username?.trim() || null;
+    console.log("📌 Parsed new username:", newUsername);
+
+    // 1️⃣ VALIDATE USERNAME
+    if (newUsername) {
+      if (!/^[a-zA-Z0-9._]+$/.test(newUsername)) {
+        return res.status(400).json({
+          error: "Username may only contain letters, numbers, dots, and underscores.",
+        });
+      }
+
+      // Check for username collision
+      const existingUsername = await prisma.user.findUnique({
+        where: { username: newUsername },
+        select: { id: true },
+      });
+
+      if (existingUsername && existingUsername.id !== Number(userId)) {
+        return res.status(400).json({
+          error: "This username is already taken.",
+        });
+      }
+    }
+
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true },
+      include: { profile: true },
     });
 
     if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // 2️⃣ USER FIELDS
     const userUpdates = {};
     if (typeof name === 'string') userUpdates.name = name;
     if (typeof email === 'string') userUpdates.email = email;
+    if (newUsername) userUpdates.username = newUsername; // canonical username
 
+    // 3️⃣ PROFILE FIELDS
     const profileUpdates = {};
-    if (typeof profile.bio === 'string' || profile.bio === null) profileUpdates.bio = profile.bio;
-    if (typeof profile.profilePicture === 'string' || profile.profilePicture === null) {
-      profileUpdates.profilePicture = profile.profilePicture;
-    }
-    if (typeof profile.fullName === 'string') profileUpdates.fullName = profile.fullName;
-    if (profile.username !== undefined) {
-      const parsedUsername = String(profile.username).trim();
-      if (parsedUsername.length > 0) {
-        profileUpdates.username = parsedUsername;
-      }
+
+    // Debug log for bio before assignment
+    console.log("📌 Profile bio before update:", profile.bio);
+
+    // Handle undefined or null bio correctly
+    if (profile.hasOwnProperty('bio')) {
+      profileUpdates.bio = profile.bio || null; // Ensure bio is either a valid string or null
     }
 
+    if (profile.hasOwnProperty('profilePicture')) {
+      profileUpdates.profilePicture = profile.profilePicture || null; // Handle profile picture correctly
+    }
+
+    if (profile.hasOwnProperty('fullName')) {
+      profileUpdates.fullName = profile.fullName || null; // Ensure fullName is valid or null
+    }
+
+    if (newUsername) {
+      profileUpdates.username = newUsername; // mirror username if provided
+    }
+
+    // Debug log for the profile updates object
+    console.log("📌 Profile updates object:", profileUpdates);
+
+    // Build final object to be sent to Prisma
     const data = { ...userUpdates };
 
     if (Object.keys(profileUpdates).length > 0) {
-      const createProfile = {
-        username:
-          typeof profileUpdates.username === 'string' && profileUpdates.username.length > 0
-            ? profileUpdates.username
-            : randomUsername(),
-        fullName:
-          profileUpdates.fullName ||
-          userUpdates.name ||
-          req.body.name ||
-          existingUser.name ||
-          'New User',
-        bio: profileUpdates.bio ?? null,
-        profilePicture: profileUpdates.profilePicture ?? null,
-      };
       data.profile = {
         upsert: {
-          create: createProfile,
           update: profileUpdates,
+          create: {
+            fullName: profileUpdates.fullName || existingUser.name,
+            bio: profileUpdates.bio ?? null,
+            profilePicture: profileUpdates.profilePicture ?? null,
+            username: newUsername || existingUser.username || `user_${userId}`,
+            joinDate: existingUser.profile?.joinDate || new Date(),
+          },
         },
       };
     }
 
-    if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: 'No valid fields provided' });
-    }
+    // Debug log for the final data object being sent to Prisma
+    console.log("🟣 FINAL DATA SENT TO PRISMA:", JSON.stringify(data, null, 2));
 
-    const user = await prisma.user.update({
+    // Update the user in the database
+    const updatedUser = await prisma.user.update({
       where: { id: userId },
       data,
       include: { profile: true },
     });
 
-    res.json({ message: 'Profile updated', user: serializeUser(user) });
+    res.json({
+      message: "Profile updated",
+      user: serializeUser(updatedUser),
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update user' });
+    console.error("User update error:", err);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
+
+
 
 // Upload avatar
 app.post(
@@ -461,50 +542,68 @@ app.post(
   }
 );
 
-// Sign Up Route
-app.post('/api/signup', async (req, res) => {
+// Signup Route
+app.post("/api/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { fullName, name, username, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+    const actualFullName = fullName || name;
+
+    console.log("Signup body:", req.body);
+
+    if (!actualFullName || !username || !email || !password) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'Email already registered' });
+    // Check username availability
+    const existingUsername = await prisma.profile.findUnique({
+      where: { username }
+    });
+
+    if (existingUsername) {
+      return res.status(400).json({ error: "Username already taken" });
+    }
+
+    // Check email availability
+    const existingEmail = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingEmail) {
+      return res.status(400).json({ error: "Email already in use" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create user
     const user = await prisma.user.create({
       data: {
-        name,
+        name: actualFullName,
+        username,
         email,
         password: hashedPassword,
         profile: {
           create: {
-            username: randomUsername(),
-            fullName: name,
-            bio: null,
+            fullName: actualFullName,
+            username,
+            bio: "",
             profilePicture: null,
-          },
-        },
+            joinDate: new Date()
+          }
+        }
       },
-      include: { profile: true },
+      include: { profile: true }
     });
 
-    console.log(`✅ New user registered: ${user.email}`);
 
-    res.json({
-      message: 'User registered successfully!',
-      user: serializeUser(user),
-    });
-  } catch (error) {
-    console.error('❌ Signup error:', error);
-    res.status(500).json({ error: 'Server error during signup' });
+    res.json({ user });
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Signup failed" });
   }
 });
+
+
 
 // User Login Route
 app.post('/api/login', async (req, res) => {
@@ -1246,7 +1345,7 @@ app.get("/api/users/:id/club-invitations", async (req, res) => {
             profile: {
               select: {
                 profilePicture: true,
-                username: true,
+                fullName: true,
               },
             },
           },
@@ -1598,6 +1697,7 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
     const before = req.query.before ? new Date(req.query.before) : new Date();
     const limit = Math.min(Number(req.query.limit) || 50, 100);
 
+    // ⭐ FIX: Include username + profile
     const messages = await prisma.message.findMany({
       where: { clubId, createdAt: { lt: before } },
       orderBy: { createdAt: "desc" },
@@ -1606,11 +1706,17 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
         user: {
           select: {
             id: true,
-            name: true,
-            profile: { select: { profilePicture: true } },
-          },
-        },
-      },
+            username: true,      // ⭐ USE username from User table
+            name: true,          // fallback full name
+            profile: {
+              select: {
+                username: true,  // ⭐ USE username from Profile table
+                profilePicture: true
+              }
+            }
+          }
+        }
+      }
     });
 
     const baseUrl =
@@ -1621,15 +1727,27 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
       clubId: m.clubId,
       content: m.content,
       createdAt: m.createdAt,
+
       user: {
         id: m.user.id,
-        name: m.user.name,
+
+        // ⭐ Username priority:
+        // 1. Profile.username
+        // 2. User.username
+        // 3. Full name
+        // 4. Fallback
+        username:
+          m.user.profile?.username ||
+          m.user.username ||
+          m.user.name ||
+          `user_${m.user.id}`,
+
         profilePicture: m.user.profile?.profilePicture
-          ? `${baseUrl}${m.user.profile.profilePicture.startsWith("/") ? "" : "/"}${
-              m.user.profile.profilePicture
-            }`
+          ? `${baseUrl}${
+              m.user.profile.profilePicture.startsWith("/") ? "" : "/"
+            }${m.user.profile.profilePicture}`
           : null,
-      },
+      }
     }));
 
     res.json(normalized);
@@ -1640,11 +1758,12 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
 });
 
 
+
 // Get club members
 app.get("/api/clubs/:id/members", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const club = await prisma.club.findUnique({
       where: { id: Number(id) },
       select: { creatorId: true }
@@ -1653,24 +1772,59 @@ app.get("/api/clubs/:id/members", async (req, res) => {
     if (!club) {
       return res.status(404).json({ error: "Club not found" });
     }
-    
+
     const members = await prisma.clubMember.findMany({
       where: { clubId: Number(id) },
       include: {
         user: {
-          select: { id: true, name: true, email: true }
+          select: {
+            id: true,
+            username: true,         // ⭐ Get username from User table
+            name: true,             // fallback full name
+            email: true,
+            profile: {
+              select: {
+                username: true,     // ⭐ Get username from Profile table
+                profilePicture: true
+              }
+            }
+          }
         }
       },
       orderBy: { joinedAt: "asc" }
     });
 
-    // Add isHost flag to each member
-    const membersWithHostFlag = members.map(member => ({
-      ...member,
-      isHost: member.userId === club.creatorId
-    }));
+    const baseUrl =
+      process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
 
-    res.json(membersWithHostFlag);
+    const normalized = members.map((member) => {
+      const profilePic = member.user.profile?.profilePicture;
+      
+      return {
+        ...member,
+        isHost: member.userId === club.creatorId,
+
+        user: {
+          id: member.user.id,
+
+          // ⭐ Username priority:
+          username:
+            member.user.profile?.username ||
+            member.user.username ||
+            member.user.name ||
+            `user_${member.user.id}`,
+
+          email: member.user.email,
+
+          profilePicture: profilePic
+            ? `${baseUrl}${profilePic.startsWith("/") ? "" : "/"}${profilePic}`
+            : null
+        }
+      };
+    });
+
+    res.json(normalized);
+
   } catch (error) {
     console.error("❌ Error fetching club members:", error);
     res.status(500).json({ error: "Server error while fetching members." });
@@ -2355,7 +2509,7 @@ app.get("/api/friends/:userId/pending", async(req, res) => {
                                                             name: true,
                                                             profile : {
                                                                       select: {
-                                                                                username: true,
+                                                                                fullName: true,
                                                                                 profilePicture: true,
                                                                       },
                                                             },
@@ -2385,7 +2539,7 @@ app.get("/api/friends/:userId/received", async(req, res) => {
                                                             name: true,
                                                             profile : {
                                                                       select: {
-                                                                                username: true,
+                                                                                fullName: true,
                                                                                 profilePicture: true,
                                                                       },
                                                             },
@@ -2485,7 +2639,7 @@ app.get("/api/friends/:userId/:friendId/profile", async (req, res) => {
                                                             name: true,
                                                             profile: {
                                                                       select: {
-                                                                                username: true,
+                                                                                fullName: true,
                                                                                 profilePicture: true,
                                                                       },
                                                             },
@@ -2506,7 +2660,7 @@ app.get("/api/friends/:userId/:friendId/profile", async (req, res) => {
                                                             name: true,
                                                             profile: {
                                                                       select: {
-                                                                                username: true,
+                                                                                fullName: true,
                                                                                 profilePicture: true,
                                                                       },
                                                             },
@@ -2587,7 +2741,7 @@ app.get("/api/friends/:userId", async(req, res) => {
                                                             name: true,
                                                             profile : {
                                                                       select: {
-                                                                                username: true,
+                                                                                fullName: true,
                                                                                 profilePicture: true,
                                                                       },
                                                             },

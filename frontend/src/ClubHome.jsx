@@ -84,42 +84,40 @@ export default function ClubHome() {
     }
   };
 
-  const handleSaveProfile = async ({
-    name,
-    email,
-    bio,
-    avatarFile,
-    removeAvatar,
-  }) => {
+  const handleSaveProfile = async (payload) => {
     try {
+      const { name, email, bio, avatarFile, removeAvatar, profile } = payload;
+
       await updateProfile(user.id, {
         name,
         email,
         profile: {
           bio,
-          fullName: name,
-          username: user.profile?.username || `user_${user.id}`,
+          username: profile.username,
         },
       });
 
-      if (avatarFile) await uploadAvatar(user.id, avatarFile);
-      else if (removeAvatar) {
+      if (avatarFile) {
+        await uploadAvatar(user.id, avatarFile);
+      } else if (removeAvatar) {
         await updateProfile(user.id, {
           profile: {
             bio,
-            fullName: name,
-            username: user.profile?.username || `user_${user.id}`,
+            username: profile.username,
             profilePicture: null,
           },
         });
       }
-
+      
       setIsEditModalOpen(false);
-      if (returnPath) navigate(returnPath);
+      if (returnPath) {
+        navigate(returnPath);
+      }
     } catch (error) {
       console.error("Error updating profile:", error);
     }
   };
+
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);

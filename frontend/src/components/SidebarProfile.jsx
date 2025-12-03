@@ -8,11 +8,15 @@ function SidebarProfile() {
   const { user, logout } = useUser();
   const navigate = useNavigate();
 
+  // 🔍 Manual debug: see exactly what we get from context
+  console.log("SidebarProfile user =", user);
+
   const handleLogout = () => {
     logout();
     navigate("/");
   };
 
+  // Avatar URL from profile picture
   const avatarSrc = useMemo(() => {
     const path = user?.profile?.profilePicture;
     if (!path) return null;
@@ -23,6 +27,23 @@ function SidebarProfile() {
   const memberSince = user?.profile?.joinDate
     ? new Date(user.profile.joinDate).toLocaleDateString()
     : "—";
+
+  // ⚙️ Username + full name logic
+  const rawUsername =
+    user?.profile?.username || // preferred – from Profile
+    user?.username ||          // top-level username from backend
+    user?.name || "";          // last-resort fallback
+
+  const username = rawUsername ? `@${rawUsername}` : "";
+
+  const fullName =
+    user?.profile?.fullName || // nice display name if set
+    user?.name ||              // legacy full name
+    "";
+
+  // Avatar initial: from username first, then full name
+  const avatarInitial =
+    (rawUsername || fullName || "?").charAt(0).toUpperCase();
 
   return (
     <aside className="lg:col-span-3 space-y-4 sticky top-6 self-start">
@@ -42,20 +63,33 @@ function SidebarProfile() {
                   className="text-2xl text-gray-700"
                   style={{ fontFamily: "Times New Roman, serif" }}
                 >
-                  {user?.name?.charAt(0).toUpperCase()}
+                  {avatarInitial}
                 </span>
               </div>
             )}
           </div>
         </div>
+
         <div className="px-6 pt-12 pb-6 space-y-4">
           <div>
+            {/* Username */}
             <h2
-              className="text-xl font-semibold text-gray-800 capitalize"
+              className="text-xl font-semibold text-gray-800"
               style={{ fontFamily: "Times New Roman, serif" }}
             >
-              {user?.name}
+              {username}
             </h2>
+
+            {/* Full Name (optional) */}
+            {fullName && (
+              <p
+                className="text-sm text-gray-700"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                {fullName}
+              </p>
+            )}
+
             <p
               className="text-sm text-gray-500 mt-1"
               style={{ fontFamily: "Times New Roman, serif" }}
@@ -63,6 +97,7 @@ function SidebarProfile() {
               {user?.email}
             </p>
           </div>
+
           <div
             className="text-sm text-gray-600 space-y-1"
             style={{ fontFamily: "Times New Roman, serif" }}
@@ -74,6 +109,7 @@ function SidebarProfile() {
                 "Add a bio to let other readers know what you love."}
             </p>
           </div>
+
           <button
             type="button"
             onClick={() => navigate("/user-home")}

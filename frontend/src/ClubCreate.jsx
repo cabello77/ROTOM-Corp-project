@@ -19,41 +19,40 @@ export default function ClubCreate() {
   const [returnPath, setReturnPath] = useState(null);
 
   // Handle save profile from edit modal
-  const handleSaveProfile = async (updatedData) => {
-    try {
-      const { name, email, bio, avatarFile, removeAvatar } = updatedData;
-      
+  const handleSaveProfile = async (payload) => {
+  try {
+    const { name, email, bio, avatarFile, removeAvatar, profile } = payload;
+    
+    await updateProfile(user.id, {
+      name,
+      email,
+      profile: {
+        bio,
+        username: profile.username,  // Use `profile.username` from payload
+      },
+    });
+
+    if (avatarFile) {
+      await uploadAvatar(user.id, avatarFile);
+    } else if (removeAvatar) {
       await updateProfile(user.id, {
-        name,
-        email,
         profile: {
           bio,
-          fullName: name,
-          username: user.profile?.username || `user_${user.id}`,
+          username: profile.username,   // Use `profile.username` from payload
+          profilePicture: null,
         },
       });
-
-      if (avatarFile) {
-        await uploadAvatar(user.id, avatarFile);
-      } else if (removeAvatar) {
-        await updateProfile(user.id, {
-          profile: {
-            bio,
-            fullName: name,
-            username: user.profile?.username || `user_${user.id}`,
-            profilePicture: null,
-          },
-        });
-      }
-      
-      setIsEditModalOpen(false);
-      if (returnPath) {
-        navigate(returnPath);
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
     }
-  };
+    
+    setIsEditModalOpen(false);
+    if (returnPath) {
+      navigate(returnPath);
+    }
+  } catch (error) {
+    console.error("Error updating profile:", error);
+  }
+};
+
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);

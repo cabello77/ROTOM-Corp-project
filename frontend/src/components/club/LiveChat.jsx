@@ -24,7 +24,11 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
     const path = user?.profilePicture;
 
     if (!path) {
-      const firstLetter = user?.name?.charAt(0)?.toUpperCase() || "U";
+      const firstLetter =
+      user?.profile?.username?.charAt(0)?.toUpperCase() ||
+      user?.username?.charAt(0)?.toUpperCase() ||
+      "U";
+
       return `https://ui-avatars.com/api/?name=${firstLetter}&background=EEE&color=555&size=64&rounded=true`;
     }
 
@@ -167,9 +171,10 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
                 />
 
                 <div>
-                  <p className="text-xs text-gray-600 mb-1">
-                    {msg.user?.name ?? "Member"}
+                  <p className="text-xs text-gray-600 mb-1 font-semibold">
+                    {msg.user?.profile?.username || msg.user?.username || "Member"}
                   </p>
+
 
                   <div className="bg-white border rounded px-3 py-2 text-sm max-w-[32rem]">
                     {msg.content}

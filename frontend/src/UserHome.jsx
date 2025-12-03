@@ -135,42 +135,67 @@ function UserHome() {
     navigate("/");
   };
 
-  const handleSaveProfile = async ({ name, email, bio, avatarFile, removeAvatar }) => {
+  const handleSaveProfile = async ({ name, email, bio, avatarFile, removeAvatar, profile }) => {
     if (!user) return;
+
     setIsSaving(true);
     setStatusMessage("Saving profile...");
+
     try {
+      // Debugging: Log the input payload
+      console.log("🔥 Received payload in handleSaveProfile:", {
+        name,
+        email,
+        bio,
+        avatarFile,
+        removeAvatar,
+        profile,
+      });
+
+      // Update profile with the provided name, email, and bio
+      console.log("🔵 Updating profile with name, email, and bio:", { name, email, bio, username: profile?.username });
+      
       await updateProfile(user.id, {
         name,
         email,
         profile: {
-          bio,
-          fullName: name,
-          username: user.profile?.username || `user_${user.id}`,
+          bio,                 // Pass the bio
+          username: profile?.username,  // Ensure username is passed correctly
         },
       });
 
+      // Debugging: Log after profile update
+      console.log("🟢 Profile update sent to backend.");
+
+      // If avatar file is provided, upload it
       if (avatarFile) {
+        console.log("🔵 Avatar file is provided. Uploading avatar...");
         await uploadAvatar(user.id, avatarFile);
+        console.log("🟢 Avatar uploaded successfully.");
       } else if (removeAvatar) {
+        // If the avatar is being removed, update the profile with null for profilePicture
+        console.log("🔵 Removing avatar and updating profilePicture to null.");
         await updateProfile(user.id, {
           profile: {
             bio,
-            fullName: name,
-            username: user.profile?.username || `user_${user.id}`,
+            username: profile?.username,  // Correct reference here as well
             profilePicture: null,
           },
         });
+        console.log("🟢 Avatar removed successfully.");
       }
 
       setStatusMessage("Profile updated!");
       setIsEditModalOpen(false);
+      
       // Navigate back to the return path if one was provided
       if (returnPath) {
+        console.log("🔵 Navigating back to:", returnPath);
         navigate(returnPath);
       }
+
     } catch (error) {
-      console.error(error);
+      console.error("❌ Error updating profile:", error);
       setStatusMessage(error.message || "Failed to update profile.");
     } finally {
       setIsSaving(false);

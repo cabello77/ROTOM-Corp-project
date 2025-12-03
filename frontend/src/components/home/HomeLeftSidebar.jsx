@@ -57,57 +57,67 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
         </Link>
       </div>
 
-      {/* Friends */}
-      <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
-        <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-          Friends
-        </h2>
-        <div className="flex flex-wrap gap-3">
-          {friendsList.length ? (
-            friendsList.map((friend) => {
-              const friendData = friend.friend || friend;
-              const profilePicture = friendData.profile?.profilePicture;
-              const avatarSrc = profilePicture 
-                ? (profilePicture.startsWith("http://") || profilePicture.startsWith("https://") 
-                    ? profilePicture 
-                    : `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"}${profilePicture}`)
-                : null;
-              const name = friendData.name || friendData.profile?.username || 'Unknown';
-              
-              return (
-                <div
-                  key={friendData.id || friend.id || name}
-                  className="relative group cursor-pointer"
-                  title={name}
-                  onClick={() => navigate(`/friends/${friendData.id || friend.id}`)}
-                >
-                  <div className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
-                    {avatarSrc ? (
-                      <img src={avatarSrc} alt={name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                        <span className="text-lg text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
-                          {name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+{/* Friends */}
+<div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+  <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+    Friends
+  </h2>
+  <div className="flex flex-wrap gap-3">
+    {friendsList.length ? (
+      friendsList.map((friend) => {
+        const friendData = friend.friend || friend;
+        
+        // Log the entire friendData to understand the structure
+        console.log('Friend Data:', friendData);
+
+        // Try to log if profile is available
+        console.log('Profile:', friendData.profile);
+        console.log('Username:', friendData.profile?.username);
+
+        const profilePicture = friendData.profile?.profilePicture;
+        const avatarSrc = profilePicture 
+          ? (profilePicture.startsWith("http://") || profilePicture.startsWith("https://") 
+              ? profilePicture 
+              : `${import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"}${profilePicture}`)
+          : null;
+
+        const username = friendData.profile?.username || 'Unknown';  // Ensure username is used for initials
+
+        return (
+          <div
+            key={friendData.id || friend.id || username}
+            className="relative group cursor-pointer"
+            title={username}
+            onClick={() => navigate(`/friends/${friendData.id || friend.id}`)}
+          >
+            <div className="w-12 h-12 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+              {avatarSrc ? (
+                <img src={avatarSrc} alt={username} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
+                  <span className="text-lg text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+                    {username.charAt(0).toUpperCase()}  {/* Ensure first letter of username */}
+                  </span>
                 </div>
-              );
-            })
-          ) : (
-            <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-              Add friends to see them here.
-            </p>
-          )}
-        </div>
-        <Link
-          to="/add-friend"
-          className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-          style={{ fontFamily: "Times New Roman, serif" }}
-        >
-          Add Friends
-        </Link>
+              )}
+            </div>
+          </div>
+        );
+      })
+    ) : (
+      <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+        Add friends to see them here.
+      </p>
+    )}
+  </div>
+  <Link
+    to="/add-friend"
+    className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
+    style={{ fontFamily: "Times New Roman, serif" }}
+  >
+    Add Friends
+  </Link>
+
 
         {/* ⭐ Direct Messages Section */}
         <div

@@ -10,6 +10,9 @@ export default function HomeRightSidebar({
   friendsCount = 0,
   onLogout
 }) {
+  const username = user?.profile?.username || user?.name || `user_${user?.id}`;
+  const fullName = user?.profile?.fullName || "";
+
   return (
     <aside className="lg:col-span-3 space-y-4">
 
@@ -29,7 +32,7 @@ export default function HomeRightSidebar({
                   className="text-2xl text-gray-700"
                   style={{ fontFamily: "Times New Roman, serif" }}
                 >
-                  {user.name?.charAt(0).toUpperCase()}
+                  {username.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
@@ -38,12 +41,26 @@ export default function HomeRightSidebar({
 
         <div className="px-6 pt-12 pb-6 space-y-4">
           <div>
+
+            {/* USERNAME (NO @) */}
             <h2
               className="text-xl font-semibold text-gray-800"
               style={{ fontFamily: "Times New Roman, serif" }}
             >
-              {user.name}
+              {username}
             </h2>
+
+            {/* OPTIONAL FULL NAME */}
+            {fullName && (
+              <p
+                className="text-sm text-gray-700"
+                style={{ fontFamily: "Times New Roman, serif" }}
+              >
+                {fullName}
+              </p>
+            )}
+
+            {/* EMAIL */}
             <p
               className="text-sm text-gray-500 mt-1"
               style={{ fontFamily: "Times New Roman, serif" }}
@@ -84,13 +101,11 @@ export default function HomeRightSidebar({
 
             <div className="space-y-3">
               {(() => {
-                const clubsWithGoals = clubsJoined.filter((club) => {
-                  return (
-                    club.readingGoalPageStart != null &&
-                    club.readingGoalPageEnd != null &&
-                    club.goalDeadline != null
-                  );
-                });
+                const clubsWithGoals = clubsJoined.filter((club) => (
+                  club.readingGoalPageStart != null &&
+                  club.readingGoalPageEnd != null &&
+                  club.goalDeadline != null
+                ));
 
                 if (clubsJoined.length > 0 && clubsWithGoals.length === 0) {
                   return (
@@ -124,7 +139,10 @@ export default function HomeRightSidebar({
                   const currentPage = club.membershipPageNumber ?? start;
                   const totalPages = end - start;
                   const pagesRead = Math.max(0, currentPage - start);
-                  const percent = Math.min(100, Math.round((pagesRead / totalPages) * 100));
+                  const percent = Math.min(
+                    100,
+                    Math.round((pagesRead / totalPages) * 100)
+                  );
 
                   const daysRemaining = getDaysRemainingDays(club.goalDeadline);
 

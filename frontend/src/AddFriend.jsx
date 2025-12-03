@@ -21,17 +21,25 @@ function AddFriend() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Handle save profile from edit modal
-  const handleSaveProfile = async (updatedData) => {
+  const handleSaveProfile = async (payload) => {
     try {
-      const { name, email, bio, avatarFile, removeAvatar } = updatedData;
+      console.log("Received Payload in handleSaveProfile:", payload);
+      const { name, email, avatarFile, removeAvatar, profile } = payload;
       
+      // Logging profile data for further inspection
+      console.log("Profile:", profile);
+      console.log("Profile bio:", profile?.bio);
+      console.log("Profile username:", profile?.username);
+
+      const bio = profile?.bio || null; // Ensure bio is safely accessed from profile
+
+      // Sending data to updateProfile
       await updateProfile(user.id, {
         name,
         email,
         profile: {
-          bio,
-          fullName: name,
-          username: user.profile?.username || `user_${user.id}`,
+          bio,               // Pass the bio correctly
+          username: profile?.username || '',  // Ensure username is passed properly
         },
       });
 
@@ -40,14 +48,13 @@ function AddFriend() {
       } else if (removeAvatar) {
         await updateProfile(user.id, {
           profile: {
-            bio,
-            fullName: name,
-            username: user.profile?.username || `user_${user.id}`,
+            bio,               // Pass bio if removing avatar as well
+            username: profile?.username || '',  // Ensure username is passed
             profilePicture: null,
           },
         });
       }
-      
+
       setIsEditModalOpen(false);
       if (returnPath) {
         navigate(returnPath);
@@ -56,6 +63,7 @@ function AddFriend() {
       console.error("Error updating profile:", error);
     }
   };
+
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
@@ -177,13 +185,14 @@ function AddFriend() {
   const hasReceivedRequest = (userId) => receivedRequests.includes(userId);
   const isSending = (userId) => sendingRequests.has(userId);
 
-  // Filter users based on search query (case-insensitive search by name or username)
+  // Filter users based on search query (case-insensitive search by username)
   const filteredUsers = users.filter((user) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
-    const name = (user.name || "").toLowerCase();
-    const username = (user.profile?.username || "").toLowerCase();
-    return name.includes(query) || username.includes(query);
+    const username =
+      (user?.profile?.username || user?.username || "").toLowerCase();
+
+    return username.includes(query);
   });
 
   // Loading state
@@ -296,80 +305,78 @@ function AddFriend() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredUsers.map((otherUser) => {
-                const avatarSrc = getAvatarSrc(otherUser.profile?.profilePicture);
-                const alreadyFriend = isFriend(otherUser.id);
-                const pending = isPending(otherUser.id);
-                const received = hasReceivedRequest(otherUser.id);
-                const sending = isSending(otherUser.id);
-                
-                return (
-                  <div
-                    key={otherUser.id}
-                    className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 flex flex-col"
-                  >
-                    <div className="flex items-center mb-4">
-                      <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg mr-4">
-                        {avatarSrc ? (
-                          <img src={avatarSrc} alt={otherUser.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                            <span className="text-xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
-                              {otherUser.name?.charAt(0).toUpperCase() || "?"}
-                            </span>
-                          </div>
-                        )}
+                  const avatarSrc = getAvatarSrc(otherUser.profile?.profilePicture);
+                  const alreadyFriend = isFriend(otherUser.id);
+                  const pending = isPending(otherUser.id);
+                  const received = hasReceivedRequest(otherUser.id);
+                  const sending = isSending(otherUser.id);
+
+                  return (
+                    <div key={otherUser.id}
+                      className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 flex flex-col"
+                    >
+                      <div className="flex items-center mb-4">
+                        <div className="w-16 h-16 rounded-full border-2 border-[#d7c4a9] overflow-hidden shadow-lg mr-4">
+                          {avatarSrc ? (
+                            <img
+                              src={avatarSrc}
+                              alt={otherUser?.profile?.username || otherUser?.username || "avatar"}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
+                              <span className="text-xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                                {otherUser?.profile?.username?.charAt(0)?.toUpperCase()
+                                  || otherUser?.username?.charAt(0)?.toUpperCase()
+                                  || "?"}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3
+                            className="text-lg font-semibold text-gray-800 truncate"
+                            style={{ fontFamily: "Times New Roman, serif" }}
+                          >
+                            {otherUser?.profile?.username || otherUser?.username || ""}
+                          </h3>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3
-                          className="text-lg font-semibold text-gray-800 truncate"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          {otherUser.name}
-                        </h3>
-                        <p
-                          className="text-sm text-gray-500 truncate"
-                          style={{ fontFamily: "Times New Roman, serif" }}
-                        >
-                          @{otherUser.profile?.username || `user_${otherUser.id}`}
+
+                      {otherUser.profile?.bio && (
+                        <p className="text-xs text-gray-600 mb-4 line-clamp-2"
+                          style={{ fontFamily: "Times New Roman, serif" }}>
+                          {otherUser.profile.bio}
                         </p>
-                      </div>
-                    </div>
-                    
-                    {otherUser.profile?.bio && (
-                      <p
-                        className="text-xs text-gray-600 mb-4 line-clamp-2"
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddFriend(otherUser.id)}
+                        disabled={alreadyFriend || pending || received || sending}
+                        className={`w-full px-4 py-2 rounded border transition-colors ${
+                          alreadyFriend
+                            ? "border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed"
+                            : pending || received || sending
+                            ? "border-[#ddcdb7] bg-[#f7ecda] text-gray-600 cursor-not-allowed"
+                            : "border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-gray-800"
+                        }`}
                         style={{ fontFamily: "Times New Roman, serif" }}
                       >
-                        {otherUser.profile.bio}
-                      </p>
-                    )}
-                    
-                    <button
-                      type="button"
-                      onClick={() => handleAddFriend(otherUser.id)}
-                      disabled={alreadyFriend || pending || received || sending}
-                      className={`w-full px-4 py-2 rounded border transition-colors ${
-                        alreadyFriend
-                          ? "border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed"
-                          : pending || received || sending
-                          ? "border-[#ddcdb7] bg-[#f7ecda] text-gray-600 cursor-not-allowed"
-                          : "border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-gray-800"
-                      }`}
-                      style={{ fontFamily: "Times New Roman, serif" }}
-                    >
-                      {alreadyFriend
-                        ? "Already Friends"
-                        : pending
-                        ? "Friend Request Sent"
-                        : received
-                        ? "Request Pending"
-                        : sending
-                        ? "Sending..."
-                        : "Add"}
-                    </button>
-                  </div>
-                );
-              })}
+                        {alreadyFriend
+                          ? "Already Friends"
+                          : pending
+                          ? "Friend Request Sent"
+                          : received
+                          ? "Request Pending"
+                          : sending
+                          ? "Sending..."
+                          : "Add"}
+                      </button>
+                    </div>
+                  );
+                })}
+
               </div>
             )}
           </div>

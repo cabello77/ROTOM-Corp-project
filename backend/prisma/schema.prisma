@@ -13,6 +13,7 @@ model User {
   name                 String
   email                String                @unique
   password             String
+  username             String                @unique
   createdAt            DateTime              @default(now())
   clubs                Club[]
   receivedInvitations  ClubInvitation[]      @relation("Invitee")
@@ -51,35 +52,39 @@ enum FriendStatus {
 
 model Profile {
   id             Int      @id @default(autoincrement())
-  username       String   @unique
   fullName       String
   profilePicture String?
   bio            String?
+  username       String?  @unique
   joinDate       DateTime @default(now())
   userId         Int      @unique
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Club {
-  id              Int             @id @default(autoincrement())
-  name            String
-  description     String?
-  createdAt       DateTime        @default(now())
-  creatorId       Int
-  creator         User            @relation(fields: [creatorId], references: [id])
-  currentBookId   String?
-  currentBookData Json?
-  assignedAt      DateTime?
-  readingGoal     String?
-  readingGoalPageStart Int?
-  readingGoalPageEnd   Int?
-  goalDeadline    String?
-  members         ClubMember[]
-  discussionPosts DiscussionPost[]
-  invitations     ClubInvitation[]
-  messages          Message[]
-  pastReads       ClubBookHistory[]
+  id                    Int               @id @default(autoincrement())
+  name                  String
+  description           String?
+  createdAt             DateTime          @default(now())
+  creatorId             Int
+  creator               User              @relation(fields: [creatorId], references: [id])
+
+  currentBookId         String?
+  currentBookData       Json?
+  assignedAt            DateTime?
+
+  readingGoal           String?
+  readingGoalPageStart  Int?
+  readingGoalPageEnd    Int?
+  totalPages            Int?              @default(0)
+  goalDeadline          String?
+  members               ClubMember[]
+  discussionPosts       DiscussionPost[]
+  invitations           ClubInvitation[]
+  messages              Message[]
+  pastReads             ClubBookHistory[]
 }
+
 
 model ClubBookHistory {
   id          Int      @id @default(autoincrement())

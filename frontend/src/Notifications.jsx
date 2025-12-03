@@ -172,9 +172,10 @@ function Notifications() {
     setProcessing(prev => new Set(prev).add(requesterId));
     
     try {
-      await respondToFriendRequest(user.id, requesterId, "DECLINED");
-      // Remove the request from the list
+      await respondToFriendRequest(user.id, requesterId, "REJECTED");  // Change to "REJECTED"
+      // Remove the rejected request from the list
       setReceivedRequests(prev => prev.filter(req => req.user.id !== requesterId));
+      console.log("Friend request rejected!");
     } catch (err) {
       console.error("Error rejecting friend request:", err);
       console.error("Failed to reject friend request:", err.message || err);
@@ -186,6 +187,9 @@ function Notifications() {
       });
     }
   };
+
+
+
 
   // Loading state
   if (isLoading || loading) {

@@ -546,7 +546,6 @@ app.post(
 app.post("/api/signup", async (req, res) => {
   try {
     const { fullName, name, username, email, password } = req.body;
-
     const actualFullName = fullName || name;
 
     console.log("Signup body:", req.body);
@@ -555,8 +554,8 @@ app.post("/api/signup", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Check username availability
-    const existingUsername = await prisma.profile.findUnique({
+    // Check username availability in User model
+    const existingUsername = await prisma.user.findUnique({
       where: { username }
     });
 
@@ -575,7 +574,7 @@ app.post("/api/signup", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user and profile
     const user = await prisma.user.create({
       data: {
         name: actualFullName,
@@ -585,7 +584,6 @@ app.post("/api/signup", async (req, res) => {
         profile: {
           create: {
             fullName: actualFullName,
-            username,
             bio: "",
             profilePicture: null,
             joinDate: new Date()
@@ -595,15 +593,15 @@ app.post("/api/signup", async (req, res) => {
       include: { profile: true }
     });
 
-
-    res.json({ user });
+    res.status(201).json({ user });
   } catch (err) {
     console.error("Signup error:", err);
+    if (err.code === 'P2002') {
+      return res.status(400).json({ error: "Email or Username already exists" });
+    }
     res.status(500).json({ error: "Signup failed" });
   }
 });
-
-
 
 // User Login Route
 app.post('/api/login', async (req, res) => {

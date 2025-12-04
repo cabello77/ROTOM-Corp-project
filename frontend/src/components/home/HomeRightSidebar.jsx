@@ -27,7 +27,7 @@ export default function HomeRightSidebar({
               <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
                 <span
                   className="text-2xl text-gray-700"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 >
                   {user.name?.charAt(0).toUpperCase()}
                 </span>
@@ -40,13 +40,13 @@ export default function HomeRightSidebar({
           <div>
             <h2
               className="text-xl font-semibold text-gray-800"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               {user.name}
             </h2>
             <p
               className="text-sm text-gray-500 mt-1"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               {user.email}
             </p>
@@ -56,7 +56,7 @@ export default function HomeRightSidebar({
           <Link
             to={`/profile/${user.id}`}
             className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             View Profile
           </Link>
@@ -64,7 +64,7 @@ export default function HomeRightSidebar({
           {/* MEMBER INFO */}
           <div
             className="text-sm text-gray-600 space-y-1"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             <p>Member since - {memberSince}</p>
             <p>
@@ -80,7 +80,7 @@ export default function HomeRightSidebar({
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
         <h2
           className="text-lg font-semibold text-gray-800"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           My Bookshelf
         </h2>
@@ -94,7 +94,7 @@ export default function HomeRightSidebar({
           type="button"
           onClick={onLogout}
           className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Logout
         </button>

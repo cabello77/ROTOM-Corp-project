@@ -88,7 +88,7 @@ export default function UserProfile() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F7F1E2" }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-gray-600" style={{}}>
             Loading profile...
           </p>
         </div>
@@ -113,7 +113,7 @@ export default function UserProfile() {
       <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
+            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Dancing Script, cursive" }}>
               Plotline
             </div>
             <UserDropdown
@@ -138,7 +138,7 @@ export default function UserProfile() {
                   <img src={avatarSrc} alt={fullProfile.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                    <span className="text-4xl text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+                    <span className="text-4xl text-gray-700 font-semibold" style={{}}>
                       {fullProfile.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -148,13 +148,13 @@ export default function UserProfile() {
               <div className="flex-1">
                 <h1
                   className="text-3xl font-semibold text-gray-800 mb-2"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 >
                   {fullProfile.name}
                 </h1>
 
                 {fullProfile.profile?.bio && (
-                  <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                  <p className="text-gray-700" style={{}}>
                     {fullProfile.profile.bio}
                   </p>
                 )}
@@ -164,14 +164,14 @@ export default function UserProfile() {
 
           {/* Bookshelf Section */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{}}>
               Bookshelf
             </h2>
 
             {/* Current Reads */}
             {currentClubs.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+                <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{}}>
                   Currently Reading
                 </h3>
 
@@ -189,10 +189,10 @@ export default function UserProfile() {
                           className="w-12 h-16 object-cover rounded mr-4" // Adjusted the margin to position it correctly
                         />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <h4 className="font-semibold text-gray-800" style={{}}>
                             {bookTitle}
                           </h4>
-                          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <p className="text-sm text-gray-600" style={{}}>
                             Reading with <strong>{club.name}</strong>
                           </p>
                         </div>
@@ -205,12 +205,12 @@ export default function UserProfile() {
 
             {/* Past Reads */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+              <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{}}>
                 Past Reads
               </h3>
 
               {fullProfile.pastReads?.length === 0 ? (
-                <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                <p className="text-sm text-gray-600" style={{}}>
                   No past reads yet.
                 </p>
               ) : (
@@ -220,7 +220,7 @@ export default function UserProfile() {
                       key={entry.bookId}
                       className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed]
                                 rounded"
-                      style={{ fontFamily: "Times New Roman, serif" }}
+                      style={{}}
                     >
                       <img
                         src={entry.bookData?.cover || ""}
@@ -250,7 +250,7 @@ export default function UserProfile() {
 
           {/* Book Clubs */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{}}>
               Book Clubs
             </h2>
 
@@ -260,7 +260,7 @@ export default function UserProfile() {
                   <div
                     key={club.id}
                     className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default"
-                    style={{ fontFamily: "Times New Roman, serif" }}
+                    style={{}}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-gray-800">{club.name}</span> {/* Make the club name bold */}
@@ -272,7 +272,7 @@ export default function UserProfile() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+              <p className="text-gray-600" style={{}}>
                 You are not part of any book clubs yet.
               </p>
             )}

@@ -69,7 +69,7 @@ export default function DMs() {
           <div className="flex justify-between items-center py-6">
             <div
               className="text-6xl md:text-8xl italic"
-              style={{ fontFamily: "Kapakana, cursive" }}
+              style={{ fontFamily: "Dancing Script, cursive" }}
             >
               Plotline
             </div>
@@ -84,7 +84,7 @@ export default function DMs() {
       <div className="max-w-7xl mx-auto p-6 w-full">
         <h1
           className="text-2xl font-semibold text-gray-800 mb-6"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Messages
         </h1>
@@ -97,7 +97,7 @@ export default function DMs() {
             <div className="bg-white rounded-xl border border-[#e3d8c8] shadow-sm p-4 space-y-2">
               <h2
                 className="text-lg font-semibold text-gray-800 mb-2"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Your Friends
               </h2>
@@ -137,7 +137,7 @@ export default function DMs() {
 
                       <p
                         className="text-sm font-medium text-gray-800"
-                        style={{ fontFamily: "Times New Roman, serif" }}
+                        style={{}}
                       >
                         {f.name}
                       </p>
@@ -155,7 +155,7 @@ export default function DMs() {
             ) : (
               <div
                 className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-10 text-center text-gray-600"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Select a friend to start messaging.
               </div>

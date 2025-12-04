@@ -99,7 +99,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
       <div className="flex justify-between items-center mb-3">
         <h2
           className="text-lg font-semibold"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Live Chat
         </h2>
@@ -114,7 +114,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
         <div className="flex-1 flex items-center justify-center bg-[#faf6ed] border rounded-md p-4">
           <p
             className="text-sm text-gray-600 text-center"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Join this club to participate in the live chat.
           </p>
@@ -161,9 +161,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
               onClick={handleSend}
               className="px-4 py-2 rounded-md text-white hover:opacity-90 text-sm"
               style={{
-                backgroundColor: "#774C30",
-                fontFamily: "Times New Roman, serif",
-              }}
+                backgroundColor: "#774C30",}}
             >
               Send
             </button>

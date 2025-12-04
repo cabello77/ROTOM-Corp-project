@@ -44,7 +44,7 @@ export default function HomeCenterFeed({ allClubs = [] }) {
               type="text"
               placeholder="Search posts, clubs, or friends"
               className="w-full border border-[#ddcdb7] rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
-              style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#FDFBF6" }}
+              style={{backgroundColor: "#FDFBF6" }}
             />
           </div>
           <Link
@@ -66,7 +66,7 @@ export default function HomeCenterFeed({ allClubs = [] }) {
       {/* Example Feed Blocks */}
       {allClubs.length === 0 && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
-          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-sm text-gray-600" style={{}}>
             Join a book club to see curated discussions here.
           </p>
         </div>
@@ -76,7 +76,7 @@ export default function HomeCenterFeed({ allClubs = [] }) {
       <RecentThreadsByClub clubIds={clubIds} clubMap={clubMap} limit={3} />
 
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 text-center">
-        <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: "Times New Roman, serif" }}>
+        <p className="text-sm text-gray-600 font-medium" style={{}}>
           You're all caught up! :)
         </p>
       </div>

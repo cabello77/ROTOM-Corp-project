@@ -94,7 +94,7 @@ function ClubDiscover() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
           <p
             className="text-gray-600"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Loading clubs...
           </p>
@@ -111,7 +111,7 @@ function ClubDiscover() {
           <div className="flex justify-between items-center py-6">
             <div
               className="text-6xl md:text-8xl italic"
-              style={{ fontFamily: "Kapakana, cursive" }}
+              style={{ fontFamily: "Dancing Script, cursive" }}
             >
               Plotline
             </div>
@@ -132,7 +132,7 @@ function ClubDiscover() {
           <section className="flex flex-col items-center">
             <h1
               className="text-3xl font-semibold text-center mb-8"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Discover Book Clubs
             </h1>
@@ -140,7 +140,7 @@ function ClubDiscover() {
             {clubs.length === 0 ? (
               <p
                 className="text-center text-gray-600"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 No clubs found yet. Be the first to create one!
               </p>
@@ -154,20 +154,20 @@ function ClubDiscover() {
                     <div>
                       <h2
                         className="text-xl font-semibold mb-2"
-                        style={{ fontFamily: "Times New Roman, serif" }}
+                        style={{}}
                       >
                         {club.name}
                       </h2>
                       <p
                         className="text-sm text-gray-600 mb-3"
-                        style={{ fontFamily: "Times New Roman, serif" }}
+                        style={{}}
                       >
                         {club.description || "No description available."}
                       </p>
                     </div>
                     <div
                       className="mt-2 text-sm text-gray-500"
-                      style={{ fontFamily: "Times New Roman, serif" }}
+                      style={{}}
                     >
                       Created by:{" "}
                       <strong>{club.creator?.name || "Unknown"}</strong>
@@ -177,7 +177,7 @@ function ClubDiscover() {
                     <Link
                       to={`/clubs/${club.id}`}
                       className="mt-4 block w-full text-center px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                      style={{ fontFamily: "Times New Roman, serif" }}
+                      style={{}}
                     >
                       View Book Club
                     </Link>

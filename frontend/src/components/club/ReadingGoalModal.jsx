@@ -43,7 +43,7 @@ export default function ReadingGoalModal({
         <div className="p-6">
           <h2
             className="text-2xl font-semibold text-gray-800 mb-4"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Update Reading Goal
           </h2>
@@ -53,7 +53,7 @@ export default function ReadingGoalModal({
             <div>
               <label
                 className="block text-sm font-medium text-gray-700 mb-1"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Goal (optional)
               </label>
@@ -63,9 +63,7 @@ export default function ReadingGoalModal({
                 onChange={(e) => setEditReadingGoal(e.target.value)}
                 placeholder="Enter reading goal"
                 className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                style={{
-                  fontFamily: "Times New Roman, serif",
-                  backgroundColor: "#FDFBF6",
+                style={{backgroundColor: "#FDFBF6",
                 }}
               />
             </div>
@@ -74,7 +72,7 @@ export default function ReadingGoalModal({
             <div>
               <label
                 className="block text-sm font-medium text-gray-700 mb-2"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Pages
               </label>
@@ -86,13 +84,11 @@ export default function ReadingGoalModal({
                   onChange={(e) => setReadingGoalPageStart(e.target.value)}
                   placeholder="Start"
                   className="w-1/2 border border-[#ddcdb7] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  style={{
-                    fontFamily: "Times New Roman, serif",
-                    backgroundColor: "#FDFBF6",
+                  style={{backgroundColor: "#FDFBF6",
                   }}
                 />
 
-                <span style={{ fontFamily: "Times New Roman, serif" }}>to</span>
+                <span style={{}}>to</span>
 
                 <input
                   type="number"
@@ -100,9 +96,7 @@ export default function ReadingGoalModal({
                   onChange={(e) => setReadingGoalPageEnd(e.target.value)}
                   placeholder="End"
                   className="w-1/2 border border-[#ddcdb7] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                  style={{
-                    fontFamily: "Times New Roman, serif",
-                    backgroundColor: "#FDFBF6",
+                  style={{backgroundColor: "#FDFBF6",
                   }}
                 />
               </div>
@@ -112,7 +106,7 @@ export default function ReadingGoalModal({
             <div>
               <label
                 className="block text-sm font-medium text-gray-700 mb-1"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Deadline
               </label>
@@ -121,9 +115,7 @@ export default function ReadingGoalModal({
                 value={editGoalDeadline}
                 onChange={(e) => setEditGoalDeadline(e.target.value)}
                 className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                style={{
-                  fontFamily: "Times New Roman, serif",
-                  backgroundColor: "#FDFBF6",
+                style={{backgroundColor: "#FDFBF6",
                 }}
               />
             </div>
@@ -133,7 +125,7 @@ export default function ReadingGoalModal({
             <button
               onClick={handleCancel}
               className="px-6 py-2 rounded border border-[#ddcdb7] bg-white hover:bg-gray-50 transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Cancel
             </button>
@@ -141,7 +133,7 @@ export default function ReadingGoalModal({
             <button
               onClick={handleSubmit}
               className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Update
             </button>

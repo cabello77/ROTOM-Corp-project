@@ -99,7 +99,7 @@ function App() {
         <section className="welcome-section">
           <div className="welcome-content">
             <h2 className="welcome-heading">
-              Welcome to  <span className="italic-logo"  style={{ fontFamily: "Kapakana, cursive", fontSize: "75px"}} >  Plotline</span>.
+              Welcome to  <span className="italic-logo"  style={{ fontFamily: "Dancing Script, cursive", fontSize: "75px"}} >  Plotline</span>.
             </h2>
             <p className="welcome-text">
               Reading doesn't have to be a solo journey. Plotline is the community-driven platform built for readers and book clubs. Here stories spark real conversations and connections.

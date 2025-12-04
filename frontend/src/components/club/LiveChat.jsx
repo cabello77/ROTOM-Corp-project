@@ -131,7 +131,7 @@ export default function LiveChat({ clubId, user, isMember, apiBase }) {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 flex flex-col h-[26rem]">
       <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+        <h2 className="text-lg font-semibold" style={{}}>
           Live Chat
         </h2>
         {(loading || connecting) && (

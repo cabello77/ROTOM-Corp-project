@@ -120,7 +120,7 @@ const loadHistory = async (cid) => {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h2 className="text-lg font-semibold text-gray-800" style={{}}>
             {friend?.name}
           </h2>
           <p className="text-xs text-gray-500 italic">Direct Message</p>
@@ -147,9 +147,7 @@ const loadHistory = async (cid) => {
               className={`inline-block max-w-[70%] px-3 py-2 rounded-xl text-sm border`}
               style={{
                 backgroundColor: m.senderId === user.id ? "#efe6d7" : "#ffffff",
-                borderColor: "#ddcdb7",
-                fontFamily: "Times New Roman, serif",
-              }}
+                borderColor: "#ddcdb7",}}
             >
               {m.content}
             </div>
@@ -165,12 +163,12 @@ const loadHistory = async (cid) => {
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Type a message…"
           className="flex-1 border border-[#ddcdb7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#d7bfa2]"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         />
         <button
           onClick={handleSend}
           className="px-4 py-2 rounded-lg bg-[#774C30] text-white hover:opacity-90 text-sm"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Send
         </button>

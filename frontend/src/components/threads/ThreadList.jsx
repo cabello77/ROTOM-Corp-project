@@ -85,12 +85,11 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>Discussions</h3>
+        <h3 className="text-base font-semibold text-gray-800">Discussions</h3>
         {canCreate ? (
           <button
             type="button"
             className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-sm"
-            style={{ fontFamily: 'Times New Roman, serif' }}
             onClick={() => setModalOpen(true)}
           >
             New Discussion
@@ -100,14 +99,13 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
             type="button"
             className="px-3 py-2 rounded border border-[#ddcdb7] bg-white text-sm opacity-70 cursor-not-allowed"
             title="Only hosts can create threads right now."
-            style={{ fontFamily: 'Times New Roman, serif' }}
           >
             New Discussion
           </button>
         )}
       </div>
       {items.length === 0 && !loading && (
-        <div className="text-center py-3 border border-[#e6dac8] bg-[#efe6d7] rounded" style={{ fontFamily: 'Times New Roman, serif' }}>
+        <div className="text-center py-3 border border-[#e6dac8] bg-[#efe6d7] rounded" style={{}}>
           <p className="text-sm text-gray-600">No discussions yet</p>
         </div>
       )}
@@ -134,7 +132,7 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
       </div>
       <div ref={scrollSentinel} />
       {loading && (
-        <p className="text-xs text-gray-500" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
+        <p className="text-xs text-gray-500" style={{}}>Loading…</p>
       )}
 
       <ThreadCreateModal

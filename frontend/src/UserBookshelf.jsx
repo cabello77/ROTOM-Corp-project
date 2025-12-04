@@ -39,7 +39,7 @@ export default function UserBookshelf({ userId }) {
   // Loading state
   if (loading) {
     return (
-      <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+      <p className="text-sm text-gray-600" style={{}}>
         Loading bookshelf...
       </p>
     );
@@ -68,7 +68,7 @@ export default function UserBookshelf({ userId }) {
       <div className="space-y-8">
         {/* CURRENT READS */}
         <section>
-          <h3 className="text-base font-semibold text-gray-800 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h3 className="text-base font-semibold text-gray-800 mb-3" style={{}}>
             Current Reads
           </h3>
 
@@ -80,7 +80,7 @@ export default function UserBookshelf({ userId }) {
                 <div
                   key={entry.bookId}
                   className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                   onClick={() => openBookModal(entry)}
                 >
                   <img
@@ -100,7 +100,7 @@ export default function UserBookshelf({ userId }) {
 
         {/* PAST READS */}
         <section>
-          <h3 className="text-base font-semibold text-gray-800 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h3 className="text-base font-semibold text-gray-800 mb-3" style={{}}>
             Past Reads
           </h3>
 
@@ -112,7 +112,7 @@ export default function UserBookshelf({ userId }) {
                 <div
                   key={entry.bookId}
                   className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                   onClick={() => openBookModal(entry)}
                 >
                   <img

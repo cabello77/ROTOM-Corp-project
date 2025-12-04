@@ -82,7 +82,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h2 className="text-xl font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+            <h2 className="text-xl font-semibold" style={{}}>
               Edit Profile
             </h2>
           </div>
@@ -95,7 +95,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
                 ) : (
-                  <span className="text-4xl text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                  <span className="text-4xl text-gray-600" style={{}}>
                     {user.name.charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -104,7 +104,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 <div
                   className="w-full bg-gray-200 border border-gray-400 rounded px-4 py-2 text-center cursor-pointer hover:bg-gray-300 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 >
                   {isUploading ? "Uploading..." : "Upload Profile Pic"}
                 </div>
@@ -113,7 +113,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
 
             <div className="flex-grow space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
                   Display Name
                 </label>
                 <input
@@ -122,12 +122,12 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                   value={form.name}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
                   Email
                 </label>
                 <input
@@ -136,12 +136,12 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                   value={form.email}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
                   Bio
                 </label>
                 <textarea
@@ -150,7 +150,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                   onChange={handleChange}
                   rows={3}
                   className="w-full border border-gray-300 rounded p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                   placeholder="Tell the community a little about yourself"
                 />
               </div>
@@ -164,7 +164,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
               type="button"
               onClick={handleCancel}
               className="text-gray-700 px-6 py-2 rounded border border-gray-400 hover:bg-gray-200 transition-opacity"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
               disabled={isSaving}
             >
               Cancel
@@ -173,7 +173,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
               type="button"
               onClick={handleSave}
               className="text-gray-800 px-6 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity font-medium"
-              style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#EFE6D7" }}
+              style={{backgroundColor: "#EFE6D7" }}
               disabled={isSaving}
             >
               {isSaving ? "Saving..." : "Done"}

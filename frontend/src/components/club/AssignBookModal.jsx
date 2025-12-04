@@ -32,7 +32,7 @@ export default function AssignBookModal({
           <div className="flex justify-between items-center mb-4">
             <h2
               className="text-2xl font-semibold text-gray-800"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Assign Book to Club
             </h2>
@@ -67,15 +67,13 @@ export default function AssignBookModal({
                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 placeholder="Search for a book..."
                 className="flex-1 border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                style={{
-                  fontFamily: "Times New Roman, serif",
-                  backgroundColor: "#FDFBF6",
+                style={{backgroundColor: "#FDFBF6",
                 }}
               />
               <button
                 onClick={handleSearch}
                 className="px-4 py-2 rounded-lg border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Search
               </button>
@@ -93,7 +91,7 @@ export default function AssignBookModal({
                         ? "bg-[#e3d5c2] border-[#774C30]"
                         : "bg-[#faf6ed] border-[#ddcdb7] hover:bg-[#efe6d7]"
                     }`}
-                    style={{ fontFamily: "Times New Roman, serif" }}
+                    style={{}}
                   >
                     <div className="flex gap-3">
                       {book.cover && (
@@ -128,7 +126,7 @@ export default function AssignBookModal({
             <div className="border-t border-[#e3d8c8] pt-6">
               <h3
                 className="text-lg font-semibold text-gray-800 mb-4"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Book Details
               </h3>
@@ -149,9 +147,7 @@ export default function AssignBookModal({
                       })
                     }
                     className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    style={{
-                      fontFamily: "Times New Roman, serif",
-                      backgroundColor: "#FDFBF6",
+                    style={{backgroundColor: "#FDFBF6",
                     }}
                   />
                 </div>
@@ -171,9 +167,7 @@ export default function AssignBookModal({
                       })
                     }
                     className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    style={{
-                      fontFamily: "Times New Roman, serif",
-                      backgroundColor: "#FDFBF6",
+                    style={{backgroundColor: "#FDFBF6",
                     }}
                   />
                 </div>
@@ -193,9 +187,7 @@ export default function AssignBookModal({
                       })
                     }
                     className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    style={{
-                      fontFamily: "Times New Roman, serif",
-                      backgroundColor: "#FDFBF6",
+                    style={{backgroundColor: "#FDFBF6",
                     }}
                   />
                 </div>
@@ -215,9 +207,7 @@ export default function AssignBookModal({
                     }
                     rows={3}
                     className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                    style={{
-                      fontFamily: "Times New Roman, serif",
-                      backgroundColor: "#FDFBF6",
+                    style={{backgroundColor: "#FDFBF6",
                     }}
                   ></textarea>
                 </div>
@@ -238,9 +228,7 @@ export default function AssignBookModal({
                         })
                       }
                       className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                      style={{
-                        fontFamily: "Times New Roman, serif",
-                        backgroundColor: "#FDFBF6",
+                      style={{backgroundColor: "#FDFBF6",
                       }}
                     />
                   </div>
@@ -259,9 +247,7 @@ export default function AssignBookModal({
                         })
                       }
                       className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                      style={{
-                        fontFamily: "Times New Roman, serif",
-                        backgroundColor: "#FDFBF6",
+                      style={{backgroundColor: "#FDFBF6",
                       }}
                     />
                   </div>
@@ -271,7 +257,7 @@ export default function AssignBookModal({
                 <div className="border-t border-[#e3d8c8] pt-4 mt-4">
                   <h4
                     className="text-base font-semibold text-gray-800 mb-4"
-                    style={{ fontFamily: "Times New Roman, serif" }}
+                    style={{}}
                   >
                     Reading Goal
                   </h4>
@@ -288,9 +274,7 @@ export default function AssignBookModal({
                         onChange={(e) => setReadingGoal(e.target.value)}
                         placeholder="Enter reading goal"
                         className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        style={{
-                          fontFamily: "Times New Roman, serif",
-                          backgroundColor: "#FDFBF6",
+                        style={{backgroundColor: "#FDFBF6",
                         }}
                       />
                     </div>
@@ -309,13 +293,11 @@ export default function AssignBookModal({
                           }
                           placeholder="Start"
                           className="w-1/2 border border-[#ddcdb7] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          style={{
-                            fontFamily: "Times New Roman, serif",
-                            backgroundColor: "#FDFBF6",
+                          style={{backgroundColor: "#FDFBF6",
                           }}
                         />
 
-                        <span style={{ fontFamily: "Times New Roman, serif" }}>
+                        <span style={{}}>
                           to
                         </span>
 
@@ -327,9 +309,7 @@ export default function AssignBookModal({
                           }
                           placeholder="End"
                           className="w-1/2 border border-[#ddcdb7] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                          style={{
-                            fontFamily: "Times New Roman, serif",
-                            backgroundColor: "#FDFBF6",
+                          style={{backgroundColor: "#FDFBF6",
                           }}
                         />
                       </div>
@@ -345,9 +325,7 @@ export default function AssignBookModal({
                         value={goalDeadline}
                         onChange={(e) => setGoalDeadline(e.target.value)}
                         className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
-                        style={{
-                          fontFamily: "Times New Roman, serif",
-                          backgroundColor: "#FDFBF6",
+                        style={{backgroundColor: "#FDFBF6",
                         }}
                       />
                     </div>

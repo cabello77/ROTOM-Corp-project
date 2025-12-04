@@ -1,4 +1,4 @@
-﻿import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";
@@ -190,7 +190,7 @@ export default function ClubHome() {
     }
   };
 
-  // ⭐ CLEAN + FINAL ⭐
+
   const handleUpdateGoal = async ({
     readingGoal,
     goalDeadline,
@@ -245,7 +245,6 @@ export default function ClubHome() {
     });
   };
 
-  // ⭐ CLEAN + FINAL — ASSIGN BOOK WITH PAGE RANGE ⭐
   const handleAssignBook = async ({
     bookDetails,
     readingGoal,
@@ -372,7 +371,7 @@ export default function ClubHome() {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: "#F7F1E2" }}
       >
-        <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+        <p className="text-gray-700" style={{}}>
           Loading...
         </p>
       </div>

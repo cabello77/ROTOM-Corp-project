@@ -3,7 +3,7 @@ export default function MembersRoles({ members = [] }) {
     <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
       <h2
         className="text-lg font-semibold text-gray-800"
-        style={{ fontFamily: "Times New Roman, serif" }}
+        style={{}}
       >
         Members & Roles
       </h2>
@@ -26,13 +26,13 @@ export default function MembersRoles({ members = [] }) {
                 <div>
                   <p
                     className="text-sm text-gray-800"
-                    style={{ fontFamily: "Times New Roman, serif" }}
+                    style={{}}
                   >
                     {displayName}
                   </p>
                   <p
                     className="text-xs text-gray-600"
-                    style={{ fontFamily: "Times New Roman, serif" }}
+                    style={{}}
                   >
                     Joined: {new Date(m.joinedAt).toLocaleDateString()}
                   </p>
@@ -47,7 +47,7 @@ export default function MembersRoles({ members = [] }) {
         ) : (
           <div
             className="text-center py-2 border border-[#e6dac8] bg-[#efe6d7] rounded"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             <p className="text-sm text-gray-600">No members yet.</p>
           </div>

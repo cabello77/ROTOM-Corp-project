@@ -18,7 +18,7 @@
 .app-logo {
   font-size: 4rem;
   font-style: italic;
-  font-family: 'Kapakana, cursive';
+  font-family: 'Dancing Script, cursive';
   text-decoration: none;
   color: white;
   transition: opacity 0.3s;
@@ -40,7 +40,7 @@
   transition: opacity 0.3s;
   color: #1f2937;
   background-color: #EFE6D7;
-  font-family: 'Times New Roman, serif';
+  /* Inherits Open Sans from body */
   text-decoration: none;
 }
 

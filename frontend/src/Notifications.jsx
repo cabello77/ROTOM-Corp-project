@@ -197,7 +197,7 @@ function Notifications() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F7F1E2" }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-gray-600" style={{}}>
             Loading notifications...
           </p>
         </div>
@@ -221,7 +221,7 @@ function Notifications() {
       <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
+            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Dancing Script, cursive" }}>
               Plotline
             </div>
             <div className="flex items-center space-x-3">
@@ -239,7 +239,7 @@ function Notifications() {
         <div className="max-w-4xl mx-auto">
           <h1
             className="text-3xl font-semibold mb-8"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Notifications
           </h1>
@@ -247,7 +247,7 @@ function Notifications() {
           {/* Empty State - Show only if ALL notification types are empty */}
           {receivedRequests.length === 0 && sentRequests.length === 0 && clubInvitations.length === 0 ? (
             <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-8 text-center">
-              <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+              <p className="text-gray-600" style={{}}>
                 No notifications.
               </p>
             </div>
@@ -258,7 +258,7 @@ function Notifications() {
             <div className="mb-8">
               <h2
                 className="text-xl font-semibold text-gray-800 mb-4"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Friend Requests Received
               </h2>
@@ -276,18 +276,18 @@ function Notifications() {
                             <img src={avatarSrc} alt={requester.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                              <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                              <span className="text-2xl text-gray-700" style={{}}>
                                 {requester.name?.charAt(0).toUpperCase() || "?"}
                               </span>
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{}}>
                             {requester.name}
                           </h3>
                           {/* Removed @username */}
-                          <p className="text-sm text-gray-700 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <p className="text-sm text-gray-700 mb-4" style={{}}>
                             wants to be your friend
                           </p>
                           <div className="flex space-x-3">
@@ -296,7 +296,7 @@ function Notifications() {
                               onClick={() => handleAccept(requester.id)}
                               disabled={isProcessing}
                               className="px-6 py-2 rounded border border-green-600 bg-green-50 hover:bg-green-100 text-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                              style={{ fontFamily: "Times New Roman, serif" }}
+                              style={{}}
                             >
                               {isProcessing ? "Processing..." : "Accept"}
                             </button>
@@ -305,7 +305,7 @@ function Notifications() {
                               onClick={() => handleReject(requester.id)}
                               disabled={isProcessing}
                               className="px-6 py-2 rounded border border-red-600 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                              style={{ fontFamily: "Times New Roman, serif" }}
+                              style={{}}
                             >
                               {isProcessing ? "Processing..." : "Reject"}
                             </button>
@@ -324,7 +324,7 @@ function Notifications() {
             <div className="mb-8">
               <h2
                 className="text-xl font-semibold text-gray-800 mb-4"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Pending Friend Requests Sent
               </h2>
@@ -341,25 +341,25 @@ function Notifications() {
                             <img src={avatarSrc} alt={friendUser.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                              <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                              <span className="text-2xl text-gray-700" style={{}}>
                                 {friendUser.name?.charAt(0).toUpperCase() || "?"}
                               </span>
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{}}>
                             {friendUser.name}
                           </h3>
                           {/* Removed @username */}
-                          <p className="text-sm text-gray-700 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <p className="text-sm text-gray-700 mb-4" style={{}}>
                             Waiting for response
                           </p>
                           <div className="flex items-center justify-center px-4 py-2 rounded border border-[#ddcdb7] bg-[#f7ecda] text-gray-600 w-fit">
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-sm" style={{ fontFamily: "Times New Roman, serif" }}>
+                            <span className="text-sm" style={{}}>
                               Request Pending
                             </span>
                           </div>
@@ -377,7 +377,7 @@ function Notifications() {
             <div className="mb-8">
               <h2
                 className="text-xl font-semibold text-gray-800 mb-4"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Book Club Invitations
               </h2>
@@ -396,18 +396,18 @@ function Notifications() {
                             <img src={avatarSrc} alt={inviter.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                              <span className="text-2xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                              <span className="text-2xl text-gray-700" style={{}}>
                                 {inviter.name?.charAt(0).toUpperCase() || "?"}
                               </span>
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-1" style={{}}>
                             {inviter.name}
                           </h3>
                           {/* Removed @username */}
-                          <p className="text-sm text-gray-700 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+                          <p className="text-sm text-gray-700 mb-4" style={{}}>
                             invited you to join <span className="font-semibold">{club.name}</span>
                           </p>
                           <div className="flex space-x-3">
@@ -416,7 +416,7 @@ function Notifications() {
                               onClick={() => handleAcceptClubInvitation(club.id, invitation.id)}
                               disabled={isProcessing}
                               className="px-6 py-2 rounded border border-green-600 bg-green-50 hover:bg-green-100 text-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                              style={{ fontFamily: "Times New Roman, serif" }}
+                              style={{}}
                             >
                               {isProcessing ? "Processing..." : "Accept"}
                             </button>
@@ -425,7 +425,7 @@ function Notifications() {
                               onClick={() => handleRejectClubInvitation(club.id, invitation.id)}
                               disabled={isProcessing}
                               className="px-6 py-2 rounded border border-red-600 bg-red-50 hover:bg-red-100 text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                              style={{ fontFamily: "Times New Roman, serif" }}
+                              style={{}}
                             >
                               {isProcessing ? "Processing..." : "Reject"}
                             </button>

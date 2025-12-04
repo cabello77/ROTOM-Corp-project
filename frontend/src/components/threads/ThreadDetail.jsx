@@ -37,7 +37,7 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
     <div className="mt-3" style={{ marginLeft: `${Math.min(node.depth, 3) * 16}px` }}>
       <div className="p-3 rounded border border-[#e6dac8] bg-[#faf6ed]">
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>
+          <p className="text-xs text-gray-600" style={{}}>
             {node.author?.name || 'Unknown'} · {new Date(node.createdAt).toLocaleString()}
           </p>
           <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
             )}
           </div>
         </div>
-        <div className="text-sm text-gray-800 mt-1" style={{ fontFamily: 'Times New Roman, serif' }}>{node.body}</div>
+        <div className="text-sm text-gray-800 mt-1" style={{}}>{node.body}</div>
       </div>
       {replyOpen && (
         <form onSubmit={handleChildReply} className="mt-2 space-y-2" style={{ marginLeft: `${Math.min(node.depth, 3) * 16}px` }}>
@@ -83,7 +83,7 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
             placeholder={locked ? 'Thread is locked' : 'Write a reply…'}
             disabled={!isMember || locked}
             className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-60"
-            style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#FDFBF6' }}
+            style={{backgroundColor: '#FDFBF6' }}
           />
           <div className="flex items-center gap-2 justify-end">
             <button type="button" className="text-xs text-gray-600 hover:underline" onClick={() => { setReplyOpen(false); setReplyText(''); }}>Cancel</button>
@@ -91,7 +91,7 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
               type="submit"
               disabled={!isMember || locked || !replyText.trim()}
               className="px-2 py-1 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-xs disabled:opacity-60"
-              style={{ fontFamily: 'Times New Roman, serif' }}
+              style={{}}
             >
               Post reply
             </button>
@@ -243,7 +243,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
   };
 
   if (!thread) return (
-    <p className="text-sm text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
+    <p className="text-sm text-gray-600" style={{}}>Loading…</p>
   );
 
   return (
@@ -257,11 +257,11 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
             <span className="text-xs px-2 py-1 rounded bg-red-100 border border-red-300 text-red-800">Locked</span>
           )}
         </div>
-        <h4 className="text-lg font-semibold text-gray-800 mt-1" style={{ fontFamily: 'Times New Roman, serif' }}>{thread.title}</h4>
-        <p className="text-xs text-gray-600" style={{ fontFamily: 'Times New Roman, serif' }}>
+        <h4 className="text-lg font-semibold text-gray-800 mt-1" style={{}}>{thread.title}</h4>
+        <p className="text-xs text-gray-600" style={{}}>
           by {thread.author?.name || 'Unknown'} · {new Date(thread.createdAt).toLocaleString()}
         </p>
-        <div className="text-sm text-gray-800 mt-3 whitespace-pre-wrap" style={{ fontFamily: 'Times New Roman, serif' }}>{thread.body}</div>
+        <div className="text-sm text-gray-800 mt-3 whitespace-pre-wrap" style={{}}>{thread.body}</div>
         <div className="mt-2 flex items-center gap-1" title="Vote">
           <button
             type="button"
@@ -284,7 +284,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
             disabled={!isMember || thread.locked}
             title={thread.locked ? 'Thread is locked' : 'Reply'}
             className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-xs disabled:opacity-60"
-            style={{ fontFamily: 'Times New Roman, serif' }}
+            style={{}}
           >
             <span role="img" aria-label="reply">💬</span>
             Reply
@@ -304,14 +304,14 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
               placeholder={thread.locked ? 'Thread is locked' : 'Add a comment…'}
               disabled={!isMember || thread.locked}
               className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-60"
-              style={{ fontFamily: 'Times New Roman, serif', backgroundColor: '#FDFBF6' }}
+              style={{backgroundColor: '#FDFBF6' }}
             />
             <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setComposerOpen(false)}
                 className="px-3 py-2 rounded border border-[#ddcdb7] bg-white text-sm"
-                style={{ fontFamily: 'Times New Roman, serif' }}
+                style={{}}
               >
                 Cancel
               </button>
@@ -319,7 +319,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
                 type="submit"
                 disabled={!isMember || thread.locked || !replyText.trim()}
                 className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-sm disabled:opacity-60"
-                style={{ fontFamily: 'Times New Roman, serif' }}
+                style={{}}
               >
                 Post
               </button>
@@ -348,7 +348,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
                 type="button"
                 className="text-sm text-gray-700 underline"
                 onClick={() => setExpanded(true)}
-                style={{ fontFamily: 'Times New Roman, serif' }}
+                style={{}}
               >
                 Show more comments ({tree.length - initialVisibleCount} more)
               </button>
@@ -357,7 +357,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
                 type="button"
                 className="text-sm text-gray-700 underline"
                 onClick={() => setExpanded(false)}
-                style={{ fontFamily: 'Times New Roman, serif' }}
+                style={{}}
               >
                 Show fewer comments
               </button>
@@ -365,7 +365,7 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
           </div>
         )}
         {loading && (
-          <p className="text-xs text-gray-500" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
+          <p className="text-xs text-gray-500" style={{}}>Loading…</p>
         )}
       </div>
       {/* Composer removed per request; use the Reply button above to add comments via prompt. */}

@@ -188,14 +188,14 @@ export default function ClubRightSidebar({
       {/* Non-member → Join */}
       {!isMember && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{}}>
             Actions
           </h2>
 
           <button
             onClick={onJoinClub}
             className="w-full px-4 py-2 rounded bg-[#d9c5a3] hover:bg-[#cbb894] text-sm"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Join Club
           </button>
@@ -205,7 +205,7 @@ export default function ClubRightSidebar({
       {/* Member tools */}
       {isMember && canManage && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{}}>
             Actions
           </h2>
 
@@ -213,7 +213,7 @@ export default function ClubRightSidebar({
           <button
             onClick={onOpenGoalModal}
             className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Update Reading Goal
           </button>
@@ -221,7 +221,7 @@ export default function ClubRightSidebar({
           <button
             onClick={onInviteMembers}
             className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Invite Members
           </button>
@@ -232,7 +232,7 @@ export default function ClubRightSidebar({
               <button
                 onClick={() => setIsAssignModalOpen(true)}
                 className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Assign Moderator
               </button>
@@ -240,7 +240,7 @@ export default function ClubRightSidebar({
               <button
                 onClick={onDeleteClub}
                 className="w-full px-4 py-2 rounded border border-red-300 bg-red-100 hover:bg-red-200 transition-colors text-sm text-red-700"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 Delete Book Club
               </button>

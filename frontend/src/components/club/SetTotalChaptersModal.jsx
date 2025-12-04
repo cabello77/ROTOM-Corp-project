@@ -49,14 +49,14 @@ export default function SetTotalChaptersModal({
       <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md">
         <h2
           className="text-lg font-semibold mb-4 text-center"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Set Total Chapters
         </h2>
 
         <label
           className="block text-sm text-gray-700 mb-2"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Total Chapters
         </label>
@@ -76,7 +76,7 @@ export default function SetTotalChaptersModal({
             onClick={onClose}
             disabled={loading}
             className="px-4 py-2 rounded border border-[#ddcdb7] bg-[#f5ece0] text-sm"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Cancel
           </button>
@@ -86,7 +86,7 @@ export default function SetTotalChaptersModal({
             onClick={handleSave}
             disabled={loading}
             className="px-4 py-2 rounded bg-[#8b5a2b] text-white text-sm hover:bg-[#73481f] disabled:opacity-60"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             {loading ? "Saving..." : "Save"}
           </button>

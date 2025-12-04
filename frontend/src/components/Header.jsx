@@ -6,7 +6,7 @@ function Header({ buttons = [] }) {
     <header className="app-header">
       <div className="app-header-content">
         <div className="app-header-nav">
-          <Link to="/" className="app-logo" style={{ fontFamily: "Kapakana, cursive", fontSize: "96px"}}>
+          <Link to="/" className="app-logo" style={{ fontFamily: "Dancing Script, cursive", fontSize: "96px"}}>
             Plotline
           </Link>
           <div className="app-nav-buttons">

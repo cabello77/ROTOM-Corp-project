@@ -370,8 +370,14 @@ export default function AssignBookModal({
                       bookDetails,
                       readingGoal,
                       goalDeadline,
-                      readingGoalPageStart: Number(readingGoalPageStart),
-                      readingGoalPageEnd: Number(readingGoalPageEnd),
+                      readingGoalPageStart:
+                        readingGoalPageStart === "" || readingGoalPageStart === null
+                          ? null
+                          : Number(readingGoalPageStart),
+                      readingGoalPageEnd:
+                        readingGoalPageEnd === "" || readingGoalPageEnd === null
+                          ? null
+                          : Number(readingGoalPageEnd),
                     })
                   }
                   className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"

@@ -254,7 +254,7 @@ export default function ClubHome() {
     readingGoalPageEnd,
   }) => {
     try {
-      await assignBookToClub(
+      const updatedClub = await assignBookToClub(
         API_BASE,
         id,
         user.id,
@@ -265,13 +265,46 @@ export default function ClubHome() {
         readingGoalPageEnd
       );
 
-      setCurrentBook(bookDetails);
+      // Update club state with the response - this will update the display immediately
+      setClub(updatedClub);
+
+      // Update current book from the response
+      if (updatedClub.currentBookData) {
+        setCurrentBook(updatedClub.currentBookData);
+      }
+
+      // Update reading goal state from the response (for form state)
+      if (updatedClub.readingGoal) {
+        setReadingGoal(updatedClub.readingGoal);
+      } else {
+        setReadingGoal("");
+      }
+
+      // Update reading goal page range from the response (for form state)
+      if (updatedClub.readingGoalPageStart !== null && updatedClub.readingGoalPageStart !== undefined) {
+        setReadingGoalPageStart(updatedClub.readingGoalPageStart.toString());
+      } else {
+        setReadingGoalPageStart("");
+      }
+      if (updatedClub.readingGoalPageEnd !== null && updatedClub.readingGoalPageEnd !== undefined) {
+        setReadingGoalPageEnd(updatedClub.readingGoalPageEnd.toString());
+      } else {
+        setReadingGoalPageEnd("");
+      }
+
+      // Update goal deadline if present (for form state)
+      if (updatedClub.goalDeadline) {
+        setGoalDeadline(new Date(updatedClub.goalDeadline).toISOString().split("T")[0]);
+      } else {
+        setGoalDeadline("");
+      }
 
       setIsModalOpen(false);
       setSearchQuery("");
       setSearchResults([]);
       setSelectedBook(null);
 
+      // Clear form fields for next use
       setBookDetails({
         title: "",
         authors: "",
@@ -280,11 +313,6 @@ export default function ClubHome() {
         year: "",
         genre: "",
       });
-
-      setReadingGoal("");
-      setGoalDeadline("");
-      setReadingGoalPageStart("");
-      setReadingGoalPageEnd("");
     } catch (err) {
       console.error("Error assigning book:", err);
     }
@@ -304,14 +332,18 @@ export default function ClubHome() {
         return;
       }
 
-      const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
-      const updated = clubRes.data;
-
-      setClub(updated);
-      setCurrentBook(updated.currentRead || null);
-      setReadingGoal(updated.readingGoal || "");
-      setGoalDeadline(updated.goalDeadline || "");
-      setMembers(updated.members || []);
+      // Update club state with the response - this clears reading goal immediately
+      setClub(data);
+      setCurrentBook(null);
+      // Clear reading goal state
+      setReadingGoal("");
+      setGoalDeadline("");
+      setReadingGoalPageStart("");
+      setReadingGoalPageEnd("");
+      
+      // Refresh members to get updated data
+      const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
+      setMembers(membersRes.data);
       setUserProgress(0);
 
     } catch (err) {
@@ -383,8 +415,18 @@ export default function ClubHome() {
                   });
 
                   const data = await res.json();
-                  if (res.ok) setCurrentBook(null);
-                  else console.error("Failed to remove book:", data.error);
+                  if (res.ok) {
+                    // Update club state with the response - this clears reading goal immediately
+                    setClub(data);
+                    setCurrentBook(null);
+                    // Clear reading goal state
+                    setReadingGoal("");
+                    setGoalDeadline("");
+                    setReadingGoalPageStart("");
+                    setReadingGoalPageEnd("");
+                  } else {
+                    console.error("Failed to remove book:", data.error);
+                  }
                 } catch (err) {
                   console.error("Error removing book:", err);
                 }

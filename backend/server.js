@@ -934,6 +934,8 @@ app.post("/api/clubs/:id/book/finish", async (req, res) => {
         currentBookData: null,
         assignedAt: null,
         readingGoal: null,
+        readingGoalPageStart: null,
+        readingGoalPageEnd: null,
         goalDeadline: null,
       },
     });
@@ -981,6 +983,8 @@ app.delete("/api/clubs/:id/book", async (req, res) => {
         currentBookData: null,
         assignedAt: null,
         readingGoal: null,
+        readingGoalPageStart: null,
+        readingGoalPageEnd: null,
         goalDeadline: null,
       },
     });

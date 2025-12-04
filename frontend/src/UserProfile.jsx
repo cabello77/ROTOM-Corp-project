@@ -262,38 +262,62 @@ export default function UserProfile() {
                       ? Math.min(100, Math.max(0, Math.round(club.progressPercent)))
                       : null;
 
+                  const hasReadingGoal = club.readingGoalPageStart != null && club.readingGoalPageEnd != null;
+                  const readingGoalText = hasReadingGoal
+                    ? `Pages ${club.readingGoalPageStart}-${club.readingGoalPageEnd}`
+                    : null;
+
+                  const currentBookTitle = club.currentBookData?.title || null;
+
                   return (
                     <div
                       key={club.id}
-                      className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default space-y-1"
+                      className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default space-y-2"
                       style={{}}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-gray-800">
+                      {/* Book Club Name */}
+                      <div>
+                        <span className="font-bold text-gray-800 text-base">
                           {club.name}
                         </span>
-                        {percent !== null && (
-                          <span className="text-xs text-gray-600">
-                            {percent}%
-                          </span>
-                        )}
                       </div>
 
-                      {club.description && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {club.description}
-                        </p>
+                      {/* Current Book */}
+                      {currentBookTitle && (
+                        <div>
+                          <p className="text-sm text-gray-700">
+                            <span className="font-medium">Current Book:</span> {currentBookTitle}
+                          </p>
+                        </div>
                       )}
 
+                      {/* Reading Goal */}
+                      {readingGoalText && (
+                        <div>
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Reading Goal:</span> {readingGoalText}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Progress Bar */}
                       {percent !== null && (
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
-                          <div
-                            className="h-2 rounded-full transition-all"
-                            style={{
-                              width: `${percent}%`,
-                              backgroundColor: "#774C30",
-                            }}
-                          ></div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600">Progress</span>
+                            <span className="text-xs text-gray-600 font-medium">
+                              {percent}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-2 rounded-full transition-all"
+                              style={{
+                                width: `${percent}%`,
+                                backgroundColor: "#774C30",
+                              }}
+                            ></div>
+                          </div>
                         </div>
                       )}
                     </div>

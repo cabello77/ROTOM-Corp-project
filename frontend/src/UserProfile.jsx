@@ -255,21 +255,50 @@ export default function UserProfile() {
             </h2>
 
             {fullProfile.clubs.length > 0 ? (
-              <div className="space-y-2">
-                {fullProfile.clubs.map((club) => (
-                  <div
-                    key={club.id}
-                    className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default"
-                    style={{}}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-800">{club.name}</span> {/* Make the club name bold */}
+              <div className="space-y-3">
+                {fullProfile.clubs.map((club) => {
+                  const percent =
+                    typeof club.progressPercent === "number"
+                      ? Math.min(100, Math.max(0, Math.round(club.progressPercent)))
+                      : null;
+
+                  return (
+                    <div
+                      key={club.id}
+                      className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default space-y-1"
+                      style={{}}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-gray-800">
+                          {club.name}
+                        </span>
+                        {percent !== null && (
+                          <span className="text-xs text-gray-600">
+                            {percent}%
+                          </span>
+                        )}
+                      </div>
+
+                      {club.description && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {club.description}
+                        </p>
+                      )}
+
+                      {percent !== null && (
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
+                          <div
+                            className="h-2 rounded-full transition-all"
+                            style={{
+                              width: `${percent}%`,
+                              backgroundColor: "#774C30",
+                            }}
+                          ></div>
+                        </div>
+                      )}
                     </div>
-                    {club.description && (
-                      <p className="text-sm text-gray-600 mt-1">{club.description}</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-gray-600" style={{}}>

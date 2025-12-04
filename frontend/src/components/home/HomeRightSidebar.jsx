@@ -76,6 +76,53 @@ export default function HomeRightSidebar({
         </div>
       </div>
 
+      {/* MY CLUB PROGRESS */}
+      {clubsJoined.length > 0 && (
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+          <h2 className="text-lg font-semibold text-gray-800" style={{}}>
+            My Club Reading Goals
+          </h2>
+
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+            {clubsJoined.map((club) => {
+              const percent =
+                typeof club.progressPercent === "number"
+                  ? Math.min(100, Math.max(0, Math.round(club.progressPercent)))
+                  : 0;
+
+              return (
+                <div
+                  key={club.id}
+                  className="space-y-1 border border-[#e3d8c8] rounded-lg p-3 bg-[#faf6ed]"
+                >
+                  <div className="flex justify-between items-center text-xs text-gray-700">
+                    <span className="font-semibold">{club.name}</span>
+                    <span>{percent}%</span>
+                  </div>
+
+                  {club.currentBookData?.title && (
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">Book:</span>{" "}
+                      {club.currentBookData.title}
+                    </p>
+                  )}
+
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{
+                        width: `${percent}%`,
+                        backgroundColor: "#774C30",
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* MY BOOKSHELF */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
         <h2

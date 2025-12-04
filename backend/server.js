@@ -1355,16 +1355,56 @@ app.get("/api/users/:userId/bookshelf/current", async (req, res) => {
       where: { id: { in: clubIds } }
     });
 
+    // Create a map of clubId to membership for quick lookup
+    const membershipMap = new Map();
+    memberships.forEach(m => {
+      membershipMap.set(m.clubId, m);
+    });
+
     const currentBooks = clubs
       .filter(c => c.currentBookId && c.currentBookData)
-      .map(c => ({
-        clubId: c.id,
-        type: "current",
-        clubName: c.name,
-        assignedAt: c.createdAt,
-        bookId: c.currentBookId,
-        bookData: c.currentBookData
-      }));
+      .map(c => {
+        const membership = membershipMap.get(c.id);
+        const start = c.readingGoalPageStart;
+        const end = c.readingGoalPageEnd;
+        const currentPage = membership?.pageNumber ?? null;
+
+        let progressPercent = null;
+        if (start != null && end != null && currentPage != null) {
+          const totalPages = end - start + 1;
+          const pagesRead = Math.max(0, currentPage - start);
+          progressPercent = Math.min(100, Math.max(0, (pagesRead / totalPages) * 100));
+        }
+
+        const bookData = {
+          clubId: c.id,
+          type: "current",
+          clubName: c.name,
+          assignedAt: c.createdAt,
+          bookId: c.currentBookId,
+          bookData: c.currentBookData,
+          readingGoalPageStart: start,
+          readingGoalPageEnd: end,
+          currentPage: currentPage,
+          progressPercent: progressPercent
+        };
+
+        console.log(`Bookshelf current - Club ${c.id}:`, {
+          readingGoalPageStart: start,
+          readingGoalPageEnd: end,
+          currentPage: currentPage,
+          progressPercent: progressPercent
+        });
+
+        return bookData;
+      });
+
+    console.log("Bookshelf current - Returning books:", currentBooks.map(b => ({
+      clubId: b.clubId,
+      readingGoalPageStart: b.readingGoalPageStart,
+      readingGoalPageEnd: b.readingGoalPageEnd,
+      progressPercent: b.progressPercent
+    })));
 
     res.json(currentBooks);
   } catch (error) {

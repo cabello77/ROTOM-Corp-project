@@ -69,10 +69,17 @@ export default function ClubRightSidebar({
       currentPage != null
     ) {
       const totalPages = club.readingGoalPageEnd - club.readingGoalPageStart;
-      const pagesRead = currentPage - club.readingGoalPageStart;
 
-      // Ensure that progress is 100% when currentPage is equal to or greater than readingGoalPageEnd
-      return Math.min((pagesRead / totalPages) * 100, 100);
+      // Guard against invalid ranges
+      if (totalPages <= 0) return 0;
+
+      // Never let pagesRead go below 0, so progress can't be negative
+      const pagesRead = Math.max(0, currentPage - club.readingGoalPageStart);
+
+      const rawPercent = (pagesRead / totalPages) * 100;
+
+      // Clamp percentage between 0% and 100%
+      return Math.min(100, Math.max(0, rawPercent));
     }
     return 0;
   };

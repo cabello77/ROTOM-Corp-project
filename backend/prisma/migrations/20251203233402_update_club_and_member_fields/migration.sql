@@ -13,10 +13,18 @@ BEGIN
   END IF;
 END $$;
 
--- Copy existing progress values to pageNumber
-UPDATE "ClubMember" 
-SET "pageNumber" = "progress" 
-WHERE "progress" IS NOT NULL;
+-- Copy existing progress values to pageNumber (only if progress column exists)
+DO $$ 
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'ClubMember' AND column_name = 'progress'
+  ) THEN
+    UPDATE "ClubMember" 
+    SET "pageNumber" = "progress" 
+    WHERE "progress" IS NOT NULL;
+  END IF;
+END $$;
 
 -- Drop the old progress column if it exists
 DO $$ 

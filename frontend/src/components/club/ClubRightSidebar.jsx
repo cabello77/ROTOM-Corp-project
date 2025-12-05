@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import AssignModeratorModal from "./AssignModeratorModal";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
 function formatDeadline(deadline) {
   if (!deadline || typeof deadline !== "string") return null;
 
@@ -50,11 +52,20 @@ export default function ClubRightSidebar({
 
     // Fetch the user's current progress from the database
     if (user && club) {
-      fetch(`/api/progress/${user.id}/${club.id}`)
+      fetch(`${API_BASE}/api/progress/${user.id}/${club.id}`)
         .then((response) => response.json())
         .then((data) => {
-          if (data.page_number) {
-            setCurrentPage(data.page_number); // Set the current page number from the database
+          console.log('Fetched progress data:', data);
+          if (data.page_number != null) {
+            const pageNum = data.page_number;
+            console.log('Setting currentPage and tempPage to:', pageNum);
+            setCurrentPage(pageNum); // Set the current page number from the database
+            setTempPage(pageNum); // Also update the input field
+          } else if (club.readingGoalPageStart != null) {
+            // If no progress saved but there's a reading goal start, use that
+            console.log('No progress found, using readingGoalPageStart:', club.readingGoalPageStart);
+            setCurrentPage(club.readingGoalPageStart);
+            setTempPage(club.readingGoalPageStart);
           }
         })
         .catch((error) => console.error("Error fetching progress:", error));
@@ -79,8 +90,24 @@ export default function ClubRightSidebar({
       const rawPercent = (pagesRead / totalPages) * 100;
 
       // Clamp percentage between 0% and 100%
-      return Math.min(100, Math.max(0, rawPercent));
+      const progress = Math.min(100, Math.max(0, rawPercent));
+      
+      console.log('Progress calculation:', {
+        currentPage,
+        readingGoalPageStart: club.readingGoalPageStart,
+        readingGoalPageEnd: club.readingGoalPageEnd,
+        pagesRead,
+        totalPages,
+        progress
+      });
+      
+      return progress;
     }
+    console.log('Progress calculation: missing data', {
+      readingGoalPageStart: club.readingGoalPageStart,
+      readingGoalPageEnd: club.readingGoalPageEnd,
+      currentPage
+    });
     return 0;
   };
 
@@ -101,10 +128,8 @@ export default function ClubRightSidebar({
       return;
     }
 
-    setCurrentPage(tempPage); // Update current page when the button is clicked
-
     // Send the updated progress to the backend (POST request)
-    fetch('/api/progress', {
+    fetch(`${API_BASE}/api/progress`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -118,8 +143,13 @@ export default function ClubRightSidebar({
       .then((response) => response.json())
       .then((data) => {
         console.log('Progress updated:', data);
+        // Update current page after successful save
+        setCurrentPage(tempPage);
       })
-      .catch((error) => console.error('Error updating progress:', error));
+      .catch((error) => {
+        console.error('Error updating progress:', error);
+        alert('Failed to update progress. Please try again.');
+      });
   };
 
   return (

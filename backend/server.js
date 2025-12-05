@@ -1764,7 +1764,13 @@ app.get('/api/progress/:userId/:clubId', async (req, res) => {
   const { userId, clubId } = req.params;
 
   try {
-    // Correctly use the compound unique key in the `where` clause
+    // Get the club to check reading goal start
+    const club = await prisma.club.findUnique({
+      where: { id: parseInt(clubId) },
+      select: { readingGoalPageStart: true }
+    });
+
+    // Get the member's progress
     const progress = await prisma.clubMember.findUnique({
       where: {
         clubId_userId: {  // Correct reference to the compound unique constraint
@@ -1774,11 +1780,32 @@ app.get('/api/progress/:userId/:clubId', async (req, res) => {
       },
     });
 
-    if (progress) {
-      return res.json({ page_number: progress.pageNumber });
-    } else {
+    if (!progress) {
       return res.status(404).json({ message: 'Progress not found' });
     }
+
+    // If the reading goal start is set and the member's pageNumber is less than it (or null),
+    // update the member's pageNumber to the reading goal start
+    let pageNumber = progress.pageNumber;
+    if (club?.readingGoalPageStart != null) {
+      if (progress.pageNumber == null || progress.pageNumber < club.readingGoalPageStart) {
+        // Update this specific member's page number to the reading goal start
+        const updated = await prisma.clubMember.update({
+          where: {
+            clubId_userId: {
+              clubId: parseInt(clubId),
+              userId: parseInt(userId),
+            },
+          },
+          data: {
+            pageNumber: club.readingGoalPageStart
+          }
+        });
+        pageNumber = updated.pageNumber;
+      }
+    }
+
+    return res.json({ page_number: pageNumber });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Error fetching progress' });

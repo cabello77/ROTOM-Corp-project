@@ -36,7 +36,7 @@ function UserHome() {
   const memberSince = useMemo(() => {
     return user?.profile?.joinDate
       ? new Date(user.profile.joinDate).toLocaleDateString()
-      : "—";
+      : "ï¿½";
   }, [user?.profile?.joinDate]);
 
   // Combine created and joined clubs
@@ -197,7 +197,11 @@ function UserHome() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       {/* LEFT SIDEBAR */}
-      <HomeLeftSidebar allClubs={allClubs} friendsList={friendsList} />
+      <HomeLeftSidebar 
+        clubsCreated={clubsCreated} 
+        clubsJoined={clubsJoined} 
+        friendsList={friendsList} 
+      />
       {/* CENTER COLUMN */}
       <HomeCenterFeed allClubs={allClubs} />
 

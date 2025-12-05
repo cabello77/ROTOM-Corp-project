@@ -1,7 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
 
-export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
+export default function HomeLeftSidebar({ clubsCreated = [], clubsJoined = [], friendsList = [] }) {
   const navigate = useNavigate();
+  
+  // Filter out clubs from clubsJoined that are also in clubsCreated (to avoid duplicates)
+  const memberClubsOnly = clubsJoined.filter(
+    joinedClub => !clubsCreated.some(createdClub => createdClub.id === joinedClub.id)
+  );
+  
+  const isHost = clubsCreated.length > 0;
   
   return (
     <aside className="lg:col-span-3 space-y-4">
@@ -11,23 +18,55 @@ export default function HomeLeftSidebar({ allClubs = [], friendsList = [] }) {
         <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{}}>
           My Book Clubs
         </h2>
-        <div className="space-y-3">
-          {allClubs.length ? (
-            allClubs.map((club) => (
-              <Link
-                key={club.id}
-                to={`/clubs/${club.id}`}
-                className="block text-left px-4 py-2 rounded border border-[#e6dac8] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors"
-                style={{}}
-              >
-                {club.name}
-              </Link>
-            ))
-          ) : (
-            <p className="text-sm text-gray-600" style={{}}>
-              Join or create a club to see it here.
-            </p>
-          )}
+        
+        {/* Book Clubs I Host */}
+        <div className="mb-6">
+          <h3 className="text-base font-medium text-gray-700 mb-3" style={{}}>
+            Host
+          </h3>
+          <div className="space-y-3">
+            {clubsCreated.length ? (
+              clubsCreated.map((club) => (
+                <Link
+                  key={club.id}
+                  to={`/clubs/${club.id}`}
+                  className="block text-left px-4 py-2 rounded border border-[#e6dac8] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors"
+                  style={{}}
+                >
+                  {club.name}
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-gray-600" style={{}}>
+                No clubs hosted yet.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Book Clubs I'm In */}
+        <div>
+          <h3 className="text-base font-medium text-gray-700 mb-3" style={{}}>
+            Member
+          </h3>
+          <div className="space-y-3">
+            {memberClubsOnly.length ? (
+              memberClubsOnly.map((club) => (
+                <Link
+                  key={club.id}
+                  to={`/clubs/${club.id}`}
+                  className="block text-left px-4 py-2 rounded border border-[#e6dac8] bg-[#faf6ed] hover:bg-[#efe5d5] transition-colors"
+                  style={{}}
+                >
+                  {club.name}
+                </Link>
+              ))
+            ) : (
+              <p className="text-sm text-gray-600" style={{}}>
+                You're not a member of any other clubs.
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

@@ -115,9 +115,13 @@ export default function ClubRightSidebar({
   return (
     <aside className="lg:col-span-3 space-y-4">
       {/* Current Goal */}
-      {isMember && (club.readingGoal || club.goalDeadline) && (
+      {isMember && (club.readingGoal || club.goalDeadline || (club.readingGoalPageStart != null && club.readingGoalPageEnd != null)) && (
         <div className="mt-4 bg-[#f8f3ea] border border-[#ddcdb7] rounded-lg p-3 text-sm space-y-1">
           <p>📖 <strong>Reading:</strong> {club.currentBookData?.title}</p>
+
+          {club.readingGoal && (
+            <p>🎯 <strong>Goal:</strong> {club.readingGoal}</p>
+          )}
 
           {club.readingGoalPageStart != null && club.readingGoalPageEnd != null && (
             <p>📄 <strong>Pages:</strong> {club.readingGoalPageStart}-{club.readingGoalPageEnd}</p>

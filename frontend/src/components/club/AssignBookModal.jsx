@@ -272,7 +272,7 @@ export default function AssignBookModal({
                         type="text"
                         value={readingGoal}
                         onChange={(e) => setReadingGoal(e.target.value)}
-                        placeholder="Enter reading goal"
+                        placeholder={!readingGoal ? "Enter reading goal (ex. Annotate your favorite quotes!)" : "Enter reading goal"}
                         className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
                         style={{backgroundColor: "#FDFBF6",
                         }}

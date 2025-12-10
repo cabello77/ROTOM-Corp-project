@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import UserDropdown from "../UserDropdown";
 import DMChat from "./DMChat";
 
@@ -67,12 +67,13 @@ export default function DMs() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div
-              className="text-6xl md:text-8xl italic"
-              style={{ fontFamily: "Dancing Script, cursive" }}
+            <Link
+              to="/user-home"
+              className="text-6xl md:text-8xl italic cursor-pointer hover:opacity-80 transition-opacity"
+              style={{ fontFamily: "Dancing Script, cursive", textDecoration: "none", color: "white" }}
             >
               Plotline
-            </div>
+            </Link>
             <div className="flex items-center space-x-3">
               <UserDropdown />
             </div>

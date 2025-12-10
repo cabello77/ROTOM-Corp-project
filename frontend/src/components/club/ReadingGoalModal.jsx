@@ -15,7 +15,16 @@ export default function ReadingGoalModal({
 }) {
   if (!open) return null;
 
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = new Date().toISOString().split('T')[0];
+
   const handleSubmit = () => {
+    // Validate that deadline is not in the past
+    if (editGoalDeadline && editGoalDeadline < today) {
+      alert("Please select a deadline that is today or in the future.");
+      return;
+    }
+
     onUpdate({
       readingGoal: editReadingGoal,
       goalDeadline: editGoalDeadline,
@@ -114,6 +123,7 @@ export default function ReadingGoalModal({
                 type="date"
                 value={editGoalDeadline}
                 onChange={(e) => setEditGoalDeadline(e.target.value)}
+                min={today}
                 className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 style={{backgroundColor: "#FDFBF6",
                 }}

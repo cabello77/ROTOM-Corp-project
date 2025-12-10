@@ -21,6 +21,31 @@ export default function AssignBookModal({
 }) {
   if (!open) return null;
 
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = new Date().toISOString().split('T')[0];
+
+  const handleSubmit = () => {
+    // Validate that deadline is not in the past
+    if (goalDeadline && goalDeadline < today) {
+      alert("Please select a deadline that is today or in the future.");
+      return;
+    }
+
+    handleAssignBook({
+      bookDetails,
+      readingGoal,
+      goalDeadline,
+      readingGoalPageStart:
+        readingGoalPageStart === "" || readingGoalPageStart === null
+          ? null
+          : Number(readingGoalPageStart),
+      readingGoalPageEnd:
+        readingGoalPageEnd === "" || readingGoalPageEnd === null
+          ? null
+          : Number(readingGoalPageEnd),
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div
@@ -324,6 +349,7 @@ export default function AssignBookModal({
                         type="date"
                         value={goalDeadline}
                         onChange={(e) => setGoalDeadline(e.target.value)}
+                        min={today}
                         className="w-full border border-[#ddcdb7] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
                         style={{backgroundColor: "#FDFBF6",
                         }}
@@ -343,21 +369,7 @@ export default function AssignBookModal({
                 </button>
 
                 <button
-                  onClick={() =>
-                    handleAssignBook({
-                      bookDetails,
-                      readingGoal,
-                      goalDeadline,
-                      readingGoalPageStart:
-                        readingGoalPageStart === "" || readingGoalPageStart === null
-                          ? null
-                          : Number(readingGoalPageStart),
-                      readingGoalPageEnd:
-                        readingGoalPageEnd === "" || readingGoalPageEnd === null
-                          ? null
-                          : Number(readingGoalPageEnd),
-                    })
-                  }
+                  onClick={handleSubmit}
                   className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
                 >
                   Submit

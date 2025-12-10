@@ -7,10 +7,10 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
 const { setupSocket } = require("./socket");
+const { uploadToS3, deleteFromS3, isS3Configured } = require("./services/s3Service");
 
 const app = express();
 const prisma = new PrismaClient();
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 const parseUserId = (value) => {
   const parsed = Number(value);
@@ -60,24 +60,17 @@ async function isClubMember(clubId, userId) {
 }
 
 
-// File upload handling for avatars (optional if multer is available)
+// File upload handling for avatars
+// Uses multer with memory storage to receive files, then uploads directly to AWS S3
 let upload = null;
 (() => {
   try {
     const multer = require('multer');
-    const fs = require('fs');
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    const storage = multer.diskStorage({
-      destination: (req, file, cb) => cb(null, uploadDir),
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-      }
-    });
+    // Use memory storage - we'll upload directly to S3
+    const storage = multer.memoryStorage();
     upload = multer({
       storage,
-      limits: { fileSize: 2 * 1024 * 1024 },
+      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
       fileFilter: (req, file, cb) => {
         const allowed = /jpeg|jpg|png/;
         const ok = allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase());
@@ -425,7 +418,16 @@ app.post(
         return res.status(503).json({ error: 'Avatar uploads unavailable: multer not installed' });
       }
 
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      // Check if S3 is configured
+      if (!isS3Configured()) {
+        console.error('S3 not configured - missing required environment variables');
+        return res.status(503).json({ error: 'Avatar uploads unavailable: S3 not configured. Please set AWS environment variables.' });
+      }
+
       let userId;
       try {
         userId = parseUserId(req.params.id);
@@ -433,17 +435,40 @@ app.post(
         return res.status(400).json({ error: 'Invalid user id' });
       }
 
-      const relativePath = `/uploads/${req.file.filename}`;
-
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true },
+        select: { name: true, profile: { select: { profilePicture: true } } },
       });
 
       if (!existingUser) {
         return res.status(404).json({ error: 'User not found' });
       }
 
+      // Upload to S3
+      let s3Url;
+      try {
+        s3Url = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype);
+      } catch (s3Error) {
+        console.error('S3 upload failed:', s3Error.message || s3Error.name);
+        
+        // Extract a safe error message without circular references
+        const errorMessage = s3Error.message || s3Error.toString() || 'Unknown S3 error';
+        const errorCode = s3Error.Code || s3Error.name || 'UnknownError';
+        
+        return res.status(500).json({ 
+          error: 'Failed to upload image to cloud storage',
+          details: errorMessage,
+          code: errorCode
+        });
+      }
+
+      // Delete old profile picture from S3 if it exists and is an S3 URL
+      const oldProfilePicture = existingUser.profile?.profilePicture;
+      if (oldProfilePicture && oldProfilePicture.includes('amazonaws.com')) {
+        await deleteFromS3(oldProfilePicture);
+      }
+
+      // Update user with S3 URL
       const user = await prisma.user.update({
         where: { id: userId },
         data: {
@@ -452,10 +477,10 @@ app.post(
               create: {
                 username: randomUsername(),
                 fullName: existingUser.name || 'New User',
-                profilePicture: relativePath,
+                profilePicture: s3Url,
               },
               update: {
-                profilePicture: relativePath,
+                profilePicture: s3Url,
               },
             },
           },
@@ -465,12 +490,19 @@ app.post(
 
       res.json({
         message: 'Avatar uploaded',
-        avatar: relativePath,
+        avatar: s3Url,
         user: serializeUser(user),
       });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: err.message || 'Failed to upload avatar' });
+      console.error('Avatar upload error:', err.message || err.toString());
+      
+      // Extract safe error message
+      const errorMessage = err.message || err.toString() || 'Unknown error';
+      
+      res.status(500).json({ 
+        error: 'Failed to upload avatar',
+        details: errorMessage
+      });
     }
   }
 );

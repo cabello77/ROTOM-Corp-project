@@ -1,14 +1,29 @@
 import { useEffect, useState } from "react";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
 function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
+  // Helper function to construct full URL for profile picture
+  const getAvatarUrl = (profilePicture) => {
+    if (!profilePicture) return "";
+    if (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")) {
+      return profilePicture;
+    }
+    // Ensure path starts with / and API_BASE doesn't end with /
+    const cleanPath = profilePicture.startsWith("/") ? profilePicture : `/${profilePicture}`;
+    const cleanBase = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+    return `${cleanBase}${cleanPath}`;
+  };
+
   const [form, setForm] = useState({
     name: user.name,
     email: user.email,
     bio: user.profile?.bio || "",
   });
-  const [avatarPreview, setAvatarPreview] = useState(user.profile?.profilePicture || "");
+  const [avatarPreview, setAvatarPreview] = useState(getAvatarUrl(user.profile?.profilePicture));
   const [avatarFile, setAvatarFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -17,8 +32,10 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
       email: user.email,
       bio: user.profile?.bio || "",
     });
-    setAvatarPreview(user.profile?.profilePicture || "");
+    const avatarUrl = getAvatarUrl(user.profile?.profilePicture);
+    setAvatarPreview(avatarUrl);
     setAvatarFile(null);
+    setImageError(false);
   }, [isOpen, user]);
 
   if (!isOpen) return null;
@@ -32,6 +49,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
     const file = event.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
+    setImageError(false);
     const reader = new FileReader();
     reader.onloadend = () => {
       setIsUploading(false);
@@ -53,7 +71,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
       email: user.email,
       bio: user.profile?.bio || "",
     });
-    setAvatarPreview(user.profile?.profilePicture || "");
+    setAvatarPreview(getAvatarUrl(user.profile?.profilePicture));
     setAvatarFile(null);
     onClose();
   };
@@ -92,8 +110,16 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
           <div className="flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-8">
             <div className="flex-shrink-0">
               <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden mb-4">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
+                {avatarPreview && !imageError ? (
+                  <img 
+                    src={avatarPreview} 
+                    alt="Profile" 
+                    className="w-32 h-32 rounded-full object-cover"
+                    onError={(e) => {
+                      console.error("Failed to load profile picture:", avatarPreview);
+                      setImageError(true);
+                    }}
+                  />
                 ) : (
                   <span className="text-4xl text-gray-600" style={{}}>
                     {user.name.charAt(0).toUpperCase()}

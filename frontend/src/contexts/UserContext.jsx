@@ -26,7 +26,7 @@ const normalizeUser = (user) => {
 const getErrorMessage = async (response) => {
   try {
     const data = await response.json();
-    return data?.error || response.statusText || "Request failed";
+    return data?.error || data?.details || response.statusText || "Request failed";
   } catch {
     return response.statusText || "Request failed";
   }
@@ -107,7 +107,9 @@ export const UserProvider = ({ children }) => {
       body: formData,
     });
     if (!response.ok) {
-      throw new Error(await getErrorMessage(response));
+      const errorMessage = await getErrorMessage(response);
+      console.error('Avatar upload failed:', errorMessage);
+      throw new Error(errorMessage);
     }
     const data = await response.json();
     return saveUser(data.user);

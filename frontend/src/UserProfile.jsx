@@ -211,9 +211,9 @@ export default function UserProfile() {
                 </p>
               ) : (
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                  {fullProfile.pastReads.map((entry) => (
+                  {fullProfile.pastReads.map((entry, index) => (
                     <div
-                      key={entry.bookId}
+                      key={entry.bookId || `past-read-${index}`}
                       className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed]
                                 rounded"
                       style={{}}
@@ -252,7 +252,7 @@ export default function UserProfile() {
 
             {fullProfile.clubs.length > 0 ? (
               <div className="space-y-3">
-                {fullProfile.clubs.map((club) => {
+                {fullProfile.clubs.map((club, index) => {
                   const percent =
                     typeof club.progressPercent === "number"
                       ? Math.min(100, Math.max(0, Math.round(club.progressPercent)))
@@ -267,7 +267,7 @@ export default function UserProfile() {
 
                   return (
                     <div
-                      key={club.id}
+                      key={club.id || `club-${index}`}
                       className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default space-y-2"
                       style={{}}
                     >

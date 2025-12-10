@@ -1928,9 +1928,22 @@ app.get("/api/users/:id/clubs-joined", async (req, res) => {
 // Helpers to normalize discussion payloads for the frontend
 const serializeDiscussion = (row) => {
   if (!row) return null;
-  const tags = Array.isArray(row.tags)
-    ? row.tags
-    : (row.tags && typeof row.tags === 'object' ? row.tags : []);
+  let tags = [];
+  if (row.tags) {
+    if (Array.isArray(row.tags)) {
+      tags = row.tags;
+    } else if (typeof row.tags === 'string') {
+      try {
+        const parsed = JSON.parse(row.tags);
+        tags = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        tags = [];
+      }
+    } else if (typeof row.tags === 'object') {
+      // If it's an object, try to convert to array
+      tags = Object.values(row.tags);
+    }
+  }
   return {
     id: String(row.id),
     clubId: row.clubId,
@@ -1940,7 +1953,7 @@ const serializeDiscussion = (row) => {
     createdAt: row.datePosted,
     updatedAt: row.dateEdited || row.datePosted,
     chapterIndex: row.chapterIndex ?? null,
-    tags: Array.isArray(tags) ? tags : [],
+    tags: Array.isArray(tags) ? tags.filter(t => typeof t === 'string') : [],
     pinned: Boolean(row.pinned),
     locked: Boolean(row.locked),
     lastActivityAt: row.dateEdited || row.datePosted,

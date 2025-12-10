@@ -108,8 +108,26 @@ export default function ThreadCreateModal({ open, onClose, onSubmit, canCreate =
               <input
                 type="number"
                 min={1}
+                step={1}
                 value={chapterIndex}
-                onChange={(e) => setChapterIndex(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Only allow positive integers: accept empty string or digits only
+                  if (value === '' || /^\d+$/.test(value)) {
+                    setChapterIndex(value);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Allow digits, control keys (Backspace, Delete, Arrow keys, Tab, etc.), and navigation keys
+                  const isDigit = /^\d$/.test(e.key);
+                  const isControlKey = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End'].includes(e.key);
+                  const isModifierKey = e.ctrlKey || e.metaKey || e.altKey;
+                  
+                  // Block if not a digit, control key, or modifier combination
+                  if (!isDigit && !isControlKey && !isModifierKey) {
+                    e.preventDefault();
+                  }
+                }}
                 className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
                 style={{backgroundColor: '#FDFBF6' }}
               />

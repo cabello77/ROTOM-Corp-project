@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import TagsInput from './TagsInput';
 
 const TITLE_MAX = 120;
-const BODY_MAX = 10000;
+const BODY_MAX = 1000;
 
 export default function ThreadCreateModal({ open, onClose, onSubmit, canCreate = false, clubId, currentUser }) {
   const [title, setTitle] = useState('');
@@ -68,7 +68,12 @@ export default function ThreadCreateModal({ open, onClose, onSubmit, canCreate =
               type="text"
               value={title}
               maxLength={TITLE_MAX}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= TITLE_MAX) {
+                  setTitle(value);
+                }
+              }}
               className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
               style={{backgroundColor: '#FDFBF6' }}
             />
@@ -82,7 +87,12 @@ export default function ThreadCreateModal({ open, onClose, onSubmit, canCreate =
             <textarea
               value={body}
               maxLength={BODY_MAX}
-              onChange={(e) => setBody(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= BODY_MAX) {
+                  setBody(value);
+                }
+              }}
               rows={8}
               className="w-full border border-[#ddcdb7] rounded-lg px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400"
               style={{backgroundColor: '#FDFBF6' }}

@@ -72,7 +72,7 @@ function ReplyNode({ node, currentUser, isMember, locked, threadId, onReplied, o
             )}
           </div>
         </div>
-        <div className="text-sm text-gray-800 mt-1" style={{}}>{node.body}</div>
+        <div className="text-sm text-gray-800 mt-1 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{node.body}</div>
       </div>
       {replyOpen && (
         <form onSubmit={handleChildReply} className="mt-2 space-y-2" style={{ marginLeft: `${Math.min(node.depth, 3) * 16}px` }}>
@@ -257,11 +257,11 @@ export default function ThreadDetail({ threadId, currentUser, isMember, isHost }
             <span className="text-xs px-2 py-1 rounded bg-red-100 border border-red-300 text-red-800">Locked</span>
           )}
         </div>
-        <h4 className="text-lg font-semibold text-gray-800 mt-1" style={{}}>{thread.title}</h4>
+        <h4 className="text-lg font-semibold text-gray-800 mt-1 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{thread.title}</h4>
         <p className="text-xs text-gray-600" style={{}}>
           by {thread.author?.name || 'Unknown'} · {new Date(thread.createdAt).toLocaleString()}
         </p>
-        <div className="text-sm text-gray-800 mt-3 whitespace-pre-wrap" style={{}}>{thread.body}</div>
+        <div className="text-sm text-gray-800 mt-3 whitespace-pre-wrap break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{thread.body}</div>
         <div className="mt-2 flex items-center gap-1" title="Vote">
           <button
             type="button"

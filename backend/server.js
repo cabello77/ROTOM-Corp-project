@@ -2140,7 +2140,7 @@ app.post('/api/discussion', async (req, res) => {
         tags: Array.isArray(tags) ? tags.slice(0, 5) : [],
         content: {
           create: {
-            message: String(message).slice(0, 10000),
+            message: String(message).slice(0, 1000),
           },
         },
         media: Array.isArray(media) && media.length > 0
@@ -2187,7 +2187,7 @@ app.post('/api/discussion/:id/replies', async (req, res) => {
         discussionId,
         parentId: parentId ? Number(parentId) : null,
         userId: Number(userId),
-        body: String(body).slice(0, 10000),
+        body: String(body).slice(0, 1000),
       },
       include: { user: true },
     });
@@ -2208,7 +2208,7 @@ app.patch('/api/replies/:id', async (req, res) => {
     const existing = await prisma.discussionReply.findUnique({ where: { id }, select: { userId: true } });
     if (!existing) return res.status(404).json({ error: 'Reply not found' });
     if (existing.userId !== Number(userId)) return res.status(403).json({ error: 'Not authorized' });
-    const updated = await prisma.discussionReply.update({ where: { id }, data: { body: String(body).slice(0, 10000), updatedAt: new Date() }, include: { user: true } });
+    const updated = await prisma.discussionReply.update({ where: { id }, data: { body: String(body).slice(0, 1000), updatedAt: new Date() }, include: { user: true } });
     res.json(serializeReply(updated));
   } catch (error) {
     console.error('Error editing reply:', error);

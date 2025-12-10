@@ -37,7 +37,7 @@ export default function RecentThreadsByClub({ clubIds = [], limit = 3, clubMap =
                       key={t.id}
                       className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#faf6ed]"
                     >
-                      <div className="text-sm text-gray-800" style={{}}>
+                      <div className="text-sm text-gray-800 truncate" style={{}} title={t.title}>
                         {t.title}
                       </div>
                       <div className="text-xs text-gray-600" style={{}}>

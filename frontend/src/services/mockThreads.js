@@ -102,7 +102,7 @@ export async function createThread({ clubId, title, body, author, chapterIndex =
     id: genId(),
     clubId: Number(clubId),
     title: String(title).slice(0, 120),
-    body: String(body).slice(0, 10000),
+    body: String(body).slice(0, 1000),
     author,
     createdAt: now,
     updatedAt: now,
@@ -131,7 +131,7 @@ export async function createReply({ threadId, parentId = null, body, author }) {
     id: genId(),
     threadId,
     parentId,
-    body: String(body).slice(0, 10000),
+    body: String(body).slice(0, 1000),
     author,
     createdAt: now,
     updatedAt: now,
@@ -161,7 +161,7 @@ export async function deleteThread() { /* no-op for now */ }
 export async function editReply({ replyId, body }) {
   const r = _state.replies.find((x) => x.id === replyId);
   if (!r) return null;
-  r.body = String(body).slice(0, 10000);
+  r.body = String(body).slice(0, 1000);
   r.updatedAt = nowIso();
   return r;
 }

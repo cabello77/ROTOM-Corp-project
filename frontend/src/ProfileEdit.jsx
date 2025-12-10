@@ -114,7 +114,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
             <div className="flex-grow space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
-                  Display Name
+                  Username
                 </label>
                 <input
                   type="text"

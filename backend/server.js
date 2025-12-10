@@ -316,85 +316,99 @@ app.get("/api/users/:id/full-profile", async (req, res) => {
   }
 });
 
-// Update user profile
-app.put('/api/users/:id', async (req, res) => {
-  try {
-    let userId;
-    try {
-      userId = parseUserId(req.params.id);
-    } catch {
-      return res.status(400).json({ error: 'Invalid user id' });
-    }
+          // Update user profile
+          app.put('/api/users/:id', async (req, res) => {
+          try {
+          let userId;
+          try {
+          userId = parseUserId(req.params.id);
+          } catch {
+          return res.status(400).json({ error: 'Invalid user id' });
+          }
 
-    const { name, email, profile = {} } = req.body;
+          const { name, email, profile = {} } = req.body;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true },
-    });
+          const existingUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true },
+          });
 
-    if (!existingUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+          if (!existingUser) {
+          return res.status(404).json({ error: 'User not found' });
+          }
 
-    const userUpdates = {};
-    if (typeof name === 'string') userUpdates.name = name;
-    if (typeof email === 'string') userUpdates.email = email;
+          // 🔹 Check if display name already exists for another user
+          if (typeof name === 'string') {
+          const nameTaken = await prisma.user.findFirst({
+          where: {
+                    name,
+                    NOT: { id: userId }, // exclude current user
+          },
+          });
+          if (nameTaken) {
+          return res.status(400).json({ error: 'Display name already taken' });
+          }
+          }
 
-    const profileUpdates = {};
-    if (typeof profile.bio === 'string' || profile.bio === null) profileUpdates.bio = profile.bio;
-    if (typeof profile.profilePicture === 'string' || profile.profilePicture === null) {
-      profileUpdates.profilePicture = profile.profilePicture;
-    }
-    if (typeof profile.fullName === 'string') profileUpdates.fullName = profile.fullName;
-    if (profile.username !== undefined) {
-      const parsedUsername = String(profile.username).trim();
-      if (parsedUsername.length > 0) {
-        profileUpdates.username = parsedUsername;
-      }
-    }
+          const userUpdates = {};
+          if (typeof name === 'string') userUpdates.name = name;
+          if (typeof email === 'string') userUpdates.email = email;
 
-    const data = { ...userUpdates };
+          const profileUpdates = {};
+          if (typeof profile.bio === 'string' || profile.bio === null) profileUpdates.bio = profile.bio;
+          if (typeof profile.profilePicture === 'string' || profile.profilePicture === null) {
+          profileUpdates.profilePicture = profile.profilePicture;
+          }
+          if (typeof profile.fullName === 'string') profileUpdates.fullName = profile.fullName;
+          if (profile.username !== undefined) {
+          const parsedUsername = String(profile.username).trim();
+          if (parsedUsername.length > 0) {
+          profileUpdates.username = parsedUsername;
+          }
+          }
 
-    if (Object.keys(profileUpdates).length > 0) {
-      const createProfile = {
-        username:
-          typeof profileUpdates.username === 'string' && profileUpdates.username.length > 0
-            ? profileUpdates.username
-            : randomUsername(),
-        fullName:
-          profileUpdates.fullName ||
-          userUpdates.name ||
-          req.body.name ||
-          existingUser.name ||
-          'New User',
-        bio: profileUpdates.bio ?? null,
-        profilePicture: profileUpdates.profilePicture ?? null,
-      };
-      data.profile = {
-        upsert: {
-          create: createProfile,
-          update: profileUpdates,
-        },
-      };
-    }
+          const data = { ...userUpdates };
 
-    if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: 'No valid fields provided' });
-    }
+          if (Object.keys(profileUpdates).length > 0) {
+          const createProfile = {
+          username:
+                    typeof profileUpdates.username === 'string' && profileUpdates.username.length > 0
+                    ? profileUpdates.username
+                    : randomUsername(),
+          fullName:
+                    profileUpdates.fullName ||
+                    userUpdates.name ||
+                    req.body.name ||
+                    existingUser.name ||
+                    'New User',
+          bio: profileUpdates.bio ?? null,
+          profilePicture: profileUpdates.profilePicture ?? null,
+          };
+          data.profile = {
+          upsert: {
+                    create: createProfile,
+                    update: profileUpdates,
+          },
+          };
+          }
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data,
-      include: { profile: true },
-    });
+          if (Object.keys(data).length === 0) {
+          return res.status(400).json({ error: 'No valid fields provided' });
+          }
 
-    res.json({ message: 'Profile updated', user: serializeUser(user) });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
-});
+          const user = await prisma.user.update({
+          where: { id: userId },
+          data,
+          include: { profile: true },
+          });
+
+          res.json({ message: 'Profile updated', user: serializeUser(user) });
+          } catch (err) {
+          console.error(err);
+          res.status(500).json({ error: 'Failed to update user' });
+          }
+          });
+
 
 // Upload avatar
 app.post(
@@ -461,7 +475,7 @@ app.post(
   }
 );
 
-// Sign Up Route
+//Sign Up Route
 app.post('/api/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -470,9 +484,16 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
+    // Check if email is already registered
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
       return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Check if username is already taken
+    const existingName = await prisma.user.findFirst({ where: { name } });
+    if (existingName) {
+      return res.status(400).json({ error: 'Username already taken' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -484,7 +505,7 @@ app.post('/api/signup', async (req, res) => {
         password: hashedPassword,
         profile: {
           create: {
-            username: randomUsername(),
+            username: randomUsername(), // you can keep this or generate differently
             fullName: name,
             bio: null,
             profilePicture: null,
@@ -505,6 +526,8 @@ app.post('/api/signup', async (req, res) => {
     res.status(500).json({ error: 'Server error during signup' });
   }
 });
+
+
 
 // User Login Route
 app.post('/api/login', async (req, res) => {

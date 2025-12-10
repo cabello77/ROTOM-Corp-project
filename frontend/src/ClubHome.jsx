@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+﻿import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";
@@ -441,10 +441,9 @@ export default function ClubHome() {
                 apiBase={API_BASE}
               />
               <DiscussionsPanel
-                clubId={club.id}
-                user={user}
-                isMember={isMember}
-                isHost={user.id === club.creatorId}
+                clubId={club.id} 
+                currentUser={user} 
+                member={currentUserMemberData}
               />
             </section>
 

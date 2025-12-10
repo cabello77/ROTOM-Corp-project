@@ -169,39 +169,45 @@ export default function UserProfile() {
             </h2>
 
             {/* Current Reads */}
-            {currentClubs.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{}}>
-                  Currently Reading
-                </h3>
+          <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">
+          Currently Reading
+          </h3>
 
-                <div className="space-y-4">
-                  {currentClubs.map((club) => {
-                    const bookData = club.currentBookData;
-                    const bookCover = bookData?.cover || "/default-book.png"; // Fallback for cover image
-                    const bookTitle = bookData?.title || "Unknown Book";
+          {currentClubs.length === 0 ? (
+          <p className="text-sm text-gray-600">No current reads.</p>
+          ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+          {currentClubs.map((club) => {
+          const bookData = club.currentBookData;
+          const bookCover = bookData?.cover || "/default-book.png";
+          const bookTitle = bookData?.title || "Unknown Book";
 
-                    return (
-                      <div key={club.id} className="flex items-center border border-[#e3d8c8] rounded-lg p-4">
-                        <img
-                          src={bookCover}
-                          alt={bookTitle}
-                          className="w-12 h-16 object-cover rounded mr-4" // Adjusted the margin to position it correctly
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-800" style={{}}>
-                            {bookTitle}
-                          </h4>
-                          <p className="text-sm text-gray-600" style={{}}>
-                            Reading with <strong>{club.name}</strong>
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          return (
+                    <div
+                    key={club.id}
+                    className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded"
+                    >
+                    <img
+                    src={bookCover}
+                    alt={bookTitle}
+                    className="w-12 h-16 object-cover rounded"
+                    />
+                    <div>
+                    <p className="text-sm text-gray-700 font-semibold">
+                    {bookTitle}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                    Reading with: <strong>{club.name}</strong>
+                    </p>
+                    </div>
+                    </div>
+          );
+          })}
+          </div>
+          )}
+          </div>
+
 
             {/* Past Reads */}
             <div>

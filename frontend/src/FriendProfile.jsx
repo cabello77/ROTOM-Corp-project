@@ -256,84 +256,85 @@ function FriendProfile() {
 
           {/* Current Reads */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{}}>
-              Current Reads
-            </h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          Current Reads
+          </h2>
 
-            {currentClubs.length > 0 ? (
-              <div className="space-y-4">
-                {currentClubs.map((club) => {
-                  const bookData = club.currentBookData;
-                  const bookCover = bookData?.cover || "/default-book.png";
-                  const bookTitle = bookData?.title || "Unknown Book";
-                  return (
-                    <div key={club.id} className="flex items-center border border-[#e3d8c8] rounded-lg p-4">
-                      <img
-                        src={bookCover}
-                        alt={bookTitle}
-                        className="w-12 h-16 object-cover rounded mr-4"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800" style={{}}>
-                          {bookTitle}
-                        </h4>
-                        <p className="text-sm text-gray-600" style={{}}>
-                          Reading with <strong>{club.name}</strong>
-                        </p>
-                      </div>
+          {currentClubs.length === 0 ? (
+          <p className="text-sm text-gray-600">No current reads.</p>
+          ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+          {currentClubs.map((club) => {
+          const bookData = club.currentBookData;
+          const bookCover = bookData?.cover || "/default-book.png";
+          const bookTitle = bookData?.title || "Unknown Book";
+
+          return (
+                    <div
+                    key={club.id}
+                    className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded"
+                    >
+                    <img
+                    src={bookCover}
+                    alt={bookTitle}
+                    className="w-12 h-16 object-cover rounded"
+                    />
+                    <div>
+                    <p className="text-sm text-gray-700 font-semibold">
+                    {bookTitle}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                    Reading with: <strong>{club.name}</strong>
+                    </p>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600" style={{}}>
-                No current reads.
-              </p>
-            )}
+                    </div>
+          );
+          })}
           </div>
+          )}
+          </div>
+
 
           {/* Past Reads */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{}}>
-              Past Reads
-            </h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          Past Reads
+          </h2>
 
-            {friendPastReads.length === 0 ? (
-              <p className="text-sm text-gray-600" style={{}}>
-                No past reads yet.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {friendPastReads.map((entry) => (
-                  <div
+          {friendPastReads.length === 0 ? (
+          <p className="text-sm text-gray-600">No past reads yet.</p>
+          ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+          {friendPastReads.map((entry) => (
+          <div
                     key={entry.bookId}
-                    className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded transition"
-                    style={{}}
-                  >
+                    className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded"
+          >
                     <img
-                      src={entry.bookData?.cover || ""}
-                      alt={entry.bookData?.title || "Book cover"}
-                      className="w-12 h-16 object-cover rounded"
+                    src={entry.bookData?.cover || ""}
+                    alt={entry.bookData?.title || "Book cover"}
+                    className="w-12 h-16 object-cover rounded"
                     />
                     <div>
-                      <p className="text-sm text-gray-700 font-semibold">
-                        {entry.bookData?.title}
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Assigned by: <strong>{entry.clubName}</strong>
-                      </p>
-                      <p className="text-xs text-gray-600">
-                        Finished{" "}
-                        {entry.finishedAt
-                          ? new Date(entry.finishedAt).toLocaleDateString()
-                          : "Unknown date"}
-                      </p>
+                    <p className="text-sm text-gray-700 font-semibold">
+                    {entry.bookData?.title}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                    Assigned by: <strong>{entry.clubName}</strong>
+                    </p>
+                    <p className="text-xs text-gray-600">
+                    Finished{" "}
+                    {entry.finishedAt
+                    ? new Date(entry.finishedAt).toLocaleDateString()
+                    : "Unknown date"}
+                    </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
+          ))}
+          </div>
+          )}
+          </div>
+
 
 
           {/* Book Clubs Section */}

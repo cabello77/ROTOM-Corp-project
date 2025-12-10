@@ -35,8 +35,8 @@ export default function ClubRightSidebar({
 }) {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [canManage, setCanManage] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0); // Store the user's current page
-  const [tempPage, setTempPage] = useState(0); // Temporary page number for input
+  const [currentPage, setCurrentPage] = useState(0);
+  const [tempPage, setTempPage] = useState(0);
 
   // Identify currentMember and their role
   const currentMember = members.find((m) => m.userId === user?.id);
@@ -45,34 +45,28 @@ export default function ClubRightSidebar({
     if (currentMember) {
       const isHost = currentMember?.role === "HOST";
       const isMod = currentMember?.role === "MODERATOR";
-      setCanManage(isHost || isMod); // Set canManage based on role
+      setCanManage(isHost || isMod);
     } else {
-      setCanManage(false); // Default to false if currentMember is undefined
+      setCanManage(false);
     }
 
-    // Fetch the user's current progress from the database
+    // Fetch the user's progress
     if (user && club) {
       fetch(`${API_BASE}/api/progress/${user.id}/${club.id}`)
         .then((response) => response.json())
         .then((data) => {
-          console.log('Fetched progress data:', data);
           if (data.page_number != null) {
-            const pageNum = data.page_number;
-            console.log('Setting currentPage and tempPage to:', pageNum);
-            setCurrentPage(pageNum); // Set the current page number from the database
-            setTempPage(pageNum); // Also update the input field
+            setCurrentPage(data.page_number);
+            setTempPage(data.page_number);
           } else if (club.readingGoalPageStart != null) {
-            // If no progress saved but there's a reading goal start, use that
-            console.log('No progress found, using readingGoalPageStart:', club.readingGoalPageStart);
             setCurrentPage(club.readingGoalPageStart);
             setTempPage(club.readingGoalPageStart);
           }
         })
-        .catch((error) => console.error("Error fetching progress:", error));
+        .catch(console.error);
     }
   }, [currentMember, user, club]);
 
-  // Calculate reading progress
   const calculateProgress = () => {
     if (
       club.readingGoalPageStart != null &&
@@ -80,34 +74,11 @@ export default function ClubRightSidebar({
       currentPage != null
     ) {
       const totalPages = club.readingGoalPageEnd - club.readingGoalPageStart;
-
-      // Guard against invalid ranges
       if (totalPages <= 0) return 0;
 
-      // Never let pagesRead go below 0, so progress can't be negative
       const pagesRead = Math.max(0, currentPage - club.readingGoalPageStart);
-
-      const rawPercent = (pagesRead / totalPages) * 100;
-
-      // Clamp percentage between 0% and 100%
-      const progress = Math.min(100, Math.max(0, rawPercent));
-      
-      console.log('Progress calculation:', {
-        currentPage,
-        readingGoalPageStart: club.readingGoalPageStart,
-        readingGoalPageEnd: club.readingGoalPageEnd,
-        pagesRead,
-        totalPages,
-        progress
-      });
-      
-      return progress;
+      return Math.min(100, Math.max(0, (pagesRead / totalPages) * 100));
     }
-    console.log('Progress calculation: missing data', {
-      readingGoalPageStart: club.readingGoalPageStart,
-      readingGoalPageEnd: club.readingGoalPageEnd,
-      currentPage
-    });
     return 0;
   };
 
@@ -115,11 +86,10 @@ export default function ClubRightSidebar({
 
   const handlePageChange = (event) => {
     const page = parseInt(event.target.value, 10);
-    setTempPage(page); // Update the temporary page number while typing
+    setTempPage(page);
   };
 
   const handleUpdateProgress = () => {
-    // Validation check when the button is clicked
     if (
       tempPage < club.readingGoalPageStart ||
       tempPage > club.readingGoalPageEnd
@@ -128,12 +98,9 @@ export default function ClubRightSidebar({
       return;
     }
 
-    // Send the updated progress to the backend (POST request)
     fetch(`${API_BASE}/api/progress`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: user.id,
         clubId: club.id,
@@ -141,30 +108,21 @@ export default function ClubRightSidebar({
       }),
     })
       .then((response) => response.json())
-      .then((data) => {
-        console.log('Progress updated:', data);
-        // Update current page after successful save
-        setCurrentPage(tempPage);
-      })
-      .catch((error) => {
-        console.error('Error updating progress:', error);
-        alert('Failed to update progress. Please try again.');
-      });
+      .then(() => setCurrentPage(tempPage))
+      .catch(() => alert("Failed to update progress. Please try again."));
   };
 
   return (
     <aside className="lg:col-span-3 space-y-4">
-      {/* Current Goal (Moved here from Left Sidebar) */}
+      {/* Current Goal */}
       {isMember && (club.readingGoal || club.goalDeadline) && (
         <div className="mt-4 bg-[#f8f3ea] border border-[#ddcdb7] rounded-lg p-3 text-sm space-y-1">
           <p>📖 <strong>Reading:</strong> {club.currentBookData?.title}</p>
 
-          {/* Pages line */}
           {club.readingGoalPageStart != null && club.readingGoalPageEnd != null && (
             <p>📄 <strong>Pages:</strong> {club.readingGoalPageStart}-{club.readingGoalPageEnd}</p>
           )}
 
-          {club.readingGoal && <p>🎯 <strong>Goal:</strong> {club.readingGoal}</p>}
           {club.goalDeadline && (
             <p>📅 <strong>Deadline:</strong> {formatDeadline(club.goalDeadline)}</p>
           )}
@@ -172,23 +130,17 @@ export default function ClubRightSidebar({
           {/* Progress Bar */}
           {club.readingGoalPageStart != null && club.readingGoalPageEnd != null && (
             <div className="mt-4">
-              <label htmlFor="progress-bar" className="block text-sm font-medium">
-                📊 Reading Progress:
-              </label>
               <div
                 className="w-full h-4 rounded"
-                style={{
-                  backgroundColor: '#e0d7c6', // Darker background (lighter than the progress bar)
-                  borderRadius: '8px', // Rounded corners for the container
-                }}
+                style={{ backgroundColor: "#e0d7c6" }}
               >
                 <div
                   style={{
-                    width: `${progress}%`, // Dynamic width based on progress
-                    backgroundColor: '#a67c52', // Darker brownish hue for the progress fill
-                    borderRadius: '8px', // Rounded corners
-                    height: '100%', // Full height for the bar
-                    transition: 'width 1s ease-in-out', // Smooth transition effect
+                    width: `${progress}%`,
+                    backgroundColor: "#a67c52",
+                    height: "100%",
+                    borderRadius: "8px",
+                    transition: "width 1s ease-in-out",
                   }}
                 />
               </div>
@@ -199,85 +151,76 @@ export default function ClubRightSidebar({
           )}
 
           {/* Input to update progress */}
-          <div className="mt-4">
-            <label htmlFor="page-input" className="block text-sm font-medium">
-              📖 Update Your Progress (Page Number):
-            </label>
-            <input
-              type="number"
-              id="page-input"
-              value={tempPage}
-              min={club.readingGoalPageStart}
-              max={club.readingGoalPageEnd}
-              onChange={handlePageChange}
-              className="w-full mt-2 p-2 rounded border border-[#ddd]"
-            />
-            <button
-              onClick={handleUpdateProgress} // Updates the progress when clicked
-              className="mt-2 w-full px-4 py-2 rounded bg-[#d9c5a3] hover:bg-[#cbb894] text-sm"
-            >
-              Update Progress
-            </button>
-          </div>
+          {club.readingGoalPageStart != null && club.readingGoalPageEnd != null && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium">
+                📖 Update Your Progress:
+              </label>
+              <input
+                type="number"
+                value={tempPage}
+                onChange={handlePageChange}
+                className="w-full mt-2 p-2 rounded border border-[#ddd]"
+              />
+              <button
+                onClick={handleUpdateProgress}
+                className="mt-2 w-full px-4 py-2 rounded bg-[#d9c5a3] hover:bg-[#cbb894] text-sm"
+              >
+                Update Progress
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* Non-member → Join */}
       {!isMember && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{}}>
-            Actions
-          </h2>
-
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Actions</h2>
           <button
             onClick={onJoinClub}
             className="w-full px-4 py-2 rounded bg-[#d9c5a3] hover:bg-[#cbb894] text-sm"
-            style={{}}
           >
             Join Club
           </button>
         </div>
       )}
 
-      {/* Member tools */}
+      {/* Member with management permissions */}
       {isMember && canManage && (
         <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4" style={{}}>
-            Actions
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Actions</h2>
 
-          {/* Update Reading Goal Button */}
-          <button
-            onClick={onOpenGoalModal}
-            className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-            style={{}}
-          >
-            Update Reading Goal
-          </button>
+          {/* ✅ Update Reading Goal only if a book is assigned */}
+          {(club.currentBookData || currentBook) && (
+            <button
+              onClick={onOpenGoalModal}
+              className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
+            >
+              Update Reading Goal
+            </button>
+          )}
 
           <button
             onClick={onInviteMembers}
             className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-            style={{}}
           >
             Invite Members
           </button>
 
-          {/* Host-only */}
+          {/* Host-only buttons */}
           {currentMember?.role === "HOST" && (
             <>
               <button
                 onClick={() => setIsAssignModalOpen(true)}
                 className="w-full px-4 py-2 mb-3 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors text-sm"
-                style={{}}
               >
                 Assign Moderator
               </button>
 
               <button
                 onClick={onDeleteClub}
-                className="w-full px-4 py-2 rounded border border-red-300 bg-red-100 hover:bg-red-200 transition-colors text-sm text-red-700"
-                style={{}}
+                className="w-full px-4 py-2 rounded border border-red-300 bg-red-100 hover:bg-red-200 text-sm text-red-700"
               >
                 Delete Book Club
               </button>
@@ -299,3 +242,4 @@ export default function ClubRightSidebar({
     </aside>
   );
 }
+

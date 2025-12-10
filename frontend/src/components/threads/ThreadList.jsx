@@ -5,18 +5,26 @@ import ThreadDetail from './ThreadDetail';
 import { canCreateThread } from '../../utils/roles';
 import { createThread, fetchThreads } from '../../services/discussions';
 
-export default function ThreadList({ clubId, currentUser, isHost = false, isMember = false }) {
+export default function ThreadList({ 
+  clubId, 
+  currentUser, 
+  role // "HOST", "MODERATOR", "MEMBER"
+}) {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState(null);
+  const isHost = role === "HOST";
+  const isModerator = role === "MODERATOR";
+  const isMember = role === "MEMBER";
 
-  const canCreate = useMemo(
-    () => canCreateThread({ isHost, isMember: Boolean(isMember || isHost) }),
-    [isHost, isMember]
-  );
+const canCreate = useMemo(
+  () => canCreateThread({ isHost, isModerator }),
+  [isHost, isModerator]
+);
+
   const pageSize = 10;
   const pollMs = 30000;
   const scrollSentinel = useRef(null);
@@ -123,7 +131,7 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
                   threadId={t.id}
                   currentUser={currentUser}
                   isHost={isHost}
-                  isMember={Boolean(isMember || isHost)}
+                  isMember={isMember || isHost || isModerator}
                 />
               </div>
             )}

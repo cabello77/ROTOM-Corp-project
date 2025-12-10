@@ -17,16 +17,6 @@ export default function CurrentBookCard({
       {currentBook.year && <p className="text-xs text-gray-500">Published: {currentBook.year}</p>}
       {currentBook.genre && <p className="text-xs text-gray-500">Genre: {currentBook.genre}</p>}
 
-      {isHost && club.readingGoal && (
-        <button
-          onClick={onUpdateGoal}
-          className="mt-3 w-full px-4 py-2 text-sm rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-          style={{}}
-        >
-          Update Goal
-        </button>
-      )}
-
       {isHost && (
         <button
           onClick={onRemoveBook}

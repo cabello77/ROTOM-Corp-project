@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ProfileEdit from "./ProfileEdit";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -144,21 +144,12 @@ function FriendProfile() {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-        <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-6">
-              <Link to="/user-home" className="text-6xl md:text-8xl italic cursor-pointer hover:opacity-80 transition-opacity" style={{ fontFamily: "Dancing Script, cursive", textDecoration: "none", color: "white" }}>
-                Plotline
-              </Link>
-              <div className="flex items-center space-x-3">
-                <UserDropdown onEditProfile={(previousLocation) => {
-                  setIsEditModalOpen(true);
-                  setReturnPath(previousLocation);
-                }} />
-              </div>
-            </div>
-          </div>
-        </header>
+        <AuthenticatedHeader
+          onEditProfile={(previousLocation) => {
+            setIsEditModalOpen(true);
+            setReturnPath(previousLocation);
+          }}
+        />
         <main className="flex-grow px-4 py-10">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white border border-red-300 rounded-xl shadow-sm p-8 text-center">
@@ -196,21 +187,12 @@ function FriendProfile() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <Link to="/user-home" className="text-6xl md:text-8xl italic cursor-pointer hover:opacity-80 transition-opacity" style={{ fontFamily: "Dancing Script, cursive", textDecoration: "none", color: "white" }}>
-              Plotline
-            </Link>
-            <div className="flex items-center space-x-3">
-              <UserDropdown onEditProfile={(previousLocation) => {
-                setIsEditModalOpen(true);
-                setReturnPath(previousLocation);
-              }} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
+          setIsEditModalOpen(true);
+          setReturnPath(previousLocation);
+        }}
+      />
 
       <main className="flex-grow px-4 py-10">
         <div className="max-w-7xl mx-auto">

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useUser } from "./contexts/UserContext";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ProfileEdit from "./ProfileEdit";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -98,25 +98,12 @@ export default function ClubCreate() {
   return (
     <div className="min-h-screen flex flex-col bg-amber-50">
       {/* Header */}
-      <header className="text-white" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <Link
-              to="/user-home"
-              className="text-6xl md:text-8xl italic cursor-pointer hover:opacity-80 transition-opacity"
-              style={{ fontFamily: "Dancing Script, cursive", textDecoration: "none", color: "white" }}
-            >
-              Plotline
-            </Link>
-            <div className="space-x-4">
-              <UserDropdown onEditProfile={(previousLocation) => {
-                setIsEditModalOpen(true);
-                setReturnPath(previousLocation);
-              }} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
+          setIsEditModalOpen(true);
+          setReturnPath(previousLocation);
+        }}
+      />
 
       {/* Main Form */}
       <main className="flex-grow flex flex-col items-center justify-center px-4 py-10">

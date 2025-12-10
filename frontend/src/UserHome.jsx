@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import ProfileEdit from "./ProfileEdit";
 import axios from "axios";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import HomeLeftSidebar from "./components/home/HomeLeftSidebar";
 import HomeCenterFeed from "./components/home/HomeCenterFeed";
 import HomeRightSidebar from "./components/home/HomeRightSidebar";
@@ -179,18 +179,7 @@ function UserHome() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <Link to="/user-home" className="text-6xl md:text-8xl italic cursor-pointer hover:opacity-80 transition-opacity" style={{ fontFamily: "Dancing Script, cursive", textDecoration: "none", color: "white" }}>
-              Plotline
-            </Link>
-            <div className="flex items-center space-x-3">
-              <UserDropdown onEditProfile={() => setIsEditModalOpen(true)} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader onEditProfile={() => setIsEditModalOpen(true)} />
 
 <main className="flex-grow px-4 py-8">
   <div className="max-w-7xl mx-auto space-y-6">

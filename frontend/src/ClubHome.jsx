@@ -6,7 +6,7 @@ import LiveChat from "./components/club/LiveChat";
 import DiscussionsPanel from "./components/club/DiscussionsPanel";
 import ClubLeftSidebar from "./components/club/ClubLeftSidebar";
 import ClubRightSidebar from "./components/club/ClubRightSidebar";
-import ClubHeader from "./components/club/ClubHeader";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ClubTitleBar from "./components/club/ClubTitleBar";
 import ClubModals from "./components/club/ClubModals";
 import InviteFriendsModal from "./components/club/InviteFriendsModal";
@@ -380,8 +380,8 @@ export default function ClubHome() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      <ClubHeader
-        onOpenEditProfile={(previousLocation) => {
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
           setIsEditModalOpen(true);
           setReturnPath(previousLocation);
         }}

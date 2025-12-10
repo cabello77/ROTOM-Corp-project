@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import UserDropdown from "../UserDropdown";
+import { useNavigate } from "react-router-dom";
+import AuthenticatedHeader from "../AuthenticatedHeader";
 import DMChat from "./DMChat";
 
 export default function DMs() {
@@ -60,26 +60,7 @@ export default function DMs() {
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: "#F7F1E2" }}
     >
-      {/* HEADER */}
-      <header
-        className="text-white shadow"
-        style={{ backgroundColor: "#774C30" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <Link
-              to="/user-home"
-              className="text-6xl md:text-8xl italic cursor-pointer hover:opacity-80 transition-opacity"
-              style={{ fontFamily: "Dancing Script, cursive", textDecoration: "none", color: "white" }}
-            >
-              Plotline
-            </Link>
-            <div className="flex items-center space-x-3">
-              <UserDropdown />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader />
 
       {/* BODY CONTENT */}
       <div className="max-w-7xl mx-auto p-6 w-full">

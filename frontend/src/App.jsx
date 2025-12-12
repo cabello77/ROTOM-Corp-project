@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Header from './components/Header';
+import bookIllustration from './assets/book-illustration.png';
 import './App.css';
 
 function App() {
@@ -28,7 +29,7 @@ function App() {
               </Link>
             </div>
             <div className="welcome-image-column">
-              <img src="/src/assets/book-illustration.png" alt="Books illustration" className="welcome-image" />
+              <img src={bookIllustration} alt="Books illustration" className="welcome-image" />
             </div>
           </div>
         </section>

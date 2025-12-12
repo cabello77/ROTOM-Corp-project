@@ -36,15 +36,16 @@
 .app-nav-button {
   padding: 0.5rem 1rem;
   border-radius: 0.25rem;
-  border: 1px solid #9ca3af;
-  transition: opacity 0.3s;
-  color: #1f2937;
-  background-color: #EFE6D7;
+  border: 1px solid white;
+  transition: all 0.3s;
+  color: white;
+  background-color: transparent;
   /* Inherits Open Sans from body */
   text-decoration: none;
 }
 
 .app-nav-button:hover {
-  opacity: 0.8;
+  background-color: white;
+  color: #774C30;
 }
 

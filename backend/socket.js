@@ -94,9 +94,6 @@ function setupSocket(io) {
           },
         });
 
-        const baseUrl =
-          process.env.BASE_URL || "http://localhost:3001";
-
         const message = {
           id: saved.id,
           clubId: saved.clubId,
@@ -105,9 +102,7 @@ function setupSocket(io) {
           user: {
             id: saved.user.id,
             name: saved.user.name,
-            profilePicture: saved.user.profile?.profilePicture
-              ? `${baseUrl}${saved.user.profile.profilePicture.startsWith("/") ? "" : "/"}${saved.user.profile.profilePicture}`
-              : null,
+            profilePicture: saved.user.profile?.profilePicture || null,
           },
         };
 

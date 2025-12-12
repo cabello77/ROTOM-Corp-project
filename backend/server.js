@@ -1750,9 +1750,6 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
       },
     });
 
-    const baseUrl =
-      process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-
     const normalized = messages.reverse().map((m) => ({
       id: m.id,
       clubId: m.clubId,
@@ -1761,11 +1758,7 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
       user: {
         id: m.user.id,
         name: m.user.name,
-        profilePicture: m.user.profile?.profilePicture
-          ? `${baseUrl}${m.user.profile.profilePicture.startsWith("/") ? "" : "/"}${
-              m.user.profile.profilePicture
-            }`
-          : null,
+        profilePicture: m.user.profile?.profilePicture || null,
       },
     }));
 

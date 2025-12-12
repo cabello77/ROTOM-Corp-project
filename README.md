@@ -1,16 +1,73 @@
 # Plotline
 
-Brought to you by ROTOM Corp Members: Patrick Hwang (CEO), Julia Chaidez, Emily Panfilo, Julian Cabello, Julianna Arzola  
+A modern web application for **online book clubs** that helps readers create and join clubs, assign books, set shared reading goals, track progress, and have real-time discussions around what they're reading.
 
-**Deployed Site:** https://plotline-app-7b57b5bdab97.herokuapp.com/
+---
 
-Plotline is a modern web application for **online book clubs**. It helps readers create and join clubs, assign books, set shared reading goals, track progress, and have real-time discussions around what they’re reading.
+## Quick Links
 
-At a high level, Plotline provides:
-- **Book clubs and membership**: Users can start clubs, invite friends, and manage roles (host, moderator, members).
-- **Shared reading goals**: Club hosts assign books, define page ranges and deadlines, and everyone’s progress is tracked against the same goal.
-- **Discussion threads and replies**: Structured conversations for each club, with posts, replies, and voting to surface the most helpful comments.
-- **Live chat**: Real-time messaging inside each club for casual conversation while reading together.
-- **User profiles and bookshelf**: Each user has a profile and a personal bookshelf that summarizes current reads, past reads, and club activity.
+- **Application:** [https://plotline-app-7b57b5bdab97.herokuapp.com/](https://plotline-app-7b57b5bdab97.herokuapp.com/)
+- **Company Website:** [https://rotom-corp-company-website-2bed7e8765d3.herokuapp.com/](https://rotom-corp-company-website-2bed7e8765d3.herokuapp.com/)
 
-Plotline is built as a full-stack JavaScript app with a React frontend and a Node/Express backend, using a relational database for persistent storage and Socket.IO for live updates. It’s designed to feel like a cozy digital reading room where people can read, talk, and stay motivated together.
+---
+
+## Team
+
+**ROTOM Corporation**
+
+- **Patrick Hwang** - CEO
+- **Julia Chaidez**
+- **Emily Panfilo**
+- **Julian Cabello**
+- **Julianna Arzola**
+
+---
+
+## Features
+
+Plotline provides a comprehensive platform for book club management and reader engagement:
+
+- **Book Clubs and Membership**
+  - Create and join book clubs
+  - Invite friends and manage member roles (host, moderator, members)
+
+- **Shared Reading Goals**
+  - Club hosts assign books and define reading schedules
+  - Set page ranges and deadlines
+  - Track everyone's progress against shared goals
+
+- **Discussion Threads and Replies**
+  - Structured conversations for each club
+  - Posts, replies, and voting system
+
+- **Live Chat**
+  - Real-time messaging within each club
+  - Casual conversation while reading together
+
+- **User Profiles and Bookshelf**
+  - Personal profiles showcasing reading activity
+  - Bookshelf summarizing current reads, past reads, and club participation
+
+---
+
+## Tech Stack
+
+Plotline is built as a full-stack JavaScript application:
+
+- **Frontend:** React
+- **Backend:** Node.js with Express
+- **Database:** PostgreSQL (Prisma ORM)
+- **Real-time Communication:** Socket.IO
+- **Deployment:** Heroku
+
+---
+
+## Walkthrough Video
+
+_Coming soon..._
+
+---
+
+## About
+
+Plotline is designed to feel like a cozy digital reading room where people can read, talk, and stay motivated together. It combines the best features of social reading platforms, discussion forums, and real-time chat applications into one unified experience for book lovers.

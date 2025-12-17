@@ -7,10 +7,10 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const { PrismaClient } = require('@prisma/client');
 const { setupSocket } = require("./socket");
+const { uploadToS3, deleteFromS3, isS3Configured } = require("./services/s3Service");
 
 const app = express();
 const prisma = new PrismaClient();
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 const parseUserId = (value) => {
   const parsed = Number(value);
@@ -60,24 +60,17 @@ async function isClubMember(clubId, userId) {
 }
 
 
-// File upload handling for avatars (optional if multer is available)
+// File upload handling for avatars
+// Uses multer with memory storage to receive files, then uploads directly to AWS S3
 let upload = null;
 (() => {
   try {
     const multer = require('multer');
-    const fs = require('fs');
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-    const storage = multer.diskStorage({
-      destination: (req, file, cb) => cb(null, uploadDir),
-      filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-      }
-    });
+    // Use memory storage - we'll upload directly to S3
+    const storage = multer.memoryStorage();
     upload = multer({
       storage,
-      limits: { fileSize: 2 * 1024 * 1024 },
+      limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
       fileFilter: (req, file, cb) => {
         const allowed = /jpeg|jpg|png/;
         const ok = allowed.test(file.mimetype) && allowed.test(path.extname(file.originalname).toLowerCase());
@@ -316,85 +309,99 @@ app.get("/api/users/:id/full-profile", async (req, res) => {
   }
 });
 
-// Update user profile
-app.put('/api/users/:id', async (req, res) => {
-  try {
-    let userId;
-    try {
-      userId = parseUserId(req.params.id);
-    } catch {
-      return res.status(400).json({ error: 'Invalid user id' });
-    }
+          // Update user profile
+          app.put('/api/users/:id', async (req, res) => {
+          try {
+          let userId;
+          try {
+          userId = parseUserId(req.params.id);
+          } catch {
+          return res.status(400).json({ error: 'Invalid user id' });
+          }
 
-    const { name, email, profile = {} } = req.body;
+          const { name, email, profile = {} } = req.body;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true },
-    });
+          const existingUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true },
+          });
 
-    if (!existingUser) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+          if (!existingUser) {
+          return res.status(404).json({ error: 'User not found' });
+          }
 
-    const userUpdates = {};
-    if (typeof name === 'string') userUpdates.name = name;
-    if (typeof email === 'string') userUpdates.email = email;
+          // 🔹 Check if display name already exists for another user
+          if (typeof name === 'string') {
+          const nameTaken = await prisma.user.findFirst({
+          where: {
+                    name,
+                    NOT: { id: userId }, // exclude current user
+          },
+          });
+          if (nameTaken) {
+          return res.status(400).json({ error: 'Display name already taken' });
+          }
+          }
 
-    const profileUpdates = {};
-    if (typeof profile.bio === 'string' || profile.bio === null) profileUpdates.bio = profile.bio;
-    if (typeof profile.profilePicture === 'string' || profile.profilePicture === null) {
-      profileUpdates.profilePicture = profile.profilePicture;
-    }
-    if (typeof profile.fullName === 'string') profileUpdates.fullName = profile.fullName;
-    if (profile.username !== undefined) {
-      const parsedUsername = String(profile.username).trim();
-      if (parsedUsername.length > 0) {
-        profileUpdates.username = parsedUsername;
-      }
-    }
+          const userUpdates = {};
+          if (typeof name === 'string') userUpdates.name = name;
+          if (typeof email === 'string') userUpdates.email = email;
 
-    const data = { ...userUpdates };
+          const profileUpdates = {};
+          if (typeof profile.bio === 'string' || profile.bio === null) profileUpdates.bio = profile.bio;
+          if (typeof profile.profilePicture === 'string' || profile.profilePicture === null) {
+          profileUpdates.profilePicture = profile.profilePicture;
+          }
+          if (typeof profile.fullName === 'string') profileUpdates.fullName = profile.fullName;
+          if (profile.username !== undefined) {
+          const parsedUsername = String(profile.username).trim();
+          if (parsedUsername.length > 0) {
+          profileUpdates.username = parsedUsername;
+          }
+          }
 
-    if (Object.keys(profileUpdates).length > 0) {
-      const createProfile = {
-        username:
-          typeof profileUpdates.username === 'string' && profileUpdates.username.length > 0
-            ? profileUpdates.username
-            : randomUsername(),
-        fullName:
-          profileUpdates.fullName ||
-          userUpdates.name ||
-          req.body.name ||
-          existingUser.name ||
-          'New User',
-        bio: profileUpdates.bio ?? null,
-        profilePicture: profileUpdates.profilePicture ?? null,
-      };
-      data.profile = {
-        upsert: {
-          create: createProfile,
-          update: profileUpdates,
-        },
-      };
-    }
+          const data = { ...userUpdates };
 
-    if (Object.keys(data).length === 0) {
-      return res.status(400).json({ error: 'No valid fields provided' });
-    }
+          if (Object.keys(profileUpdates).length > 0) {
+          const createProfile = {
+          username:
+                    typeof profileUpdates.username === 'string' && profileUpdates.username.length > 0
+                    ? profileUpdates.username
+                    : randomUsername(),
+          fullName:
+                    profileUpdates.fullName ||
+                    userUpdates.name ||
+                    req.body.name ||
+                    existingUser.name ||
+                    'New User',
+          bio: profileUpdates.bio ?? null,
+          profilePicture: profileUpdates.profilePicture ?? null,
+          };
+          data.profile = {
+          upsert: {
+                    create: createProfile,
+                    update: profileUpdates,
+          },
+          };
+          }
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data,
-      include: { profile: true },
-    });
+          if (Object.keys(data).length === 0) {
+          return res.status(400).json({ error: 'No valid fields provided' });
+          }
 
-    res.json({ message: 'Profile updated', user: serializeUser(user) });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to update user' });
-  }
-});
+          const user = await prisma.user.update({
+          where: { id: userId },
+          data,
+          include: { profile: true },
+          });
+
+          res.json({ message: 'Profile updated', user: serializeUser(user) });
+          } catch (err) {
+          console.error(err);
+          res.status(500).json({ error: 'Failed to update user' });
+          }
+          });
+
 
 // Upload avatar
 app.post(
@@ -411,7 +418,16 @@ app.post(
         return res.status(503).json({ error: 'Avatar uploads unavailable: multer not installed' });
       }
 
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+      
+      // Check if S3 is configured
+      if (!isS3Configured()) {
+        console.error('S3 not configured - missing required environment variables');
+        return res.status(503).json({ error: 'Avatar uploads unavailable: S3 not configured. Please set AWS environment variables.' });
+      }
+
       let userId;
       try {
         userId = parseUserId(req.params.id);
@@ -419,17 +435,40 @@ app.post(
         return res.status(400).json({ error: 'Invalid user id' });
       }
 
-      const relativePath = `/uploads/${req.file.filename}`;
-
       const existingUser = await prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true },
+        select: { name: true, profile: { select: { profilePicture: true } } },
       });
 
       if (!existingUser) {
         return res.status(404).json({ error: 'User not found' });
       }
 
+      // Upload to S3
+      let s3Url;
+      try {
+        s3Url = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype);
+      } catch (s3Error) {
+        console.error('S3 upload failed:', s3Error.message || s3Error.name);
+        
+        // Extract a safe error message without circular references
+        const errorMessage = s3Error.message || s3Error.toString() || 'Unknown S3 error';
+        const errorCode = s3Error.Code || s3Error.name || 'UnknownError';
+        
+        return res.status(500).json({ 
+          error: 'Failed to upload image to cloud storage',
+          details: errorMessage,
+          code: errorCode
+        });
+      }
+
+      // Delete old profile picture from S3 if it exists and is an S3 URL
+      const oldProfilePicture = existingUser.profile?.profilePicture;
+      if (oldProfilePicture && oldProfilePicture.includes('amazonaws.com')) {
+        await deleteFromS3(oldProfilePicture);
+      }
+
+      // Update user with S3 URL
       const user = await prisma.user.update({
         where: { id: userId },
         data: {
@@ -438,10 +477,10 @@ app.post(
               create: {
                 username: randomUsername(),
                 fullName: existingUser.name || 'New User',
-                profilePicture: relativePath,
+                profilePicture: s3Url,
               },
               update: {
-                profilePicture: relativePath,
+                profilePicture: s3Url,
               },
             },
           },
@@ -451,17 +490,24 @@ app.post(
 
       res.json({
         message: 'Avatar uploaded',
-        avatar: relativePath,
+        avatar: s3Url,
         user: serializeUser(user),
       });
     } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: err.message || 'Failed to upload avatar' });
+      console.error('Avatar upload error:', err.message || err.toString());
+      
+      // Extract safe error message
+      const errorMessage = err.message || err.toString() || 'Unknown error';
+      
+      res.status(500).json({ 
+        error: 'Failed to upload avatar',
+        details: errorMessage
+      });
     }
   }
 );
 
-// Sign Up Route
+//Sign Up Route
 app.post('/api/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -470,9 +516,16 @@ app.post('/api/signup', async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
+    // Check if email is already registered
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
       return res.status(400).json({ error: 'Email already registered' });
+    }
+
+    // Check if username is already taken
+    const existingName = await prisma.user.findFirst({ where: { name } });
+    if (existingName) {
+      return res.status(400).json({ error: 'Username already taken' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -484,7 +537,7 @@ app.post('/api/signup', async (req, res) => {
         password: hashedPassword,
         profile: {
           create: {
-            username: randomUsername(),
+            username: randomUsername(), // you can keep this or generate differently
             fullName: name,
             bio: null,
             profilePicture: null,
@@ -505,6 +558,8 @@ app.post('/api/signup', async (req, res) => {
     res.status(500).json({ error: 'Server error during signup' });
   }
 });
+
+
 
 // User Login Route
 app.post('/api/login', async (req, res) => {
@@ -934,6 +989,8 @@ app.post("/api/clubs/:id/book/finish", async (req, res) => {
         currentBookData: null,
         assignedAt: null,
         readingGoal: null,
+        readingGoalPageStart: null,
+        readingGoalPageEnd: null,
         goalDeadline: null,
       },
     });
@@ -981,6 +1038,8 @@ app.delete("/api/clubs/:id/book", async (req, res) => {
         currentBookData: null,
         assignedAt: null,
         readingGoal: null,
+        readingGoalPageStart: null,
+        readingGoalPageEnd: null,
         goalDeadline: null,
       },
     });
@@ -1351,16 +1410,56 @@ app.get("/api/users/:userId/bookshelf/current", async (req, res) => {
       where: { id: { in: clubIds } }
     });
 
+    // Create a map of clubId to membership for quick lookup
+    const membershipMap = new Map();
+    memberships.forEach(m => {
+      membershipMap.set(m.clubId, m);
+    });
+
     const currentBooks = clubs
       .filter(c => c.currentBookId && c.currentBookData)
-      .map(c => ({
-        clubId: c.id,
-        type: "current",
-        clubName: c.name,
-        assignedAt: c.createdAt,
-        bookId: c.currentBookId,
-        bookData: c.currentBookData
-      }));
+      .map(c => {
+        const membership = membershipMap.get(c.id);
+        const start = c.readingGoalPageStart;
+        const end = c.readingGoalPageEnd;
+        const currentPage = membership?.pageNumber ?? null;
+
+        let progressPercent = null;
+        if (start != null && end != null && currentPage != null) {
+          const totalPages = end - start + 1;
+          const pagesRead = Math.max(0, currentPage - start);
+          progressPercent = Math.min(100, Math.max(0, (pagesRead / totalPages) * 100));
+        }
+
+        const bookData = {
+          clubId: c.id,
+          type: "current",
+          clubName: c.name,
+          assignedAt: c.createdAt,
+          bookId: c.currentBookId,
+          bookData: c.currentBookData,
+          readingGoalPageStart: start,
+          readingGoalPageEnd: end,
+          currentPage: currentPage,
+          progressPercent: progressPercent
+        };
+
+        console.log(`Bookshelf current - Club ${c.id}:`, {
+          readingGoalPageStart: start,
+          readingGoalPageEnd: end,
+          currentPage: currentPage,
+          progressPercent: progressPercent
+        });
+
+        return bookData;
+      });
+
+    console.log("Bookshelf current - Returning books:", currentBooks.map(b => ({
+      clubId: b.clubId,
+      readingGoalPageStart: b.readingGoalPageStart,
+      readingGoalPageEnd: b.readingGoalPageEnd,
+      progressPercent: b.progressPercent
+    })));
 
     res.json(currentBooks);
   } catch (error) {
@@ -1651,9 +1750,6 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
       },
     });
 
-    const baseUrl =
-      process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
-
     const normalized = messages.reverse().map((m) => ({
       id: m.id,
       clubId: m.clubId,
@@ -1662,11 +1758,7 @@ app.get("/api/clubs/:id/messages", async (req, res) => {
       user: {
         id: m.user.id,
         name: m.user.name,
-        profilePicture: m.user.profile?.profilePicture
-          ? `${baseUrl}${m.user.profile.profilePicture.startsWith("/") ? "" : "/"}${
-              m.user.profile.profilePicture
-            }`
-          : null,
+        profilePicture: m.user.profile?.profilePicture || null,
       },
     }));
 
@@ -1720,7 +1812,13 @@ app.get('/api/progress/:userId/:clubId', async (req, res) => {
   const { userId, clubId } = req.params;
 
   try {
-    // Correctly use the compound unique key in the `where` clause
+    // Get the club to check reading goal start
+    const club = await prisma.club.findUnique({
+      where: { id: parseInt(clubId) },
+      select: { readingGoalPageStart: true }
+    });
+
+    // Get the member's progress
     const progress = await prisma.clubMember.findUnique({
       where: {
         clubId_userId: {  // Correct reference to the compound unique constraint
@@ -1730,11 +1828,32 @@ app.get('/api/progress/:userId/:clubId', async (req, res) => {
       },
     });
 
-    if (progress) {
-      return res.json({ page_number: progress.pageNumber });
-    } else {
+    if (!progress) {
       return res.status(404).json({ message: 'Progress not found' });
     }
+
+    // If the reading goal start is set and the member's pageNumber is less than it (or null),
+    // update the member's pageNumber to the reading goal start
+    let pageNumber = progress.pageNumber;
+    if (club?.readingGoalPageStart != null) {
+      if (progress.pageNumber == null || progress.pageNumber < club.readingGoalPageStart) {
+        // Update this specific member's page number to the reading goal start
+        const updated = await prisma.clubMember.update({
+          where: {
+            clubId_userId: {
+              clubId: parseInt(clubId),
+              userId: parseInt(userId),
+            },
+          },
+          data: {
+            pageNumber: club.readingGoalPageStart
+          }
+        });
+        pageNumber = updated.pageNumber;
+      }
+    }
+
+    return res.json({ page_number: pageNumber });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Error fetching progress' });
@@ -1834,9 +1953,22 @@ app.get("/api/users/:id/clubs-joined", async (req, res) => {
 // Helpers to normalize discussion payloads for the frontend
 const serializeDiscussion = (row) => {
   if (!row) return null;
-  const tags = Array.isArray(row.tags)
-    ? row.tags
-    : (row.tags && typeof row.tags === 'object' ? row.tags : []);
+  let tags = [];
+  if (row.tags) {
+    if (Array.isArray(row.tags)) {
+      tags = row.tags;
+    } else if (typeof row.tags === 'string') {
+      try {
+        const parsed = JSON.parse(row.tags);
+        tags = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        tags = [];
+      }
+    } else if (typeof row.tags === 'object') {
+      // If it's an object, try to convert to array
+      tags = Object.values(row.tags);
+    }
+  }
   return {
     id: String(row.id),
     clubId: row.clubId,
@@ -1846,7 +1978,7 @@ const serializeDiscussion = (row) => {
     createdAt: row.datePosted,
     updatedAt: row.dateEdited || row.datePosted,
     chapterIndex: row.chapterIndex ?? null,
-    tags: Array.isArray(tags) ? tags : [],
+    tags: Array.isArray(tags) ? tags.filter(t => typeof t === 'string') : [],
     pinned: Boolean(row.pinned),
     locked: Boolean(row.locked),
     lastActivityAt: row.dateEdited || row.datePosted,
@@ -2046,7 +2178,7 @@ app.post('/api/discussion', async (req, res) => {
         tags: Array.isArray(tags) ? tags.slice(0, 5) : [],
         content: {
           create: {
-            message: String(message).slice(0, 10000),
+            message: String(message).slice(0, 1000),
           },
         },
         media: Array.isArray(media) && media.length > 0
@@ -2093,7 +2225,7 @@ app.post('/api/discussion/:id/replies', async (req, res) => {
         discussionId,
         parentId: parentId ? Number(parentId) : null,
         userId: Number(userId),
-        body: String(body).slice(0, 10000),
+        body: String(body).slice(0, 1000),
       },
       include: { user: true },
     });
@@ -2114,7 +2246,7 @@ app.patch('/api/replies/:id', async (req, res) => {
     const existing = await prisma.discussionReply.findUnique({ where: { id }, select: { userId: true } });
     if (!existing) return res.status(404).json({ error: 'Reply not found' });
     if (existing.userId !== Number(userId)) return res.status(403).json({ error: 'Not authorized' });
-    const updated = await prisma.discussionReply.update({ where: { id }, data: { body: String(body).slice(0, 10000), updatedAt: new Date() }, include: { user: true } });
+    const updated = await prisma.discussionReply.update({ where: { id }, data: { body: String(body).slice(0, 1000), updatedAt: new Date() }, include: { user: true } });
     res.json(serializeReply(updated));
   } catch (error) {
     console.error('Error editing reply:', error);

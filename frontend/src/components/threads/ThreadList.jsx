@@ -5,18 +5,26 @@ import ThreadDetail from './ThreadDetail';
 import { canCreateThread } from '../../utils/roles';
 import { createThread, fetchThreads } from '../../services/discussions';
 
-export default function ThreadList({ clubId, currentUser, isHost = false, isMember = false }) {
+export default function ThreadList({ 
+  clubId, 
+  currentUser, 
+  role // "HOST", "MODERATOR", "MEMBER"
+}) {
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState(null);
+  const isHost = role === "HOST";
+  const isModerator = role === "MODERATOR";
+  const isMember = role === "MEMBER";
 
-  const canCreate = useMemo(
-    () => canCreateThread({ isHost, isMember: Boolean(isMember || isHost) }),
-    [isHost, isMember]
-  );
+const canCreate = useMemo(
+  () => canCreateThread({ isHost, isModerator }),
+  [isHost, isModerator]
+);
+
   const pageSize = 10;
   const pollMs = 30000;
   const scrollSentinel = useRef(null);
@@ -85,30 +93,31 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>Discussions</h3>
-        {canCreate ? (
+        <h3 className="text-base font-semibold text-gray-800">Discussions</h3>
+        {canCreate && (
           <button
             type="button"
             className="px-3 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-sm"
-            style={{ fontFamily: 'Times New Roman, serif' }}
             onClick={() => setModalOpen(true)}
-          >
-            New Discussion
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="px-3 py-2 rounded border border-[#ddcdb7] bg-white text-sm opacity-70 cursor-not-allowed"
-            title="Only hosts can create threads right now."
-            style={{ fontFamily: 'Times New Roman, serif' }}
           >
             New Discussion
           </button>
         )}
       </div>
       {items.length === 0 && !loading && (
-        <div className="text-center py-3 border border-[#e6dac8] bg-[#efe6d7] rounded" style={{ fontFamily: 'Times New Roman, serif' }}>
-          <p className="text-sm text-gray-600">No discussions yet</p>
+        <div className="text-center py-4 rounded" style={{}}>
+          {canCreate ? (
+            <p className="text-sm text-gray-600">No discussions yet</p>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-700 font-medium">
+                Only hosts and moderators can create discussions.
+              </p>
+              <p className="text-sm text-gray-600">
+                Discussions are on their way!
+              </p>
+            </div>
+          )}
         </div>
       )}
       <div className="space-y-2">
@@ -125,7 +134,7 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
                   threadId={t.id}
                   currentUser={currentUser}
                   isHost={isHost}
-                  isMember={Boolean(isMember || isHost)}
+                  isMember={isMember || isHost || isModerator}
                 />
               </div>
             )}
@@ -134,7 +143,7 @@ export default function ThreadList({ clubId, currentUser, isHost = false, isMemb
       </div>
       <div ref={scrollSentinel} />
       {loading && (
-        <p className="text-xs text-gray-500" style={{ fontFamily: 'Times New Roman, serif' }}>Loading…</p>
+        <p className="text-xs text-gray-500" style={{}}>Loading…</p>
       )}
 
       <ThreadCreateModal

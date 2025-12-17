@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ProfileEdit from "./ProfileEdit";
 import { getAllUsers, sendFriendRequest, getFriends, getPendingFriendRequests, getReceivedFriendRequests } from "./services/friends";
 
@@ -192,7 +192,7 @@ function AddFriend() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F7F1E2" }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-gray-600" style={{}}>
             Loading users...
           </p>
         </div>
@@ -212,22 +212,12 @@ function AddFriend() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      {/* Header */}
-      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
-              Plotline
-            </div>
-            <div className="flex items-center space-x-3">
-              <UserDropdown onEditProfile={(previousLocation) => {
-                setIsEditModalOpen(true);
-                setReturnPath(previousLocation);
-              }} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
+          setIsEditModalOpen(true);
+          setReturnPath(previousLocation);
+        }}
+      />
 
       {/* Main Content */}
       <main className="flex-grow px-4 py-10">
@@ -235,7 +225,7 @@ function AddFriend() {
           <div className="flex items-center justify-between mb-6">
             <h1
               className="text-3xl font-semibold"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Add Friends
             </h1>
@@ -243,7 +233,7 @@ function AddFriend() {
               type="button"
               onClick={() => navigate("/friends")}
               className="px-6 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               View Friends
             </button>
@@ -262,7 +252,7 @@ function AddFriend() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1 border-none outline-none text-gray-700 placeholder-gray-400"
-                  style={{ fontFamily: "Times New Roman, serif", backgroundColor: "transparent" }}
+                  style={{backgroundColor: "transparent" }}
                 />
                 {searchQuery && (
                   <button
@@ -283,13 +273,13 @@ function AddFriend() {
           <div>
             <h2
               className="text-xl font-semibold text-gray-800 mb-4"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               All Users
             </h2>
             {filteredUsers.length === 0 ? (
               <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-8 text-center">
-                <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                <p className="text-gray-600" style={{}}>
                   {searchQuery ? `No users found matching "${searchQuery}"` : "No other users found."}
                 </p>
               </div>
@@ -313,7 +303,7 @@ function AddFriend() {
                             <img src={avatarSrc} alt={otherUser.name} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                              <span className="text-xl text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                              <span className="text-xl text-gray-700" style={{}}>
                                 {otherUser.name?.charAt(0).toUpperCase() || "?"}
                               </span>
                             </div>
@@ -322,7 +312,7 @@ function AddFriend() {
                         <div className="flex-1 min-w-0">
                           <h3
                             className="text-lg font-semibold text-gray-800 truncate"
-                            style={{ fontFamily: "Times New Roman, serif" }}
+                            style={{}}
                           >
                             {otherUser.name}
                           </h3>
@@ -333,7 +323,7 @@ function AddFriend() {
                       {otherUser.profile?.bio && (
                         <p
                           className="text-xs text-gray-600 mb-4 line-clamp-2"
-                          style={{ fontFamily: "Times New Roman, serif" }}
+                          style={{}}
                         >
                           {otherUser.profile.bio}
                         </p>
@@ -350,7 +340,7 @@ function AddFriend() {
                             ? "border-[#ddcdb7] bg-[#f7ecda] text-gray-600 cursor-not-allowed"
                             : "border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] text-gray-800"
                         }`}
-                        style={{ fontFamily: "Times New Roman, serif" }}
+                        style={{}}
                       >
                         {alreadyFriend
                           ? "Already Friends"

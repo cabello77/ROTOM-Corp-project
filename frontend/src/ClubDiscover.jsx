@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ProfileEdit from "./ProfileEdit";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -94,7 +94,7 @@ function ClubDiscover() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
           <p
             className="text-gray-600"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Loading clubs...
           </p>
@@ -105,25 +105,12 @@ function ClubDiscover() {
 
   return (
     <div className="min-h-screen flex flex-col bg-amber-50">
-      {/* Header */}
-      <header className="text-white" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div
-              className="text-6xl md:text-8xl italic"
-              style={{ fontFamily: "Kapakana, cursive" }}
-            >
-              Plotline
-            </div>
-            <div className="space-x-4">
-              <UserDropdown onEditProfile={(previousLocation) => {
-                setIsEditModalOpen(true);
-                setReturnPath(previousLocation);
-              }} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
+          setIsEditModalOpen(true);
+          setReturnPath(previousLocation);
+        }}
+      />
 
       {/* Main Content */}
       <main className="flex-grow px-4 py-10">
@@ -132,7 +119,7 @@ function ClubDiscover() {
           <section className="flex flex-col items-center">
             <h1
               className="text-3xl font-semibold text-center mb-8"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Discover Book Clubs
             </h1>
@@ -140,7 +127,7 @@ function ClubDiscover() {
             {clubs.length === 0 ? (
               <p
                 className="text-center text-gray-600"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 No clubs found yet. Be the first to create one!
               </p>
@@ -154,20 +141,20 @@ function ClubDiscover() {
                     <div>
                       <h2
                         className="text-xl font-semibold mb-2"
-                        style={{ fontFamily: "Times New Roman, serif" }}
+                        style={{}}
                       >
                         {club.name}
                       </h2>
                       <p
                         className="text-sm text-gray-600 mb-3"
-                        style={{ fontFamily: "Times New Roman, serif" }}
+                        style={{}}
                       >
                         {club.description || "No description available."}
                       </p>
                     </div>
                     <div
                       className="mt-2 text-sm text-gray-500"
-                      style={{ fontFamily: "Times New Roman, serif" }}
+                      style={{}}
                     >
                       Created by:{" "}
                       <strong>{club.creator?.name || "Unknown"}</strong>
@@ -177,7 +164,7 @@ function ClubDiscover() {
                     <Link
                       to={`/clubs/${club.id}`}
                       className="mt-4 block w-full text-center px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-                      style={{ fontFamily: "Times New Roman, serif" }}
+                      style={{}}
                     >
                       View Book Club
                     </Link>

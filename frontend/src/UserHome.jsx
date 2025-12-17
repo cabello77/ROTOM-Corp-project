@@ -1,9 +1,9 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
 import ProfileEdit from "./ProfileEdit";
 import axios from "axios";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import HomeLeftSidebar from "./components/home/HomeLeftSidebar";
 import HomeCenterFeed from "./components/home/HomeCenterFeed";
 import HomeRightSidebar from "./components/home/HomeRightSidebar";
@@ -36,7 +36,7 @@ function UserHome() {
   const memberSince = useMemo(() => {
     return user?.profile?.joinDate
       ? new Date(user.profile.joinDate).toLocaleDateString()
-      : "—";
+      : "�";
   }, [user?.profile?.joinDate]);
 
   // Combine created and joined clubs
@@ -64,7 +64,7 @@ function UserHome() {
     }
   }, [isLoading, isAuthenticated, navigate]);
 
-  // 🆕 Fetch clubs created by the user
+  // ?? Fetch clubs created by the user
   useEffect(() => {
     const fetchClubs = async () => {
       try {
@@ -120,7 +120,7 @@ function UserHome() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F7F1E2" }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-gray-600" style={{}}>
             Loading...
           </p>
         </div>
@@ -179,25 +179,18 @@ function UserHome() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
-              Plotline
-            </div>
-            <div className="flex items-center space-x-3">
-              <UserDropdown onEditProfile={() => setIsEditModalOpen(true)} />
-            </div>
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader onEditProfile={() => setIsEditModalOpen(true)} />
 
 <main className="flex-grow px-4 py-8">
   <div className="max-w-7xl mx-auto space-y-6">
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       {/* LEFT SIDEBAR */}
-      <HomeLeftSidebar allClubs={allClubs} friendsList={friendsList} />
+      <HomeLeftSidebar 
+        clubsCreated={clubsCreated} 
+        clubsJoined={clubsJoined} 
+        friendsList={friendsList} 
+      />
       {/* CENTER COLUMN */}
       <HomeCenterFeed allClubs={allClubs} />
 
@@ -217,7 +210,7 @@ function UserHome() {
 
       {statusMessage && (
         <div className="fixed bottom-6 right-6 bg-white shadow-lg border border-gray-200 rounded-lg px-4 py-3">
-          <p className="text-sm text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-sm text-gray-700" style={{}}>
             {statusMessage}
           </p>
         </div>

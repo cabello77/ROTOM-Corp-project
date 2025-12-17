@@ -109,7 +109,7 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
           <div className="flex justify-between items-center">
             <h2
               className="text-2xl font-semibold text-gray-800"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Invite Friends to Book Club
             </h2>
@@ -135,13 +135,13 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#774C30] mx-auto"></div>
-              <p className="mt-4 text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+              <p className="mt-4 text-gray-600" style={{}}>
                 Loading friends...
               </p>
             </div>
           ) : friends.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+              <p className="text-gray-600" style={{}}>
                 No friends available to invite. All your friends are already members of this club.
               </p>
             </div>
@@ -169,7 +169,7 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
                           <img src={avatarSrc} alt={friendData.name} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                            <span className="text-lg text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+                            <span className="text-lg text-gray-700 font-semibold" style={{}}>
                               {friendData.name?.charAt(0).toUpperCase() || "?"}
                             </span>
                           </div>
@@ -178,7 +178,7 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
                       <div className="flex-1 min-w-0">
                         <h3
                           className="font-semibold text-gray-800 truncate"
-                          style={{ fontFamily: "Times New Roman, serif" }}
+                          style={{}}
                         >
                           {friendData.name}
                         </h3>
@@ -206,7 +206,7 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-[#e3d8c8] flex justify-between items-center">
-          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-sm text-gray-600" style={{}}>
             {selectedFriends.size} friend{selectedFriends.size !== 1 ? "s" : ""} selected
           </p>
           <div className="space-x-3">
@@ -214,7 +214,7 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
               onClick={onClose}
               disabled={sending}
               className="px-4 py-2 rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               Cancel
             </button>
@@ -222,7 +222,7 @@ export default function InviteFriendsModal({ isOpen, onClose, clubId, inviterId,
               onClick={handleSendInvitations}
               disabled={sending || selectedFriends.size === 0}
               className="px-4 py-2 rounded border border-[#774C30] bg-[#774C30] text-white hover:bg-[#5a3a24] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               {sending ? "Sending..." : `Send Invitation${selectedFriends.size !== 1 ? "s" : ""}`}
             </button>

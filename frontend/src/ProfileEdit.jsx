@@ -1,14 +1,29 @@
 import { useEffect, useState } from "react";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
+
 function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
+  // Helper function to construct full URL for profile picture
+  const getAvatarUrl = (profilePicture) => {
+    if (!profilePicture) return "";
+    if (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")) {
+      return profilePicture;
+    }
+    // Ensure path starts with / and API_BASE doesn't end with /
+    const cleanPath = profilePicture.startsWith("/") ? profilePicture : `/${profilePicture}`;
+    const cleanBase = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+    return `${cleanBase}${cleanPath}`;
+  };
+
   const [form, setForm] = useState({
     name: user.name,
     email: user.email,
     bio: user.profile?.bio || "",
   });
-  const [avatarPreview, setAvatarPreview] = useState(user.profile?.profilePicture || "");
+  const [avatarPreview, setAvatarPreview] = useState(getAvatarUrl(user.profile?.profilePicture));
   const [avatarFile, setAvatarFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -17,8 +32,10 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
       email: user.email,
       bio: user.profile?.bio || "",
     });
-    setAvatarPreview(user.profile?.profilePicture || "");
+    const avatarUrl = getAvatarUrl(user.profile?.profilePicture);
+    setAvatarPreview(avatarUrl);
     setAvatarFile(null);
+    setImageError(false);
   }, [isOpen, user]);
 
   if (!isOpen) return null;
@@ -32,6 +49,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
     const file = event.target.files?.[0];
     if (!file) return;
     setIsUploading(true);
+    setImageError(false);
     const reader = new FileReader();
     reader.onloadend = () => {
       setIsUploading(false);
@@ -53,7 +71,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
       email: user.email,
       bio: user.profile?.bio || "",
     });
-    setAvatarPreview(user.profile?.profilePicture || "");
+    setAvatarPreview(getAvatarUrl(user.profile?.profilePicture));
     setAvatarFile(null);
     onClose();
   };
@@ -82,7 +100,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h2 className="text-xl font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+            <h2 className="text-xl font-semibold" style={{}}>
               Edit Profile
             </h2>
           </div>
@@ -92,10 +110,18 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
           <div className="flex flex-col md:flex-row items-start space-y-6 md:space-y-0 md:space-x-8">
             <div className="flex-shrink-0">
               <div className="w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden mb-4">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
+                {avatarPreview && !imageError ? (
+                  <img 
+                    src={avatarPreview} 
+                    alt="Profile" 
+                    className="w-32 h-32 rounded-full object-cover"
+                    onError={(e) => {
+                      console.error("Failed to load profile picture:", avatarPreview);
+                      setImageError(true);
+                    }}
+                  />
                 ) : (
-                  <span className="text-4xl text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                  <span className="text-4xl text-gray-600" style={{}}>
                     {user.name.charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -104,7 +130,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                 <div
                   className="w-full bg-gray-200 border border-gray-400 rounded px-4 py-2 text-center cursor-pointer hover:bg-gray-300 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 >
                   {isUploading ? "Uploading..." : "Upload Profile Pic"}
                 </div>
@@ -113,8 +139,8 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
 
             <div className="flex-grow space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
-                  Display Name
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
+                  Username
                 </label>
                 <input
                   type="text"
@@ -122,12 +148,12 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                   value={form.name}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
                   Email
                 </label>
                 <input
@@ -136,12 +162,12 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                   value={form.email}
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: "Times New Roman, serif" }}>
+                <label className="block text-sm font-medium text-gray-700 mb-2" style={{}}>
                   Bio
                 </label>
                 <textarea
@@ -150,7 +176,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
                   onChange={handleChange}
                   rows={3}
                   className="w-full border border-gray-300 rounded p-3 text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                   placeholder="Tell the community a little about yourself"
                 />
               </div>
@@ -164,7 +190,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
               type="button"
               onClick={handleCancel}
               className="text-gray-700 px-6 py-2 rounded border border-gray-400 hover:bg-gray-200 transition-opacity"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
               disabled={isSaving}
             >
               Cancel
@@ -173,7 +199,7 @@ function ProfileEdit({ isOpen, onClose, user, onSave, isSaving }) {
               type="button"
               onClick={handleSave}
               className="text-gray-800 px-6 py-2 rounded border border-gray-400 hover:opacity-80 transition-opacity font-medium"
-              style={{ fontFamily: "Times New Roman, serif", backgroundColor: "#EFE6D7" }}
+              style={{backgroundColor: "#EFE6D7" }}
               disabled={isSaving}
             >
               {isSaving ? "Saving..." : "Done"}

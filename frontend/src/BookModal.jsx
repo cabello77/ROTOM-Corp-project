@@ -43,6 +43,52 @@ export default function BookModal({ book, onClose }) {
           </p>
         )}
 
+        {/* Reading Goal */}
+        {(book.readingGoalPageStart != null || book.readingGoalPageEnd != null) && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-700 text-center">
+              <span className="font-medium">Reading Goal:</span>{" "}
+              {book.readingGoalPageStart != null && book.readingGoalPageEnd != null
+                ? `Pages ${book.readingGoalPageStart}-${book.readingGoalPageEnd}`
+                : book.readingGoalPageStart != null
+                ? `Starting at page ${book.readingGoalPageStart}`
+                : book.readingGoalPageEnd != null
+                ? `Ending at page ${book.readingGoalPageEnd}`
+                : ""}
+            </p>
+          </div>
+        )}
+
+        {/* Progress Bar */}
+        {(book.progressPercent != null || book.currentPage != null) && (
+          <div className="mt-4 space-y-1">
+            {book.progressPercent != null && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Your Progress</span>
+                  <span className="text-sm text-gray-600 font-medium">
+                    {Math.round(Number(book.progressPercent))}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="h-2.5 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, Math.max(0, Number(book.progressPercent)))}%`,
+                      backgroundColor: "#774C30",
+                    }}
+                  ></div>
+                </div>
+              </>
+            )}
+            {book.currentPage != null && (
+              <p className="text-xs text-gray-500 text-center mt-1">
+                Currently on page {book.currentPage}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Friends Activity (Hidden for now) */}
         {/* You can remove or comment out this section to hide it */}
         {/* 

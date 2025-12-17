@@ -52,7 +52,7 @@ export default function PastReads({ clubId }) {
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5">
         <p
           className="text-sm text-gray-600"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Loading past reads...
         </p>
@@ -64,7 +64,7 @@ export default function PastReads({ clubId }) {
     <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
       <h2
         className="text-lg font-semibold text-gray-800"
-        style={{ fontFamily: "Times New Roman, serif" }}
+        style={{}}
       >
         Past Reads
       </h2>
@@ -72,7 +72,7 @@ export default function PastReads({ clubId }) {
       {pastReads.length === 0 ? (
         <p
           className="text-sm text-gray-600"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           This club hasn't finished any books yet.
         </p>
@@ -89,7 +89,7 @@ export default function PastReads({ clubId }) {
               <div
                 key={book.id}
                 className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded hover:bg-[#f1e7d8] transition cursor-pointer"
-                style={{ fontFamily: "Times New Roman, serif" }}
+                style={{}}
               >
                 <img
                   src={cover}

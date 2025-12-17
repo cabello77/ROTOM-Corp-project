@@ -6,7 +6,7 @@ import LiveChat from "./components/club/LiveChat";
 import DiscussionsPanel from "./components/club/DiscussionsPanel";
 import ClubLeftSidebar from "./components/club/ClubLeftSidebar";
 import ClubRightSidebar from "./components/club/ClubRightSidebar";
-import ClubHeader from "./components/club/ClubHeader";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ClubTitleBar from "./components/club/ClubTitleBar";
 import ClubModals from "./components/club/ClubModals";
 import InviteFriendsModal from "./components/club/InviteFriendsModal";
@@ -190,7 +190,7 @@ export default function ClubHome() {
     }
   };
 
-  // ⭐ CLEAN + FINAL ⭐
+
   const handleUpdateGoal = async ({
     readingGoal,
     goalDeadline,
@@ -245,7 +245,6 @@ export default function ClubHome() {
     });
   };
 
-  // ⭐ CLEAN + FINAL — ASSIGN BOOK WITH PAGE RANGE ⭐
   const handleAssignBook = async ({
     bookDetails,
     readingGoal,
@@ -254,7 +253,7 @@ export default function ClubHome() {
     readingGoalPageEnd,
   }) => {
     try {
-      await assignBookToClub(
+      const updatedClub = await assignBookToClub(
         API_BASE,
         id,
         user.id,
@@ -265,13 +264,46 @@ export default function ClubHome() {
         readingGoalPageEnd
       );
 
-      setCurrentBook(bookDetails);
+      // Update club state with the response - this will update the display immediately
+      setClub(updatedClub);
+
+      // Update current book from the response
+      if (updatedClub.currentBookData) {
+        setCurrentBook(updatedClub.currentBookData);
+      }
+
+      // Update reading goal state from the response (for form state)
+      if (updatedClub.readingGoal) {
+        setReadingGoal(updatedClub.readingGoal);
+      } else {
+        setReadingGoal("");
+      }
+
+      // Update reading goal page range from the response (for form state)
+      if (updatedClub.readingGoalPageStart !== null && updatedClub.readingGoalPageStart !== undefined) {
+        setReadingGoalPageStart(updatedClub.readingGoalPageStart.toString());
+      } else {
+        setReadingGoalPageStart("");
+      }
+      if (updatedClub.readingGoalPageEnd !== null && updatedClub.readingGoalPageEnd !== undefined) {
+        setReadingGoalPageEnd(updatedClub.readingGoalPageEnd.toString());
+      } else {
+        setReadingGoalPageEnd("");
+      }
+
+      // Update goal deadline if present (for form state)
+      if (updatedClub.goalDeadline) {
+        setGoalDeadline(new Date(updatedClub.goalDeadline).toISOString().split("T")[0]);
+      } else {
+        setGoalDeadline("");
+      }
 
       setIsModalOpen(false);
       setSearchQuery("");
       setSearchResults([]);
       setSelectedBook(null);
 
+      // Clear form fields for next use
       setBookDetails({
         title: "",
         authors: "",
@@ -280,11 +312,6 @@ export default function ClubHome() {
         year: "",
         genre: "",
       });
-
-      setReadingGoal("");
-      setGoalDeadline("");
-      setReadingGoalPageStart("");
-      setReadingGoalPageEnd("");
     } catch (err) {
       console.error("Error assigning book:", err);
     }
@@ -304,14 +331,18 @@ export default function ClubHome() {
         return;
       }
 
-      const clubRes = await axios.get(`${API_BASE}/api/clubs/${id}`);
-      const updated = clubRes.data;
-
-      setClub(updated);
-      setCurrentBook(updated.currentRead || null);
-      setReadingGoal(updated.readingGoal || "");
-      setGoalDeadline(updated.goalDeadline || "");
-      setMembers(updated.members || []);
+      // Update club state with the response - this clears reading goal immediately
+      setClub(data);
+      setCurrentBook(null);
+      // Clear reading goal state
+      setReadingGoal("");
+      setGoalDeadline("");
+      setReadingGoalPageStart("");
+      setReadingGoalPageEnd("");
+      
+      // Refresh members to get updated data
+      const membersRes = await axios.get(`${API_BASE}/api/clubs/${id}/members`);
+      setMembers(membersRes.data);
       setUserProgress(0);
 
     } catch (err) {
@@ -340,7 +371,7 @@ export default function ClubHome() {
         className="min-h-screen flex items-center justify-center"
         style={{ backgroundColor: "#F7F1E2" }}
       >
-        <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+        <p className="text-gray-700" style={{}}>
           Loading...
         </p>
       </div>
@@ -349,8 +380,8 @@ export default function ClubHome() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      <ClubHeader
-        onOpenEditProfile={(previousLocation) => {
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
           setIsEditModalOpen(true);
           setReturnPath(previousLocation);
         }}
@@ -383,8 +414,18 @@ export default function ClubHome() {
                   });
 
                   const data = await res.json();
-                  if (res.ok) setCurrentBook(null);
-                  else console.error("Failed to remove book:", data.error);
+                  if (res.ok) {
+                    // Update club state with the response - this clears reading goal immediately
+                    setClub(data);
+                    setCurrentBook(null);
+                    // Clear reading goal state
+                    setReadingGoal("");
+                    setGoalDeadline("");
+                    setReadingGoalPageStart("");
+                    setReadingGoalPageEnd("");
+                  } else {
+                    console.error("Failed to remove book:", data.error);
+                  }
                 } catch (err) {
                   console.error("Error removing book:", err);
                 }
@@ -400,10 +441,9 @@ export default function ClubHome() {
                 apiBase={API_BASE}
               />
               <DiscussionsPanel
-                clubId={club.id}
-                user={user}
-                isMember={isMember}
-                isHost={user.id === club.creatorId}
+                clubId={club.id} 
+                currentUser={user} 
+                member={currentUserMemberData}
               />
             </section>
 

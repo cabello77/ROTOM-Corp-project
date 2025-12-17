@@ -16,14 +16,14 @@ export default function AssignModeratorModal({
 
         <h2
           className="text-lg font-semibold text-gray-800"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Assign Moderator
         </h2>
 
         <p
           className="text-sm text-gray-600"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Select a member to promote to moderator.
         </p>
@@ -32,7 +32,7 @@ export default function AssignModeratorModal({
           {members.length === 0 && (
             <p
               className="text-sm text-gray-500"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               No eligible members.
             </p>
@@ -42,7 +42,7 @@ export default function AssignModeratorModal({
           <label
             key={member.userId}
             className="flex items-center gap-3 p-2 rounded hover:bg-gray-100 cursor-pointer"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             <input
               type="radio"
@@ -59,7 +59,7 @@ export default function AssignModeratorModal({
           <button
             onClick={onClose}
             className="px-4 py-2 rounded border text-sm bg-gray-100 hover:bg-gray-200"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Cancel
           </button>
@@ -68,7 +68,7 @@ export default function AssignModeratorModal({
             disabled={!selectedId}
             onClick={() => onPromote(selectedId)}
             className="px-4 py-2 rounded text-sm bg-[#d9c5a3] hover:bg-[#cbb894]"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             Promote
           </button>

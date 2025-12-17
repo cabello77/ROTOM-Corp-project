@@ -41,7 +41,7 @@ function Login() {
       {/* Login Section */}
       <main className="flex-grow flex flex-col items-center justify-center px-4 py-10">
         <div className="bg-white shadow-md rounded px-8 pt-6 pb-8 w-full max-w-md">
-          <h1 className="text-2xl font-bold text-center mb-6" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h1 className="text-2xl font-bold text-center mb-6" style={{}}>
             Login
           </h1>
 
@@ -53,7 +53,7 @@ function Login() {
               value={formData.email}
               onChange={handleChange}
               className="w-full border border-gray-300 p-3 mb-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
               required
             />
             <input
@@ -63,16 +63,14 @@ function Login() {
               value={formData.password}
               onChange={handleChange}
               className="w-full border border-gray-300 p-3 mb-3 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
               required
             />
 
             <button
               type="submit"
               className="w-full py-4 rounded-lg font-semibold text-lg transition-all hover:scale-105 shadow-lg disabled:opacity-60"
-              style={{ 
-                fontFamily: "Times New Roman, serif",
-                backgroundColor: '#774C30',
+              style={{backgroundColor: '#774C30',
                 color: 'white'
               }}
               disabled={isSubmitting}
@@ -88,7 +86,7 @@ function Login() {
                   ? "text-green-600"
                   : "text-red-600"
               }`}
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               {message}
             </p>
@@ -99,7 +97,7 @@ function Login() {
       {/* Footer */}
       <footer className="text-white py-8" style={{ backgroundColor: "#774C30" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p style={{ fontFamily: "Times New Roman, serif" }}>
+          <p style={{}}>
             &copy; 2025 Plotline brought to you by ROTOM Corporation
           </p>
         </div>

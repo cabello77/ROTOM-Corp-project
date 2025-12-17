@@ -1,7 +1,7 @@
-export function canCreateThread({ isHost = false, isMember = false } = {}) {
-  // Allow any club member (including host) to create threads
-  return Boolean(isHost || isMember);
+export function canCreateThread({ isHost, isModerator }) {
+  return isHost || isModerator;
 }
+
 
 export function canReply({ isLocked = false, isMember = false } = {}) {
   // Members (or host) can reply if not locked

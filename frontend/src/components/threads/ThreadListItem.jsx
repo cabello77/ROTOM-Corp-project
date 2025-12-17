@@ -17,8 +17,8 @@ export default function ThreadListItem({ thread, isHost = false, onClick }) {
               <span className="text-xs px-2 py-1 rounded bg-green-100 border border-green-300 text-green-800">New</span>
             )}
           </div>
-          <h4 className="mt-1 text-base font-semibold text-gray-800" style={{ fontFamily: 'Times New Roman, serif' }}>{title}</h4>
-          <p className="text-xs text-gray-600 mt-1" style={{ fontFamily: 'Times New Roman, serif' }}>by {author?.name || 'Unknown'}</p>
+          <h4 className="mt-1 text-base font-semibold text-gray-800 break-words" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{title}</h4>
+          <p className="text-xs text-gray-600 mt-1">by {author?.name || 'Unknown'}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {typeof chapterIndex === 'number' && (
               <span className="text-xs px-2 py-1 rounded-full border border-[#ddcdb7] bg-white text-gray-700">Chapter {chapterIndex}</span>

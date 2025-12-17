@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test ./tests/**/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.925.0",
@@ -19,5 +20,9 @@
     "prisma": "^6.17.0",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@prisma/adapter-pg": "^6.17.0",
+    "pg-mem": "^3.0.5"
   }
 }

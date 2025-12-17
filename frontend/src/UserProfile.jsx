@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "./contexts/UserContext";
-import UserDropdown from "./components/UserDropdown";
+import AuthenticatedHeader from "./components/AuthenticatedHeader";
 import ProfileEdit from "./ProfileEdit";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
@@ -88,7 +88,7 @@ export default function UserProfile() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F7F1E2" }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+          <p className="text-gray-600" style={{}}>
             Loading profile...
           </p>
         </div>
@@ -109,22 +109,12 @@ export default function UserProfile() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F7F1E2" }}>
-      {/* Header */}
-      <header className="text-white shadow" style={{ backgroundColor: "#774C30" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="text-6xl md:text-8xl italic" style={{ fontFamily: "Kapakana, cursive" }}>
-              Plotline
-            </div>
-            <UserDropdown
-              onEditProfile={(previousLocation) => {
-                setIsEditModalOpen(true);
-                setReturnPath(previousLocation);
-              }}
-            />
-          </div>
-        </div>
-      </header>
+      <AuthenticatedHeader
+        onEditProfile={(previousLocation) => {
+          setIsEditModalOpen(true);
+          setReturnPath(previousLocation);
+        }}
+      />
 
       {/* Main Content */}
       <main className="flex-grow px-4 py-10">
@@ -138,7 +128,7 @@ export default function UserProfile() {
                   <img src={avatarSrc} alt={fullProfile.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
-                    <span className="text-4xl text-gray-700 font-semibold" style={{ fontFamily: "Times New Roman, serif" }}>
+                    <span className="text-4xl text-gray-700 font-semibold" style={{}}>
                       {fullProfile.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
@@ -148,13 +138,13 @@ export default function UserProfile() {
               <div className="flex-1">
                 <h1
                   className="text-3xl font-semibold text-gray-800 mb-2"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 >
                   {fullProfile.name}
                 </h1>
 
                 {fullProfile.profile?.bio && (
-                  <p className="text-gray-700" style={{ fontFamily: "Times New Roman, serif" }}>
+                  <p className="text-gray-700" style={{}}>
                     {fullProfile.profile.bio}
                   </p>
                 )}
@@ -164,63 +154,69 @@ export default function UserProfile() {
 
           {/* Bookshelf Section */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{}}>
               Bookshelf
             </h2>
 
             {/* Current Reads */}
-            {currentClubs.length > 0 && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
-                  Currently Reading
-                </h3>
+          <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3">
+          Currently Reading
+          </h3>
 
-                <div className="space-y-4">
-                  {currentClubs.map((club) => {
-                    const bookData = club.currentBookData;
-                    const bookCover = bookData?.cover || "/default-book.png"; // Fallback for cover image
-                    const bookTitle = bookData?.title || "Unknown Book";
+          {currentClubs.length === 0 ? (
+          <p className="text-sm text-gray-600">No current reads.</p>
+          ) : (
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+          {currentClubs.map((club) => {
+          const bookData = club.currentBookData;
+          const bookCover = bookData?.cover || "/default-book.png";
+          const bookTitle = bookData?.title || "Unknown Book";
 
-                    return (
-                      <div key={club.id} className="flex items-center border border-[#e3d8c8] rounded-lg p-4">
-                        <img
-                          src={bookCover}
-                          alt={bookTitle}
-                          className="w-12 h-16 object-cover rounded mr-4" // Adjusted the margin to position it correctly
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
-                            {bookTitle}
-                          </h4>
-                          <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
-                            Reading with <strong>{club.name}</strong>
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+          return (
+                    <div
+                    key={club.id}
+                    className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed] rounded"
+                    >
+                    <img
+                    src={bookCover}
+                    alt={bookTitle}
+                    className="w-12 h-16 object-cover rounded"
+                    />
+                    <div>
+                    <p className="text-sm text-gray-700 font-semibold">
+                    {bookTitle}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                    Reading with: <strong>{club.name}</strong>
+                    </p>
+                    </div>
+                    </div>
+          );
+          })}
+          </div>
+          )}
+          </div>
+
 
             {/* Past Reads */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{ fontFamily: "Times New Roman, serif" }}>
+              <h3 className="text-lg font-semibold text-gray-700 mb-3" style={{}}>
                 Past Reads
               </h3>
 
               {fullProfile.pastReads?.length === 0 ? (
-                <p className="text-sm text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+                <p className="text-sm text-gray-600" style={{}}>
                   No past reads yet.
                 </p>
               ) : (
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                  {fullProfile.pastReads.map((entry) => (
+                  {fullProfile.pastReads.map((entry, index) => (
                     <div
-                      key={entry.bookId}
+                      key={entry.bookId || `past-read-${index}`}
                       className="flex items-center space-x-3 p-3 border border-[#ddcdb7] bg-[#faf6ed]
                                 rounded"
-                      style={{ fontFamily: "Times New Roman, serif" }}
+                      style={{}}
                     >
                       <img
                         src={entry.bookData?.cover || ""}
@@ -250,29 +246,82 @@ export default function UserProfile() {
 
           {/* Book Clubs */}
           <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-6 mb-6">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{ fontFamily: "Times New Roman, serif" }}>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4" style={{}}>
               Book Clubs
             </h2>
 
             {fullProfile.clubs.length > 0 ? (
-              <div className="space-y-2">
-                {fullProfile.clubs.map((club) => (
-                  <div
-                    key={club.id}
-                    className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default"
-                    style={{ fontFamily: "Times New Roman, serif" }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-gray-800">{club.name}</span> {/* Make the club name bold */}
+              <div className="space-y-3">
+                {fullProfile.clubs.map((club, index) => {
+                  const percent =
+                    typeof club.progressPercent === "number"
+                      ? Math.min(100, Math.max(0, Math.round(club.progressPercent)))
+                      : null;
+
+                  const hasReadingGoal = club.readingGoalPageStart != null && club.readingGoalPageEnd != null;
+                  const readingGoalText = hasReadingGoal
+                    ? `Pages ${club.readingGoalPageStart}-${club.readingGoalPageEnd}`
+                    : null;
+
+                  const currentBookTitle = club.currentBookData?.title || null;
+
+                  return (
+                    <div
+                      key={club.id || `club-${index}`}
+                      className="block px-4 py-3 rounded border border-[#e6dac8] bg-[#faf6ed] cursor-default space-y-2"
+                      style={{}}
+                    >
+                      {/* Book Club Name */}
+                      <div>
+                        <span className="font-bold text-gray-800 text-base">
+                          {club.name}
+                        </span>
+                      </div>
+
+                      {/* Current Book */}
+                      {currentBookTitle && (
+                        <div>
+                          <p className="text-sm text-gray-700">
+                            <span className="font-medium">Current Book:</span> {currentBookTitle}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Reading Goal */}
+                      {readingGoalText && (
+                        <div>
+                          <p className="text-sm text-gray-600">
+                            <span className="font-medium">Reading Goal:</span> {readingGoalText}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Progress Bar */}
+                      {percent !== null && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-600">Progress</span>
+                            <span className="text-xs text-gray-600 font-medium">
+                              {percent}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="h-2 rounded-full transition-all"
+                              style={{
+                                width: `${percent}%`,
+                                backgroundColor: "#774C30",
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {club.description && (
-                      <p className="text-sm text-gray-600 mt-1">{club.description}</p>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-gray-600" style={{ fontFamily: "Times New Roman, serif" }}>
+              <p className="text-gray-600" style={{}}>
                 You are not part of any book clubs yet.
               </p>
             )}

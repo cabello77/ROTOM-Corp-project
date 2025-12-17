@@ -27,7 +27,7 @@ export default function HomeRightSidebar({
               <div className="w-full h-full bg-[#efe2cf] flex items-center justify-center">
                 <span
                   className="text-2xl text-gray-700"
-                  style={{ fontFamily: "Times New Roman, serif" }}
+                  style={{}}
                 >
                   {user.name?.charAt(0).toUpperCase()}
                 </span>
@@ -40,13 +40,13 @@ export default function HomeRightSidebar({
           <div>
             <h2
               className="text-xl font-semibold text-gray-800"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               {user.name}
             </h2>
             <p
               className="text-sm text-gray-500 mt-1"
-              style={{ fontFamily: "Times New Roman, serif" }}
+              style={{}}
             >
               {user.email}
             </p>
@@ -56,7 +56,7 @@ export default function HomeRightSidebar({
           <Link
             to={`/profile/${user.id}`}
             className="block w-full text-center text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             View Profile
           </Link>
@@ -64,7 +64,7 @@ export default function HomeRightSidebar({
           {/* MEMBER INFO */}
           <div
             className="text-sm text-gray-600 space-y-1"
-            style={{ fontFamily: "Times New Roman, serif" }}
+            style={{}}
           >
             <p>Member since - {memberSince}</p>
             <p>
@@ -76,11 +76,58 @@ export default function HomeRightSidebar({
         </div>
       </div>
 
+      {/* MY CLUB PROGRESS */}
+      {clubsJoined.length > 0 && (
+        <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-3">
+          <h2 className="text-lg font-semibold text-gray-800" style={{}}>
+            My Club Reading Goals
+          </h2>
+
+          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+            {clubsJoined.map((club) => {
+              const percent =
+                typeof club.progressPercent === "number"
+                  ? Math.min(100, Math.max(0, Math.round(club.progressPercent)))
+                  : 0;
+
+              return (
+                <div
+                  key={club.id}
+                  className="space-y-1 border border-[#e3d8c8] rounded-lg p-3 bg-[#faf6ed]"
+                >
+                  <div className="flex justify-between items-center text-xs text-gray-700">
+                    <span className="font-semibold">{club.name}</span>
+                    <span>{percent}%</span>
+                  </div>
+
+                  {club.currentBookData?.title && (
+                    <p className="text-xs text-gray-600">
+                      <span className="font-medium">Book:</span>{" "}
+                      {club.currentBookData.title}
+                    </p>
+                  )}
+
+                  <div className="w-full bg-gray-200 rounded-full h-2 mt-1 overflow-hidden">
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{
+                        width: `${percent}%`,
+                        backgroundColor: "#774C30",
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* MY BOOKSHELF */}
       <div className="bg-white border border-[#e3d8c8] rounded-xl shadow-sm p-5 space-y-4">
         <h2
           className="text-lg font-semibold text-gray-800"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           My Bookshelf
         </h2>
@@ -94,7 +141,7 @@ export default function HomeRightSidebar({
           type="button"
           onClick={onLogout}
           className="w-full text-gray-800 px-4 py-2 rounded border border-[#ddcdb7] bg-[#efe6d7] hover:bg-[#e3d5c2] transition-colors"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Logout
         </button>

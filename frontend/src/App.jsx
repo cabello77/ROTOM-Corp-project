@@ -1,90 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
 import { Link } from "react-router-dom";
 import Header from './components/Header';
+import bookIllustration from './assets/book-illustration.png';
 import './App.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
-
 function App() {
-  const [serverStatus, setServerStatus] = useState('Checking...')
-  const [userCount, setUserCount] = useState(0)
-  const [users, setUsers] = useState([])
-  const galleryRef = useRef(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(true)
-
-  const checkScrollButtons = () => {
-    if (galleryRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = galleryRef.current
-      setCanScrollLeft(scrollLeft > 0)
-      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
-    }
-  }
-
-  const scrollGallery = (direction) => {
-    if (galleryRef.current) {
-      const scrollAmount = 400 // Scroll by 400px
-      galleryRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      })
-      // Check after scrolling
-      setTimeout(checkScrollButtons, 300)
-    }
-  }
-
-  useEffect(() => {
-    checkScrollButtons()
-    if (galleryRef.current) {
-      galleryRef.current.addEventListener('scroll', checkScrollButtons)
-      return () => {
-        if (galleryRef.current) {
-          galleryRef.current.removeEventListener('scroll', checkScrollButtons)
-        }
-      }
-    }
-  }, [])
-
-  // Test backend connection function
-  const testConnection = async () => {
-    console.log('🔄 Click me button pressed - testing connection...')
-    
-    try {
-      // Test database connection
-      console.log('📡 Testing database connection...')
-      const dbRes = await fetch(`${API_BASE}/api/db-test`)
-      if (!dbRes.ok) {
-        throw new Error(`DB test failed: ${dbRes.status}`)
-      }
-      const dbData = await dbRes.json()
-      console.log('✅ Database connection response:', dbData)
-      setServerStatus(dbData.status)
-      setUserCount(dbData.userCount)
-
-      // Fetch all users
-      console.log('👥 Fetching all users...')
-      const usersRes = await fetch(`${API_BASE}/api/users`)
-      if (!usersRes.ok) {
-        throw new Error(`Fetch users failed: ${usersRes.status}`)
-      }
-      const usersData = await usersRes.json()
-      console.log('✅ Users fetched successfully:', usersData)
-      setUsers(usersData)
-      
-    } catch (error) {
-      console.error('❌ Connection failed:', error)
-      setServerStatus('Backend not connected')
-      setUsers([])
-    }
-  }
-
-  useEffect(() => {
-    // Only set initial state, don't auto-test connection
-    setServerStatus('')
-    setUserCount(0)
-    setUsers([])
-  }, [])
-
   return (
     <div className="app-container">
       {/* Header */}
@@ -97,13 +16,21 @@ function App() {
       <div>
         {/* Welcome Section */}
         <section className="welcome-section">
-          <div className="welcome-content">
-            <h2 className="welcome-heading">
-              Welcome to  <span className="italic-logo"  style={{ fontFamily: "Kapakana, cursive", fontSize: "75px"}} >  Plotline</span>.
-            </h2>
-            <p className="welcome-text">
-              Reading doesn't have to be a solo journey. Plotline is the community-driven platform built for readers and book clubs. Here stories spark real conversations and connections.
-            </p>
+          <div className="welcome-container">
+            <div className="welcome-content">
+              <h2 className="welcome-heading">
+                Welcome to <span className="italic-logo" style={{ fontFamily: "Dancing Script, cursive", fontSize: "75px" }}>Plotline</span>.
+              </h2>
+              <p className="welcome-text">
+                Reading doesn't have to be a solo journey. Plotline is the community-driven platform built for readers and book clubs. Here stories spark real conversations and connections.
+              </p>
+              <Link to="/signup" className="welcome-button">
+                Get Started
+              </Link>
+            </div>
+            <div className="welcome-image-column">
+              <img src={bookIllustration} alt="Books illustration" className="welcome-image" />
+            </div>
           </div>
         </section>
 
@@ -130,94 +57,133 @@ function App() {
             <h2 className="features-title">
               What We Have to Offer
             </h2>
-            <div className="gallery-wrapper">
-              {/* Left Arrow */}
-              {canScrollLeft && (
-                <button
-                  onClick={() => scrollGallery('left')}
-                  className="gallery-arrow gallery-arrow-left"
-                  aria-label="Scroll left"
-                >
-                  <svg className="gallery-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+
+            {/* Feature 1: Text Left, Image Right */}
+            <div className="feature-row feature-row-normal">
+              <div className="feature-text-column">
+                <h3 className="feature-title">Join or Create Book Clubs</h3>
+                <p className="feature-description">
+                  Connect with readers by genre, author, or title in public or private clubs. Build your own community or discover existing ones that match your reading interests.
+                </p>
+              </div>
+              <div className="feature-image-column">
+                <div className="feature-image-placeholder">
+                  <svg className="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
-                </button>
-              )}
-
-              <div ref={galleryRef} className="gallery-scroll">
-              {/* Card 1: Join or Create Book Clubs */}
-              <div className="feature-card">
-                <div className="feature-card-content">
-                  <h3 className="feature-card-title">
-                    Join or Create Book Clubs
-                  </h3>
-                  <p className="feature-card-text">
-                    Connect with readers by genre, author, or title in public or private clubs
-                  </p>
                 </div>
               </div>
+            </div>
 
-              {/* Card 2: Chat in Real Time */}
-              <div className="feature-card">
-                <div className="feature-card-content">
-                  <h3 className="feature-card-title">
-                    Chat in Real Time
-                  </h3>
-                  <p className="feature-card-text">
-                    Share quick reactions, recommendations, and casual discussions through live chat
-                  </p>
-                </div>
+            {/* Feature 2: Image Left, Text Right */}
+            <div className="feature-row feature-row-reverse">
+              <div className="feature-text-column">
+                <h3 className="feature-title">Chat in Real Time</h3>
+                <p className="feature-description">
+                  Share quick reactions, recommendations, and casual discussions through live chat. Engage with your book club members instantly as you read together.
+                </p>
               </div>
-
-              {/* Card 3: Dive into Structured Threads */}
-              <div className="feature-card">
-                <div className="feature-card-content">
-                  <h3 className="feature-card-title">
-                    Dive into Structured Threads
-                  </h3>
-                  <p className="feature-card-text">
-                    Stay on track with organized discussions by chapters, themes, and questions
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 4: Showcase Your Bookshelf */}
-              <div className="feature-card">
-                <div className="feature-card-content">
-                  <h3 className="feature-card-title">
-                    Showcase Your Bookshelf
-                  </h3>
-                  <p className="feature-card-text">
-                    Share your reading journey with a visual timeline of current and past reads, ratings, and favorites
-                  </p>
-                </div>
-              </div>
-
-              {/* Card 5: Build Connections */}
-              <div className="feature-card">
-                <div className="feature-card-content">
-                  <h3 className="feature-card-title">
-                    Build Connections
-                  </h3>
-                  <p className="feature-card-text">
-                    Add friends, comment, react, and keep the conversation going beyond the book club
-                  </p>
-                </div>
-              </div>
-              </div>
-
-              {/* Right Arrow */}
-              {canScrollRight && (
-                <button
-                  onClick={() => scrollGallery('right')}
-                  className="gallery-arrow gallery-arrow-right"
-                  aria-label="Scroll right"
-                >
-                  <svg className="gallery-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <div className="feature-image-column">
+                <div className="feature-image-placeholder">
+                  <svg className="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                </button>
-              )}
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3: Text Left, Image Right */}
+            <div className="feature-row feature-row-normal">
+              <div className="feature-text-column">
+                <h3 className="feature-title">Dive into Structured Threads</h3>
+                <p className="feature-description">
+                  Stay on track with organized discussions by chapters, themes, and questions. Create meaningful conversations that go deeper than surface-level comments.
+                </p>
+              </div>
+              <div className="feature-image-column">
+                <div className="feature-image-placeholder">
+                  <svg className="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 4: Image Left, Text Right */}
+            <div className="feature-row feature-row-reverse">
+              <div className="feature-text-column">
+                <h3 className="feature-title">Showcase Your Bookshelf</h3>
+                <p className="feature-description">
+                  Share your reading journey with a visual timeline of current and past reads, ratings, and favorites. Let others discover your literary taste and recommendations.
+                </p>
+              </div>
+              <div className="feature-image-column">
+                <div className="feature-image-placeholder">
+                  <svg className="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 5: Text Left, Image Right */}
+            <div className="feature-row feature-row-normal">
+              <div className="feature-text-column">
+                <h3 className="feature-title">Build Connections</h3>
+                <p className="feature-description">
+                  Add friends, comment, react, and keep the conversation going beyond the book club. Create lasting friendships through shared literary passions.
+                </p>
+              </div>
+              <div className="feature-image-column">
+                <div className="feature-image-placeholder">
+                  <svg className="feature-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quote Section */}
+        <section className="quote-section">
+          <div className="quote-container">
+            <blockquote className="quote-text">
+              Plotline transformed how I connect with other readers. The combination of live chat and fun discussions makes every book club meeting more engaging and meaningful.
+            </blockquote>
+            <p className="quote-author">— Sarah M., Book Club Enthusiast</p>
+          </div>
+        </section>
+
+        {/* Who We Are Made For Section */}
+        <section className="who-section">
+          <div className="who-container">
+            <h2 className="who-title">Who We Are Made For</h2>
+            <div className="who-grid">
+              <div className="who-card">
+                <h3 className="who-card-title">Casual Readers</h3>
+                <p className="who-card-text">
+                  Whether you read a book a month or a book a week, Plotline helps you connect with others who share your passion for stories.
+                </p>
+              </div>
+              <div className="who-card">
+                <h3 className="who-card-title">Book Clubs</h3>
+                <p className="who-card-text">
+                  Organize your club's reading schedule, track progress, and facilitate discussions all in one place. Perfect for both online and in-person clubs.
+                </p>
+              </div>
+              <div className="who-card">
+                <h3 className="who-card-title">Classroom Communities</h3>
+                <p className="who-card-text">
+                  Teachers and can create book clubs for literature classes, making reading assignments more interactive and engaging.
+                </p>
+              </div>
+              <div className="who-card">
+                <h3 className="who-card-title">Genre Enthusiasts</h3>
+                <p className="who-card-text">
+                  Join niche communities for your favorite genres—from sci-fi to romance, mystery to fantasy—and discover your next great read.
+                </p>
+              </div>
             </div>
           </div>
         </section>
@@ -225,14 +191,12 @@ function App() {
         {/* Call to Action Section */}
         <section className="cta-section">
           <div className="cta-container">
+            <h2 className="cta-heading">Ready to Start Your Reading Journey?</h2>
             <p className="cta-text">
-              Unlike Goodreads, Reddit, or Discord alone, Plotline combines the best of all three: real-time chats, structured book discussions, and a personalized bookshelf, all into one space made just for readers
-            </p>
-            <p className="cta-text cta-text-last">
-              Whether you're a casual reader, a classroom club, or part of a niche genre community, Plotline is where your love of books finds a home
+              Join thousands of readers who are already connecting, discussing, and growing together on Plotline.
             </p>
             <Link to="/signup" className="cta-button">
-              Get Started- it's free!
+              Sign Up Today
             </Link>
           </div>
         </section>
@@ -241,7 +205,17 @@ function App() {
       {/* Footer */}
       <footer className="app-footer">
         <div className="app-footer-content">
-          <p className="app-footer-text">&copy; 2025 Plotline brought to you by ROTOM Corporation</p>
+          <p className="app-footer-text">
+            &copy; 2025 Plotline brought to you by{' '}
+            <a 
+              href="https://rotom-corp-company-website-2bed7e8765d3.herokuapp.com/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="app-footer-link"
+            >
+              ROTOM Corporation
+            </a>
+          </p>
         </div>
       </footer>
     </div>

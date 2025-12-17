@@ -64,26 +64,83 @@ const loadHistory = async (cid) => {
   }, [friend.id]);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !user?.id) return;
 
     loadHistory(conversationId);
 
+    // Check if socket already exists
+    if (socketRef.current) {
+      console.log("⚠️ DM Socket already exists, skipping new connection");
+      return;
+    }
+
     setConnecting(true);
 
-    const socket = io(apiBase, { query: { userId: user.id } });
+    const socket = io(apiBase, {
+      query: { userId: user.id },
+      transports: ["websocket"],
+      forceNew: true
+    });
+    
     socketRef.current = socket;
 
-    socket.emit("join_dm", { conversationId });
+    // Set a timeout for connection
+    let connectionTimeout = setTimeout(() => {
+      if (socket && !socket.connected) {
+        console.error("⏱️ DM socket connection timeout");
+        setConnecting(false);
+        setError("Connection timeout. Please check your internet connection and refresh.");
+        socket.disconnect();
+        socketRef.current = null;
+      }
+    }, 10000); // 10 second timeout
 
-    socket.on("connect", () => setConnecting(false));
-
-    socket.on("receive_dm", (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+    socket.on("connect", () => {
+      clearTimeout(connectionTimeout);
+      setConnecting(false);
+      setError(null);
+      console.log("✅ DM socket connected:", socket.id);
+      // Emit join_dm after connection is established
+      socket.emit("join_dm", { conversationId });
     });
 
-    return () => socket.disconnect();
-  }, [conversationId]);
+    socket.on("connect_error", (error) => {
+      clearTimeout(connectionTimeout);
+      console.error("❌ DM socket connection error:", error);
+      setConnecting(false);
+      setError("Failed to connect to chat server. Please refresh the page.");
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("🔌 DM socket disconnected:", reason);
+      if (reason === "io server disconnect") {
+        // Server disconnected, reconnect manually
+        socket.connect();
+      } else {
+        setConnecting(true);
+      }
+    });
+
+    socket.on("receive_dm", (msg) => {
+      setMessages((prev) => {
+        // Avoid duplicates
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
+      setTimeout(() => {
+        listRef.current?.lastElementChild?.scrollIntoView({ behavior: "smooth" });
+      }, 0);
+    });
+
+    return () => {
+      console.log("🧹 Cleaning DM socket");
+      clearTimeout(connectionTimeout);
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [conversationId, user?.id, apiBase]);
 
 
   const handleSend = () => {
@@ -120,7 +177,7 @@ const loadHistory = async (cid) => {
         </div>
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-800" style={{ fontFamily: "Times New Roman, serif" }}>
+          <h2 className="text-lg font-semibold text-gray-800" style={{}}>
             {friend?.name}
           </h2>
           <p className="text-xs text-gray-500 italic">Direct Message</p>
@@ -147,9 +204,7 @@ const loadHistory = async (cid) => {
               className={`inline-block max-w-[70%] px-3 py-2 rounded-xl text-sm border`}
               style={{
                 backgroundColor: m.senderId === user.id ? "#efe6d7" : "#ffffff",
-                borderColor: "#ddcdb7",
-                fontFamily: "Times New Roman, serif",
-              }}
+                borderColor: "#ddcdb7",}}
             >
               {m.content}
             </div>
@@ -165,12 +220,12 @@ const loadHistory = async (cid) => {
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Type a message…"
           className="flex-1 border border-[#ddcdb7] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#d7bfa2]"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         />
         <button
           onClick={handleSend}
           className="px-4 py-2 rounded-lg bg-[#774C30] text-white hover:opacity-90 text-sm"
-          style={{ fontFamily: "Times New Roman, serif" }}
+          style={{}}
         >
           Send
         </button>
